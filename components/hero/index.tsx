@@ -9,60 +9,76 @@ interface HeroProps {
 
 export default function Hero({ t, locale }: HeroProps) {
   return (
-    <section className="text-center mb-16 relative">
-      {/* 装饰性元素 - 左侧曲线线条 */}
-      <div className="absolute left-0 top-1/2 -translate-y-1/2 z-0 hidden md:block">
-        <svg width="120" height="180" viewBox="0 0 120 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M60 10C30 40 100 80 20 120 C-10 140 60 160 110 150" stroke="#E11D48" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="60" cy="10" r="8" fill="#FDA4AF" />
-          <circle cx="110" cy="150" r="8" fill="#FDA4AF" />
-        </svg>
+    <section className="relative min-h-[90vh] py-16 px-6 flex flex-col justify-center items-center overflow-hidden">
+      {/* 背景线条装饰 */}
+      <div className="absolute inset-0 z-0 opacity-20">
+        <div className="absolute w-full h-full">
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className="absolute w-full h-[1px] bg-border" style={{ top: `${i * 8}%` }}></div>
+          ))}
+          {[...Array(12)].map((_, i) => (
+            <div key={i} className="absolute h-full w-[1px] bg-border" style={{ left: `${i * 8}%` }}></div>
+          ))}
+        </div>
       </div>
-
-      {/* 装饰性元素 - 右侧圆点 */}
-      <div className="absolute right-0 bottom-0 z-0 hidden md:block">
-        <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="40" cy="40" r="40" fill="#FEE2E2" fillOpacity="0.6" />
-          <circle cx="40" cy="40" r="25" stroke="#E11D48" strokeWidth="2" strokeDasharray="6 3" />
-        </svg>
-      </div>
-
-      {/* 装饰性元素 - 右上角小型装饰 */}
-      <div className="absolute right-10 top-0 z-0 hidden md:block">
-        <svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 30C10 40 30 50 50 30" stroke="#E11D48" strokeWidth="3" strokeLinecap="round" />
-          <circle cx="50" cy="30" r="6" fill="#FDA4AF" />
+      
+      {/* 彩色装饰元素 */}
+      <div className="absolute top-10 right-10 w-16 h-16 bg-pink-200 rounded-full mix-blend-multiply opacity-60 animate-blob"></div>
+      <div className="absolute bottom-20 left-10 w-10 h-10 bg-purple-200 rounded-full mix-blend-multiply opacity-60 animate-blob animation-delay-2000"></div>
+      <div className="absolute top-[30%] left-[10%] w-6 h-6 text-primary opacity-70 animate-blob animation-delay-4000">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" fill="currentColor" />
         </svg>
       </div>
       
-      <h1 className="text-4xl md:text-6xl font-bold text-primary mb-4 relative z-10">
-        {t('appName')}
-      </h1>
-      <h2 className="text-2xl md:text-4xl text-secondary-foreground mb-8 relative z-10">
-        {t('tagline')}
-      </h2>
-      <p className="max-w-2xl mx-auto text-lg text-gray-600 mb-8 relative z-10">
-        {t('description')}
-      </p>
-      <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10">
-        <Link
-          href={`/${locale}/collage`}
-          className="bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-lg shadow-md flex items-center justify-center gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm0 2h12v7H4V5zm0 9v1h12v-1H4z" clipRule="evenodd" />
-          </svg>
-          {t('collageButton')}
-        </Link>
-        <Link
-          href={`/${locale}/pricing`}
-          className="border border-primary text-primary hover:bg-gray-50 font-semibold py-3 px-6 rounded-lg shadow-sm flex items-center justify-center gap-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12zm-1-5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm0-4a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clipRule="evenodd" />
-          </svg>
-          {t('pricing.title')}
-        </Link>
+      {/* 主内容容器 - 确保在背景之上 */}
+      <div className="container mx-auto max-w-5xl z-10 text-center">
+        <h1 className="text-5xl md:text-7xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600">
+          {t('appName')}
+        </h1>
+        
+        <h2 className="text-2xl md:text-3xl font-light mt-8 mb-6 text-muted-foreground max-w-2xl mx-auto">
+          {t('tagline')}
+        </h2>
+        
+        <p className="text-lg text-muted-foreground mb-12 max-w-xl mx-auto">
+          {t('description')}
+        </p>
+        
+        <div className="flex justify-center">
+          <Link
+            href={`/${locale}/collage`}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-10 py-4 rounded-full transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+          >
+            {t('collageButton')}
+          </Link>
+        </div>
+        
+        {/* 数据展示部分 */}
+        <div className="flex flex-wrap justify-center gap-8 md:gap-16 mt-24 text-center">
+          <div className="flex flex-col">
+            <div className="text-3xl md:text-4xl font-bold text-foreground">50K+</div>
+            <div className="text-sm text-muted-foreground">{t('users')}</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-3xl md:text-4xl font-bold text-foreground">5.0</div>
+            <div className="text-sm text-muted-foreground">{t('rating')}</div>
+          </div>
+          <div className="flex flex-col">
+            <div className="text-3xl md:text-4xl font-bold text-foreground">300M+</div>
+            <div className="text-sm text-muted-foreground">{t('collages')}</div>
+          </div>
+        </div>
+      </div>
+      
+      {/* 底部波浪 */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 z-0">
+        <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="relative block w-full h-full">
+          <path 
+            d="M0,224L60,213.3C120,203,240,181,360,181.3C480,181,600,203,720,208C840,213,960,203,1080,181.3C1200,160,1320,128,1380,112L1440,96L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z" 
+            fill="hsl(var(--background))"
+          ></path>
+        </svg>
       </div>
     </section>
   );

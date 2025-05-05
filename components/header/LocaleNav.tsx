@@ -7,6 +7,7 @@ import { UserButton, useUser } from "@clerk/nextjs";
 import { locales } from "@/lib/config";
 import { Locale, Dictionary, getTranslation } from "@/lib/i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
+import Image from "next/image";
 
 export default function LocaleNav({
   dict,
@@ -38,8 +39,15 @@ export default function LocaleNav({
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link href={`/${locale}`} className="text-2xl font-bold text-primary">
-                {t('appName')}
+              <Link href={`/${locale}`} className="flex items-center">
+                <Image
+                  src="/logo.png" 
+                  alt="Logo"
+                  width={32}
+                  height={32}
+                  className="mr-2"
+                />
+                <span className="text-2xl font-bold text-primary">{t('appName')}</span>
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">

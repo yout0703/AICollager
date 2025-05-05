@@ -4,6 +4,7 @@ import { Nav } from "@/types/nav";
 import Social from "@/components/social";
 import User from "@/components/user";
 import { useContext } from "react";
+import Image from "next/image";
 
 export default function () {
   const { user } = useContext(AppContext);
@@ -24,10 +25,12 @@ export default function () {
         <nav className="font-inter mx-auto h-auto w-full max-w-[1600px] lg:relative lg:top-0">
           <div className="flex flex-row items-center px-6 py-8 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:py-8 xl:px-20">
             <a href="/" className="text-xl font-medium flex items-center">
-              <img
+              <Image
                 src="/logo.png"
-                className="w-8 h-8 rounded-full mr-2"
-                alt="logo"
+                width={32}
+                height={32}
+                className="rounded-full mr-2"
+                alt="AICollager Logo"
               />
               <span className="font-bold text-primary text-2xl">
                 AICollager

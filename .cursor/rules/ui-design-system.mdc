@@ -1,0 +1,175 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# AI Collager UI 设计系统
+
+这个文档定义了 AI Collager 项目的 UI 设计规范，所有新开发的组件和页面都应遵循这些规则来保持一致性。
+
+## 1. 色彩系统
+
+### 主色调
+- **主色 (Primary)**: 红色系 - HSL(0, 72.2%, 50.6%)
+  - 用于按钮、强调元素和交互点
+  - 悬停状态: 主色透明度 90% (bg-primary/90)
+  - 参考: [app/globals.css](mdc:app/globals.css) 中的 CSS 变量定义
+
+### 中性色
+- **背景色 (Background)**: 白色 - HSL(0, 0%, 100%)
+- **前景色 (Foreground)**: 近黑色 - HSL(0, 0%, 3.9%)
+- **次要色 (Secondary)**: 浅灰色 - HSL(0, 0%, 96.1%)
+  - 次要按钮和非重点区域使用
+- **柔和色 (Muted)**: 浅灰色 - HSL(0, 0%, 96.1%)
+  - 用于不太重要的文本和背景
+
+### 功能色
+- **警示/破坏性色 (Destructive)**: 鲜红色 - HSL(0, 84.2%, 60.2%)
+- **边框色 (Border)**: 浅灰色 - HSL(0, 0%, 89.8%)
+- **输入框边框色 (Input)**: 浅灰色 - HSL(0, 0%, 89.8%)
+- **装饰元素色**: 
+  - 粉色: bg-pink-200
+  - 紫色: bg-purple-200
+
+### 暗色模式
+项目支持暗色模式，暗色模式颜色定义在 [app/globals.css](mdc:app/globals.css) 的 .dark 选择器中。
+
+## 2. 排版
+
+### 字体家族
+- 基于系统字体栈，使用现代无衬线字体
+
+### 字体大小
+- **特大标题**: text-7xl (桌面端)，text-5xl (移动端)
+- **副标题**: text-3xl (桌面端)，text-2xl (移动端)
+- **正文**: text-lg
+- **按钮文本**: text-sm 搭配 font-medium
+- **数据显示**: text-3xl 带 font-bold
+- **次要文本**: text-sm
+
+### 字重
+- **粗体**: font-bold (标题、数字统计)
+- **中等**: font-medium (按钮)
+- **细体**: font-light (副标题)
+
+### 示例参考
+参考 [components/hero/index.tsx](mdc:components/hero/index.tsx) 中的排版实现。
+
+## 3. 布局与间距
+
+### 容器
+- **主容器**: container mx-auto
+- **内容最大宽度**: max-w-5xl (大屏)，max-w-2xl (中等内容区域)
+- **页面内边距**: px-6 (默认), px-4 (部分组件)
+
+### 间距
+- **垂直间距**:
+  - 小: mt-4, mb-4
+  - 中: mt-8, mb-6 
+  - 大: mt-20, mb-12
+- **水平间距**:
+  - 组件间: gap-4, gap-12
+
+## 4. 圆角
+- **默认圆角**: rounded-md (border-radius: var(--radius))
+  - 基础大小: --radius: 0.5rem
+- **小圆角**: rounded-sm
+- **大圆角**: 
+  - rounded-full (按钮使用)
+
+## 5. 交互元素
+
+### 按钮
+- **主要按钮**:
+  - 颜色: 黑色到灰色 bg-gray-900 hover:bg-black
+  - 文字: 白色 text-white
+  - 形状: rounded-full
+  - 内边距: px-8 py-4
+  - 过渡: transition-all duration-300
+  - 阴影: shadow-md hover:shadow-lg
+
+- **次要按钮**:
+  - 颜色: 白色到浅灰色 bg-white hover:bg-gray-50
+  - 文字: 深灰色 text-gray-700
+  - 边框: border border-gray-200
+  - 形态与过渡: 同主要按钮
+
+- **操作按钮** (生成封面按钮):
+  - 背景: bg-primary
+  - 文字: text-white
+  - 形状: rounded-md
+  - 内边距: px-6 py-2
+  - 边框: border-primary
+
+参考 [components/ui/button.tsx](mdc:components/ui/button.tsx) 中的按钮变体定义。
+
+### 输入框
+- **默认状态**:
+  - 边框: border border-solid border-primary
+  - 圆角: rounded-md
+  - 内边距: px-3 py-6
+  - 文字: text-sm text-[#333333]
+- **聚焦状态**:
+  - 边框: focus:border-primary
+
+参考 [components/input/index.tsx](mdc:components/input/index.tsx) 中的输入框实现。
+
+## 6. 装饰元素
+
+### 背景装饰
+- **线条装饰**: 灰色网格 bg-gray-300 (opacity-20)
+- **彩色装饰**:
+  - 粉色圆形: bg-pink-200 rounded-full mix-blend-multiply opacity-60
+  - 紫色圆形: bg-purple-200 rounded-full mix-blend-multiply opacity-60
+- **动画元素**: 
+  - 波浪形装饰 (底部)
+  - 动画: animate-blob (流体动画)
+
+参考 [components/hero/index.tsx](mdc:components/hero/index.tsx) 中的装饰元素实现。
+
+## 7. 响应式设计
+- **断点**:
+  - 移动端: 默认样式
+  - 小屏幕: sm: (min-width: 640px)
+  - 中屏幕: md: (min-width: 768px)
+  - 大屏幕: lg: (min-width: 1024px)
+  - 超大屏幕: 2xl: (min-width: 1400px)
+
+- **响应式布局**:
+  - 从列布局到行布局: flex-col sm:flex-row
+  - 字体大小调整: text-5xl md:text-7xl
+
+参考 [tailwind.config.ts](mdc:tailwind.config.ts) 中的响应式配置。
+
+## 8. 动效
+- **过渡效果**:
+  - 基础过渡: transition-colors (按钮颜色变化)
+  - 完整过渡: transition-all duration-300 (主要按钮)
+- **动画**:
+  - 流体效果: animate-blob (7s 循环)
+  - 延迟动画: animation-delay-2000, animation-delay-4000
+  - 折叠动画: accordion-down, accordion-up
+
+动画定义参考 [app/globals.css](mdc:app/globals.css) 中的 @keyframes 定义。
+
+## 9. 卡片与容器
+
+### 卡片
+- **基础样式**:
+  - 背景: bg-card
+  - 文字: text-card-foreground
+  - 圆角: 遵循 --radius 变量
+
+### 弹出层
+- **基础样式**:
+  - 背景: bg-popover
+  - 文字: text-popover-foreground
+
+## 10. 图标和视觉元素
+- **图标**:
+  - 使用 SVG 图标
+  - 大小可变: w-6 h-6, w-10 h-10, w-16 h-16
+- **渐变**:
+  - 文字渐变: bg-clip-text text-transparent bg-gradient-to-r from-gray-800 to-gray-600
+
+参考 [components/hero/index.tsx](mdc:components/hero/index.tsx) 中的渐变文本示例。

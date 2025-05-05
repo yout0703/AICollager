@@ -27,6 +27,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     chooseLayout: "Choose a layout",
     dragImages: "Drag your images here",
     adjustPosition: "Adjust image positions",
+    users: "Users",
+    rating: "Rating",
+    collages: "Collages",
     pricing: {
       title: "Pricing",
       free: {
@@ -67,6 +70,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     chooseLayout: "选择布局",
     dragImages: "拖拽您的图片到这里",
     adjustPosition: "调整图片位置",
+    users: "用户数",
+    rating: "评分",
+    collages: "拼图作品",
     pricing: {
       title: "价格",
       free: {
@@ -107,6 +113,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     chooseLayout: "Elige un diseño",
     dragImages: "Arrastra tus imágenes aquí",
     adjustPosition: "Ajusta la posición de las imágenes",
+    users: "Usuarios",
+    rating: "Calificación",
+    collages: "Collages",
     pricing: {
       title: "Precios",
       free: {
@@ -147,6 +156,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     chooseLayout: "Choisissez une mise en page",
     dragImages: "Faites glisser vos images ici",
     adjustPosition: "Ajuster la position des images",
+    users: "Utilisateurs",
+    rating: "Évaluation",
+    collages: "Collages",
     pricing: {
       title: "Tarifs",
       free: {
@@ -187,6 +199,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     chooseLayout: "Wählen Sie ein Layout",
     dragImages: "Ziehen Sie Ihre Bilder hierher",
     adjustPosition: "Bildpositionen anpassen",
+    users: "Benutzer",
+    rating: "Bewertung",
+    collages: "Collagen",
     pricing: {
       title: "Preise",
       free: {
@@ -227,6 +242,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     chooseLayout: "レイアウトを選択",
     dragImages: "ここに画像をドラッグ",
     adjustPosition: "画像の位置を調整",
+    users: "ユーザー数",
+    rating: "レーティング",
+    collages: "コラージュ作品",
     pricing: {
       title: "料金",
       free: {
@@ -267,6 +285,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     chooseLayout: "레이아웃 선택",
     dragImages: "이미지를 여기에 끌어다 놓으세요",
     adjustPosition: "이미지 위치 조정",
+    users: "유저수",
+    rating: "평점",
+    collages: "콜라주 작품",
     pricing: {
       title: "가격",
       free: {
