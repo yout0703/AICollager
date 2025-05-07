@@ -2,7 +2,7 @@ import { respData, respErr } from "@/lib/resp";
 
 import { Cover } from "@/types/cover";
 import { ImageGenerateParams } from "openai/resources/images.mjs";
-import { currentUser } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { downloadAndUploadImage } from "@/lib/s3";
 import { genUuid } from "@/lib";
 import { getOpenAIClient } from "@/services/openai";
@@ -45,6 +45,10 @@ export async function POST(req: Request) {
     const created_at = new Date().toISOString();
 
     const res = await client.images.generate(llm_params);
+    if (!res.data || res.data.length === 0 || !res.data[0].url) {
+      return respErr("generate cover failed: no image generated");
+    }
+
     const raw_img_url = res.data[0].url;
     if (!raw_img_url) {
       return respErr("generate cover failed");

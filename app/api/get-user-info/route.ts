@@ -2,7 +2,7 @@ import { findUserByEmail, insertUser } from "@/models/user";
 import { respData, respErr } from "@/lib/resp";
 
 import { User } from "@/types/user";
-import { currentUser } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { genUuid } from "@/lib";
 import { getUserCredits } from "@/services/order";
 

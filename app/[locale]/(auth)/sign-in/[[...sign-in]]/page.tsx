@@ -1,3 +1,4 @@
+"use client";
 import { SignIn } from "@clerk/nextjs";
 import { useParams } from "next/navigation";
 
@@ -8,8 +9,9 @@ export default function Page() {
   return (
     <div className="flex justify-center items-center min-h-screen py-12">
       <SignIn 
-        redirectUrl={`/${locale}`} 
-        afterSignInUrl={`/${locale}`} 
+        routing="path"
+        path="/sign-in"
+        fallbackRedirectUrl={`/${locale}`}
       />
     </div>
   );

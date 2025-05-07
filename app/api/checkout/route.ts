@@ -3,7 +3,7 @@ import { respData, respErr } from "@/lib/resp";
 
 import { Order } from "@/types/order";
 import Stripe from "stripe";
-import { currentUser } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { genOrderNo } from "@/lib/order";
 
 export const maxDuration = 120;

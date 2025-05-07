@@ -48,7 +48,7 @@ export default function ({ user }: Props) {
         <DropdownMenuSeparator className="md:hidden" />
 
         <DropdownMenuCheckboxItem>
-          <SignOutButton signOutCallback={() => location.reload()}>
+          <SignOutButton redirectUrl={window.location.href}>
             退出登录
           </SignOutButton>
         </DropdownMenuCheckboxItem>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { join } from "path";
 import { stat, mkdir, writeFile } from "fs/promises";
 import { v4 as uuidv4 } from 'uuid';

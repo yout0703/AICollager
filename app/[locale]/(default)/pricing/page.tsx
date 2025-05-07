@@ -1,6 +1,6 @@
 import { getDictionary, getTranslation, Locale, Dictionary } from "@/lib/i18n";
 import Link from "next/link";
-import { auth } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import { currentUser } from "@clerk/nextjs/server";
 
 export default async function PricingPage({

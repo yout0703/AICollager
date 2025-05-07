@@ -30,6 +30,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
     users: "Users",
     rating: "Rating",
     collages: "Collages",
+    uploadedImages: "Uploaded Images",
+    dragOrClickInstructions: "Drag to canvas or click to add",
+    pleaseUploadImages: "Please upload some images",
+    uploadedImage: "Uploaded image",
+    addToPreview: "Add to preview",
     pricing: {
       title: "Pricing",
       free: {
@@ -73,6 +78,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
     users: "用户数",
     rating: "评分",
     collages: "拼图作品",
+    uploadedImages: "已上传图片",
+    dragOrClickInstructions: "拖拽到画布或点击添加",
+    pleaseUploadImages: "请上传一些图片",
+    uploadedImage: "已上传图片",
+    addToPreview: "添加到预览",
     pricing: {
       title: "价格",
       free: {
@@ -116,6 +126,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
     users: "Usuarios",
     rating: "Calificación",
     collages: "Collages",
+    uploadedImages: "Imágenes subidas",
+    dragOrClickInstructions: "Arrastra al lienzo o haz clic para añadir",
+    pleaseUploadImages: "Por favor, sube algunas imágenes",
+    uploadedImage: "Imagen subida",
+    addToPreview: "Añadir a vista previa",
     pricing: {
       title: "Precios",
       free: {
@@ -159,6 +174,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
     users: "Utilisateurs",
     rating: "Évaluation",
     collages: "Collages",
+    uploadedImages: "Images téléchargées",
+    dragOrClickInstructions: "Glissez sur le canevas ou cliquez pour ajouter",
+    pleaseUploadImages: "Veuillez télécharger des images",
+    uploadedImage: "Image téléchargée",
+    addToPreview: "Ajouter à l'aperçu",
     pricing: {
       title: "Tarifs",
       free: {
@@ -202,6 +222,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
     users: "Benutzer",
     rating: "Bewertung",
     collages: "Collagen",
+    uploadedImages: "Hochgeladene Bilder",
+    dragOrClickInstructions: "Auf Leinwand ziehen oder klicken zum Hinzufügen",
+    pleaseUploadImages: "Bitte laden Sie einige Bilder hoch",
+    uploadedImage: "Hochgeladenes Bild",
+    addToPreview: "Zur Vorschau hinzufügen",
     pricing: {
       title: "Preise",
       free: {
@@ -245,6 +270,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
     users: "ユーザー数",
     rating: "レーティング",
     collages: "コラージュ作品",
+    uploadedImages: "アップロード済み画像",
+    dragOrClickInstructions: "キャンバスにドラッグまたはクリックして追加",
+    pleaseUploadImages: "画像をアップロードしてください",
+    uploadedImage: "アップロード済み画像",
+    addToPreview: "プレビューに追加",
     pricing: {
       title: "料金",
       free: {
@@ -288,6 +318,11 @@ export const dictionaries: Record<Locale, Dictionary> = {
     users: "유저수",
     rating: "평점",
     collages: "콜라주 작품",
+    uploadedImages: "업로드된 이미지",
+    dragOrClickInstructions: "캔버스에 드래그하거나 클릭하여 추가",
+    pleaseUploadImages: "이미지를 업로드해주세요",
+    uploadedImage: "업로드된 이미지",
+    addToPreview: "미리보기에 추가",
     pricing: {
       title: "가격",
       free: {
