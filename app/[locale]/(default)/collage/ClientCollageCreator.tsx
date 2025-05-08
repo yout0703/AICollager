@@ -2,6 +2,7 @@
 
 import { Locale } from "@/lib/i18n";
 import dynamic from "next/dynamic";
+import { ClerkProvider } from "@clerk/nextjs";
 
 // 使用动态导入避免预渲染服务器端组件，因为拼图编辑器依赖于浏览器API
 const CollageCreator = dynamic(() => import("@/components/collage/CollageCreator"), {
@@ -15,5 +16,13 @@ interface ClientCollageCreatorProps {
 }
 
 export default function ClientCollageCreator({ dict, locale }: ClientCollageCreatorProps) {
-  return <CollageCreator dict={dict} locale={locale} />;
+  return (
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      signInUrl={`/${locale}/sign-in`}
+      signUpUrl={`/${locale}/sign-up`}
+    >
+      <CollageCreator dict={dict} locale={locale} />
+    </ClerkProvider>
+  );
 } 

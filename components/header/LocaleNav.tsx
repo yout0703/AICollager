@@ -4,12 +4,31 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 import { locales } from "@/lib/config";
 import { Locale, Dictionary, getTranslation } from "@/lib/i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import Image from "next/image";
 
 export default function LocaleNav({
+  dict,
+  locale,
+}: {
+  dict: Dictionary;
+  locale: Locale;
+}) {
+  return (
+    <ClerkProvider
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      signInUrl={`/${locale}/sign-in`}
+      signUpUrl={`/${locale}/sign-up`}
+    >
+      <LocaleNavContent dict={dict} locale={locale} />
+    </ClerkProvider>
+  );
+}
+
+function LocaleNavContent({
   dict,
   locale,
 }: {
@@ -41,10 +60,11 @@ export default function LocaleNav({
             <div className="flex-shrink-0 flex items-center">
               <Link href={`/${locale}`} className="flex items-center">
                 <Image
-                  src="/logo.png" 
+                  src="/logo.png"
                   alt="Logo"
                   width={32}
                   height={32}
+                  style={{ height: 'auto' }}
                   className="mr-2"
                 />
                 <span className="text-2xl font-bold text-primary">{t('appName')}</span>
@@ -54,8 +74,8 @@ export default function LocaleNav({
               <Link
                 href={`/${locale}`}
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathnameWithoutLocale === '/' 
-                    ? 'border-primary text-gray-900' 
+                  pathnameWithoutLocale === '/'
+                    ? 'border-primary text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
@@ -64,8 +84,8 @@ export default function LocaleNav({
               <Link
                 href={`/${locale}/pricing`}
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathnameWithoutLocale === '/pricing' 
-                    ? 'border-primary text-gray-900' 
+                  pathnameWithoutLocale === '/pricing'
+                    ? 'border-primary text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
@@ -74,8 +94,8 @@ export default function LocaleNav({
               <Link
                 href={`/${locale}/collage`}
                 className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  pathnameWithoutLocale === '/collage' 
-                    ? 'border-primary text-gray-900' 
+                  pathnameWithoutLocale === '/collage'
+                    ? 'border-primary text-gray-900'
                     : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 }`}
               >
@@ -131,8 +151,8 @@ export default function LocaleNav({
             <Link
               href={`/${locale}`}
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                pathnameWithoutLocale === '/' 
-                  ? 'bg-primary/10 border-primary text-primary' 
+                pathnameWithoutLocale === '/'
+                  ? 'bg-primary/10 border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
               }`}
             >
@@ -141,8 +161,8 @@ export default function LocaleNav({
             <Link
               href={`/${locale}/pricing`}
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                pathnameWithoutLocale === '/pricing' 
-                  ? 'bg-primary/10 border-primary text-primary' 
+                pathnameWithoutLocale === '/pricing'
+                  ? 'bg-primary/10 border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
               }`}
             >
@@ -151,8 +171,8 @@ export default function LocaleNav({
             <Link
               href={`/${locale}/collage`}
               className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                pathnameWithoutLocale === '/collage' 
-                  ? 'bg-primary/10 border-primary text-primary' 
+                pathnameWithoutLocale === '/collage'
+                  ? 'bg-primary/10 border-primary text-primary'
                   : 'border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700'
               }`}
             >
@@ -193,7 +213,7 @@ export default function LocaleNav({
                     }`}
                   >
                     <div className="w-6 h-4 relative overflow-hidden rounded-sm shadow-sm border border-gray-200">
-                      <img 
+                      <img
                         src={`/flags/${l}.svg`}
                         alt={l}
                         className="absolute inset-0 w-full h-full object-cover"
@@ -217,4 +237,4 @@ export default function LocaleNav({
       )}
     </nav>
   );
-} 
+}

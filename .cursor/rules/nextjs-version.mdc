@@ -1,5 +1,16 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Next.js 版本说明
+
+本项目基于 [Next.js](mdc:https:/nextjs.org) 框架进行开发。
+
+- 当前使用的 Next.js 版本为 **15.3.1**。
+- 版本信息来源于 [package.json](mdc:package.json) 文件中的依赖声明：
+  ```json
+  "next": "15.3.1"
+  ```
+
+如需升级或变更 Next.js 版本，请务必同步更新 [package.json](mdc:package.json) 并进行充分测试。

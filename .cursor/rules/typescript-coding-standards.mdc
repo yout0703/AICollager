@@ -1,5 +1,137 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# TypeScript 编码规范
+
+本规范定义了项目中 TypeScript 代码的最佳实践和质量标准，所有开发者和 AI 助手应遵循这些规范。
+
+## 1. 类型安全
+
+### 空值检查
+- 在访问可能为 `undefined` 或 `null` 的对象属性前，**必须**先进行空值检查
+- 特别是对于 API 响应数据，应当假设任何属性都可能不存在
+
+```typescript
+// ❌ 错误示例
+const imageUrl = response.data[0].url;
+
+// ✅ 正确示例
+if (!response.data || response.data.length === 0 || !response.data[0].url) {
+  return handleError("数据不完整");
+}
+const imageUrl = response.data[0].url;
+```
+
+### 类型断言
+- 避免过度使用 `as` 类型断言
+- 当使用类型断言时，应加注释说明为何安全
+- 优先使用类型守卫（Type Guards）而非类型断言
+
+```typescript
+// ❌ 避免
+const data = result as SomeType;
+
+// ✅ 推荐
+if (isValidSomeType(result)) {
+  const data: SomeType = result;
+}
+
+// 必要时才使用类型断言
+const locale = userLocale as Locale; // 已在上方进行了 locales.includes(userLocale) 验证
+```
+
+## 2. API 错误处理
+
+### 结构化错误响应
+- 所有 API 响应应使用项目中的统一错误处理方法
+- 提供具体错误信息以便调试
+- 记录关键错误日志
+
+```typescript
+// ✅ 推荐方式
+try {
+  // 业务逻辑
+} catch (error) {
+  console.error("处理请求失败:", error);
+  return respErr("处理失败，请稍后重试");
+}
+```
+
+### 服务状态验证
+- 在调用外部服务前，验证所有必要前置条件
+- 使用提前返回模式（Early Return Pattern）处理错误情况
+
+```typescript
+// ✅ 推荐的验证方式
+if (!user || !user.emailAddresses || user.emailAddresses.length === 0) {
+  return respErr("用户未认证");
+}
+
+const userEmail = user.emailAddresses[0].emailAddress;
+```
+
+## 3. 异步编程
+
+### Promise 处理
+- 使用 `async/await` 而非 `.then()` 链式调用
+- 异步函数必须使用 `try/catch` 块捕获错误
+- 避免嵌套 Promise，使用 `Promise.all` 处理并行请求
+
+```typescript
+// ✅ 推荐的异步处理
+async function processData() {
+  try {
+    const results = await Promise.all([
+      fetchUserData(),
+      fetchUserPreferences()
+    ]);
+    return combineResults(results);
+  } catch (error) {
+    handleError(error);
+  }
+}
+```
+
+## 4. Clerk 认证集成
+
+### 服务端组件导入规范
+- 服务端组件和 API 路由必须从 `@clerk/nextjs/server` 导入身份验证函数
+- 客户端组件从 `@clerk/nextjs` 导入组件和 hooks
+
+```typescript
+// ✅ 服务端导入 (API routes, Server Components)
+import { auth, currentUser } from "@clerk/nextjs/server";
+
+// ✅ 客户端导入 (Client Components)
+import { useUser, SignIn, UserButton } from "@clerk/nextjs";
+```
+
+### 用户认证检查
+- API 路由中首先验证用户身份
+- 当访问需要认证的资源时，明确检查用户认证状态
+
+```typescript
+// ✅ 推荐的用户认证检查
+const user = await currentUser();
+if (!user) {
+  return respErr("未认证，请先登录");
+}
+```
+
+## 5. 环境变量处理
+
+### 安全访问
+- 访问环境变量时提供默认值，避免 `undefined` 错误
+- 关键环境变量使用应提前验证
+
+```typescript
+// ✅ 推荐方式
+const apiKey = process.env.API_KEY || "";
+if (!apiKey) {
+  console.error("API_KEY 环境变量未设置");
+}
+```
+
+参考 [app/api/gen-cover/route.ts](mdc:app/api/gen-cover/route.ts) 和 [app/api/checkout/route.ts](mdc:app/api/checkout/route.ts) 中的范例实现。

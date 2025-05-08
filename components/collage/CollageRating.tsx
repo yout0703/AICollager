@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/Toast";
 
 interface CollageRatingProps {
   onSubmitRating: (rating: number, comment: string) => Promise<void>;
@@ -28,9 +28,7 @@ export default function CollageRating({
 
   const handleRatingSubmit = async () => {
     if (rating === 0) {
-      setTimeout(() => {
-        toast.error("请先选择评分");
-      }, 0);
+      toast.error("请先选择评分");
       return;
     }
 
@@ -38,14 +36,11 @@ export default function CollageRating({
       setIsSubmitting(true);
       await onSubmitRating(rating, comment);
       setHasRated(true);
-      setTimeout(() => {
-        toast.success("感谢您的评分！");
-      }, 0);
+      // 评分成功不显示 toast 消息，因为已经有了视觉反馈（切换到感谢页面）
+      // toast.success("感谢您的评分！");
     } catch (error) {
       console.error("评分提交失败：", error);
-      setTimeout(() => {
-        toast.error("评分提交失败，请重试");
-      }, 0);
+      toast.error("评分提交失败，请重试");
     } finally {
       setIsSubmitting(false);
     }
@@ -62,7 +57,7 @@ export default function CollageRating({
   return (
     <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
       <h2 className="text-xl font-bold mb-4">{title}</h2>
-      
+
       <div className="mb-4">
         <p className="text-sm font-medium text-gray-700 mb-2">{ratingText}</p>
         <div className="flex items-center gap-2">
@@ -87,7 +82,7 @@ export default function CollageRating({
           </span>
         </div>
       </div>
-      
+
       <div className="mb-4">
         <p className="text-sm font-medium text-gray-700 mb-2">{commentText}</p>
         <textarea
@@ -98,7 +93,7 @@ export default function CollageRating({
           placeholder="分享您对拼图工具的使用体验..."
         />
       </div>
-      
+
       <button
         onClick={handleRatingSubmit}
         disabled={isSubmitting || rating === 0}
@@ -112,4 +107,4 @@ export default function CollageRating({
       </button>
     </div>
   );
-} 
+}

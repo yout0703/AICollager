@@ -59,7 +59,14 @@ export default async function LocaleLayout({
   const localization = localizationMap[locale];
 
   return (
-    <ClerkProvider localization={localization}>
+    <ClerkProvider 
+      localization={localization}
+      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      signInUrl={`/${locale}/sign-in`}
+      signUpUrl={`/${locale}/sign-up`}
+      afterSignInUrl={`/${locale}`}
+      afterSignUpUrl={`/${locale}`}
+    >
       <section lang={locale} suppressHydrationWarning>
         <Toaster position="top-center" richColors />
         {children}

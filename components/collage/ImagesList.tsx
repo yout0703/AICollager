@@ -48,7 +48,7 @@ export default function ImagesList({
                 alt={t("uploadedImage")}
                 className="w-full h-full object-cover"
                 style={{ objectPosition: 'center' }}
-                crossOrigin="anonymous"
+                crossOrigin={image.url.startsWith('data:') ? undefined : "anonymous"}
               />
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex flex-col justify-between">
                 <button

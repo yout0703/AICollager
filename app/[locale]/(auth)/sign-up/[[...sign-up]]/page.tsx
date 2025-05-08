@@ -9,8 +9,11 @@ export default function Page() {
   return (
     <div className="flex justify-center items-center min-h-screen py-12">
       <SignUp 
-        redirectUrl={`/${locale}`} 
-        afterSignUpUrl={`/${locale}`} 
+        routing="path"
+        path={`/${locale}/sign-up`}
+        signInUrl={`/${locale}/sign-in`}
+        redirectUrl={`/${locale}`}
+        afterSignUpUrl={`/${locale}`}
       />
     </div>
   );
