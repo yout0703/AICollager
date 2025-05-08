@@ -42,19 +42,18 @@ export function Toast() {
             secondary: "#EF4444",
           },
         },
-        // 警告样式
-        className: {
-          style: {
-            background: "#F59E0B",
-            color: "#fff",
-          },
-        },
         // 持续时间 - 减少为 3 秒，因为消息更少了
         duration: 3000,
       }}
     />
   );
 }
+
+// 警告样式 - 单独定义供warning函数使用
+const warningStyle = {
+  background: "#F59E0B",
+  color: "#fff",
+};
 
 /**
  * 安全的 toast 函数，避免在渲染过程中更新状态
@@ -89,10 +88,7 @@ export const toast = {
     setTimeout(() => {
       hotToast(message, {
         icon: "⚠️",
-        style: {
-          background: "#F59E0B",
-          color: "#fff",
-        },
+        style: warningStyle,
       });
     }, 0);
   },

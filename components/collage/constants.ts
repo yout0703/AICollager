@@ -217,6 +217,17 @@ export interface Layout {
 }
 
 // 蒙版形状定义
+export interface CellMask {
+  type: 'rectangular' | 'circular' | 'path';
+  svgPath?: string;
+  x?: number; // 在单元格内的相对位置 (0-1)
+  y?: number; // 在单元格内的相对位置 (0-1)
+  width?: number; // 相对宽度 (0-1)
+  height?: number; // 相对高度 (0-1)
+  radius?: number; // 圆形半径 (0-1，相对于单元格宽度)
+}
+
+// 蒙版形状定义
 export interface MaskShape {
   // 形状类型
   type: 'rectangular' | 'circular' | 'path' | 'custom';
@@ -230,15 +241,7 @@ export interface MaskShape {
   
   // 单元格形状定义，针对每个单元格的蒙版
   // 索引是单元格位置，值是该单元格的形状
-  cellMasks?: Record<number, {
-    type: 'rectangular' | 'circular' | 'path';
-    svgPath?: string;
-    x?: number; // 在单元格内的相对位置 (0-1)
-    y?: number; // 在单元格内的相对位置 (0-1)
-    width?: number; // 相对宽度 (0-1)
-    height?: number; // 相对高度 (0-1)
-    radius?: number; // 圆形半径 (0-1，相对于单元格宽度)
-  }>;
+  cellMasks?: Record<number, CellMask>;
 }
 
 // 获取拼图布局样式
@@ -312,7 +315,7 @@ export const RECOMMENDED_HEIGHT = 1350;
 export const IMAGE_QUALITY = 0.95;
 
 // 添加心形布局示例
-export const SHAPE_LAYOUTS = [
+export const SHAPE_LAYOUTS: Layout[] = [
   {
     id: "shape-heart",
     name: "心形",
@@ -321,7 +324,7 @@ export const SHAPE_LAYOUTS = [
     rows: 1,
     template: "grid-cols-1 grid-rows-1",
     maskShape: {
-      type: 'path' as 'path',
+      type: 'path',
       svgPath: "M50,15 A15,15 0 0,1 85,45 A15,15 0 0,1 115,45 A15,15 0 0,1 150,85 L85,150 L50,115 A15,15 0 0,1 15,85 A15,15 0 0,1 50,15 z",
     }
   },
@@ -333,7 +336,7 @@ export const SHAPE_LAYOUTS = [
     rows: 1,
     template: "grid-cols-1 grid-rows-1",
     maskShape: {
-      type: 'circular' as 'circular'
+      type: 'circular'
     }
   },
   {
@@ -344,10 +347,10 @@ export const SHAPE_LAYOUTS = [
     rows: 1,
     template: "grid-cols-1 grid-rows-1",
     maskShape: {
-      type: 'rectangular' as 'rectangular',
+      type: 'rectangular',
       cellMasks: {
         0: {
-          type: 'rectangular' as 'rectangular',
+          type: 'rectangular',
           x: 0.1,
           y: 0.1,
           width: 0.8,
@@ -364,12 +367,12 @@ export const SHAPE_LAYOUTS = [
     rows: 2,
     template: "grid-cols-2 grid-rows-2",
     maskShape: {
-      type: 'custom' as 'custom',
+      type: 'custom',
       cellMasks: {
-        0: { type: 'circular' as 'circular', radius: 0.45 },
-        1: { type: 'circular' as 'circular', radius: 0.45 },
-        2: { type: 'circular' as 'circular', radius: 0.45 },
-        3: { type: 'circular' as 'circular', radius: 0.45 }
+        0: { type: 'circular', radius: 0.45 },
+        1: { type: 'circular', radius: 0.45 },
+        2: { type: 'circular', radius: 0.45 },
+        3: { type: 'circular', radius: 0.45 }
       }
     }
   }
