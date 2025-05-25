@@ -12,6 +12,7 @@ interface CollagePreviewProps {
   onDrop: (position: number) => void;
   onRemoveImage: (id: string) => void;
   onUpdateImageTransform: (id: string, transform: ImageTransform) => void;
+  onImageClick?: (id: string) => void;
   translateFn: (key: string) => string;
   collageRef: RefObject<HTMLDivElement>;
 }
@@ -122,6 +123,7 @@ export default function CollagePreview({
   onDrop,
   onRemoveImage,
   onUpdateImageTransform,
+  onImageClick,
   translateFn,
   collageRef
 }: CollagePreviewProps) {
@@ -133,6 +135,10 @@ export default function CollagePreview({
   // 处理图片选择
   const handleImageSelect = (id: string) => {
     setSelectedImageId(prev => prev === id ? null : id);
+    // 如果提供了外部点击回调，则调用它
+    if (onImageClick) {
+      onImageClick(id);
+    }
   };
   
   // 处理缩放变化
@@ -202,7 +208,7 @@ export default function CollagePreview({
           style={{ 
             width: '100%',
             height: '100%',
-            gap: '2px',
+            gap: '8px',
             ...getCollageGridStyle(selectedLayout)
           }}
         >
@@ -249,7 +255,7 @@ export default function CollagePreview({
                           : (image.transform?.keepAspectRatio !== false) 
                             ? 'object-cover' 
                             : 'object-fill'
-                      }`}
+                      } cursor-pointer`}
                       onClick={() => handleImageSelect(image.id)}
                       draggable={false}
                       crossOrigin={image.url.startsWith('data:') ? undefined : "anonymous"}

@@ -14,6 +14,7 @@ import LayoutSelector from "./LayoutSelector";
 import AspectRatioSelector from "./AspectRatioSelector";
 import ImagesList from "./ImagesList";
 import CollagePreview from "./CollagePreview";
+import ImageEditToolbar from "./ImageEditToolbar";
 
 interface CollageCreatorProps {
   dict: Dictionary;
@@ -31,6 +32,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const collageRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -285,6 +287,11 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
   // 删除图片
   const handleRemoveImage = useCallback((id: string) => {
+    // 如果删除的是当前选中的图片，清除选中状态
+    if (id === selectedImageId) {
+      setSelectedImageId(null);
+    }
+    
     setImages(prevImages => {
       // 找到要移除的图片
       const imageToRemove = prevImages.find(img => img.id === id);
@@ -306,10 +313,15 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
     // 删除成功不显示 toast 消息
     // toast.success(t("imageRemoved"));
-  }, [t]);
+  }, [selectedImageId, t]);
 
   // 处理预览区域的图片删除
   const handleRemoveFromPreview = useCallback((id: string) => {
+    // 如果删除的是当前选中的图片，清除选中状态
+    if (id === selectedImageId) {
+      setSelectedImageId(null);
+    }
+    
     setImages(prevImages => {
       return prevImages.map(img =>
         img.id === id ? { ...img, position: undefined } : img
@@ -318,7 +330,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
     // 从预览区移除成功不显示 toast 消息
     // toast.success(t("imageRemovedFromPreview"));
-  }, [t]);
+  }, [selectedImageId, t]);
 
   // 提交评分
   const handleSubmitRating = async (rating: number, comment: string) => {
@@ -402,8 +414,16 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
     });
   }, []);
 
+  // 处理图片点击选择
+  const handleImageSelect = useCallback((id: string) => {
+    setSelectedImageId(prev => prev === id ? null : id);
+  }, []);
+
+  // 获取选中的图片
+  const selectedImage = images.find(img => img.id === selectedImageId);
+
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 lg:px-6 xl:px-8">
+    <div className="w-full px-0">
       {/* 工具栏：上传和下载按钮 */}
       <CollageToolbar
         onUploadClick={() => fileInputRef.current?.click()}
@@ -423,8 +443,8 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
         ref={fileInputRef}
       />
 
-      {/* 整体左右结构：左侧布局选择+图片列表，右侧预览区 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      {/* 整体布局结构 */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* 左侧：尺寸选择、布局选择和上传图片列表 */}
         <div className="md:col-span-1">
           {/* 尺寸比例选择器 */}
@@ -457,8 +477,8 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
           />
         </div>
 
-        {/* 右侧: 拼图预览 */}
-        <div className="md:col-span-1">
+        {/* 中间: 拼图预览 */}
+        <div className={selectedImage ? 'md:col-span-1' : 'md:col-span-2'}>
           <CollagePreview
             images={images}
             selectedLayout={selectedLayout}
@@ -533,10 +553,23 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
             }}
             onRemoveImage={handleRemoveFromPreview}
             onUpdateImageTransform={handleUpdateImageTransform}
+            onImageClick={handleImageSelect}
             translateFn={t}
             collageRef={collageRef}
           />
         </div>
+
+        {/* 右侧: 图片编辑工具栏 */}
+        {selectedImage && (
+          <div className="md:col-span-1">
+            <ImageEditToolbar
+              image={selectedImage}
+              onChange={(transform) => handleUpdateImageTransform(selectedImageId!, transform)}
+              onClose={() => setSelectedImageId(null)}
+              translateFn={t}
+            />
+          </div>
+        )}
       </div>
 
       {/* 评分组件 - 使用折叠面板 */}
