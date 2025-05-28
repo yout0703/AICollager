@@ -4,31 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { ClerkProvider } from "@clerk/nextjs";
 import { locales } from "@/lib/config";
 import { Locale, Dictionary, getTranslation } from "@/lib/i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import Image from "next/image";
 
 export default function LocaleNav({
-  dict,
-  locale,
-}: {
-  dict: Dictionary;
-  locale: Locale;
-}) {
-  return (
-    <ClerkProvider
-      publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
-      signInUrl={`/${locale}/sign-in`}
-      signUpUrl={`/${locale}/sign-up`}
-    >
-      <LocaleNavContent dict={dict} locale={locale} />
-    </ClerkProvider>
-  );
-}
-
-function LocaleNavContent({
   dict,
   locale,
 }: {

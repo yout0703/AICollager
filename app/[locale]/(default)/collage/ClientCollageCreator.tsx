@@ -1,6 +1,6 @@
 "use client";
 
-import { Locale } from "@/lib/i18n";
+import { Locale, Dictionary } from "@/lib/i18n";
 import dynamic from "next/dynamic";
 import { ClerkProvider } from "@clerk/nextjs";
 
@@ -11,7 +11,7 @@ const CollageCreator = dynamic(() => import("@/components/collage/CollageCreator
 });
 
 interface ClientCollageCreatorProps {
-  dict: any;
+  dict: Dictionary;
   locale: Locale;
 }
 

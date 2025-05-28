@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { toast } from "@/components/ui/Toast";
+import React, { useState } from 'react';
+import { Star } from 'lucide-react';
+import { toastMessage } from '@/lib/toast';
 
 interface CollageRatingProps {
   onSubmitRating: (rating: number, comment: string) => Promise<void>;
@@ -28,7 +29,7 @@ export default function CollageRating({
 
   const handleRatingSubmit = async () => {
     if (rating === 0) {
-      toast.error("请先选择评分");
+      toastMessage("请先选择评分", 'error');
       return;
     }
 
@@ -37,10 +38,10 @@ export default function CollageRating({
       await onSubmitRating(rating, comment);
       setHasRated(true);
       // 评分成功不显示 toast 消息，因为已经有了视觉反馈（切换到感谢页面）
-      // toast.success("感谢您的评分！");
+      // toastMessage("感谢您的评分！", 'success');
     } catch (error) {
       console.error("评分提交失败：", error);
-      toast.error("评分提交失败，请重试");
+      toastMessage("评分提交失败，请重试", 'error');
     } finally {
       setIsSubmitting(false);
     }

@@ -18,7 +18,7 @@ type NestedKeyOf<T> = {
 export const dictionaries: Record<Locale, Dictionary> = {
   en: {
     appName: "AICollager",
-    tagline: "Create beautiful photo collages with AI",
+    tagline: "AI-powered smart photo collage tool",
     description: "Use AI technology to create beautiful photo collages and design works",
     uploadButton: "Upload Images",
     collageButton: "Create Collage",
@@ -52,6 +52,182 @@ export const dictionaries: Record<Locale, Dictionary> = {
     pleaseUploadImages: "Please upload some images",
     uploadedImage: "Uploaded image",
     addToPreview: "Add to preview",
+    loading: "Loading...",
+    processing: "Processing...",
+    // Hero section
+    hero: {
+      title: {
+        highlight: "One-Click Generate",
+        main: "Beautiful Photo Collages"
+      },
+      subtitle: "Say goodbye to tedious manual operations. AI intelligently analyzes your photo content and automatically generates the best layout and decorative effects.",
+      features: {
+        aiLayout: "AI Smart Layout",
+        oneClick: "One-Click Generate",
+        freeTrial: "Free Trial 3 Times"
+      },
+      cta: {
+        primary: "Start Free Trial Now",
+        secondary: "Watch Demo"
+      },
+      freeTrialNotice: "🎉 Free trial 3 times, no registration required, experience AI magic instantly",
+      stats: {
+        users: {
+          number: "50K+",
+          label: "Active Users"
+        },
+        rating: {
+          number: "4.9",
+          label: "User Rating"
+        },
+        collages: {
+          number: "1M+",
+          label: "Collage Works"
+        },
+        satisfaction: {
+          number: "99%",
+          label: "Satisfaction"
+        }
+      },
+      inviteButton: {
+        text: "Invite Friends for Credits",
+        reward: "+20"
+      }
+    },
+    // 积分系统
+    credits: {
+      title: "Credits",
+      balance: "Credit Balance",
+      myCredits: "My Credits",
+      addCredits: "Add Credits",
+      getCredits: "Get Credits",
+      creditsUsed: "Credits Used",
+      creditsRemaining: "Credits Remaining",
+      insufficient: "Insufficient Credits",
+      low: "Low Credits",
+      sufficient: "Sufficient Credits",
+      abundant: "Abundant Credits",
+      empty: "Credits exhausted, invite friends to get credits",
+      lowMessage: "Credits insufficient, invite friends to get credits",
+      sufficientMessage: "Credits sufficient",
+      abundantMessage: "Credits abundant",
+      history: "Credit History",
+      transaction: "Transaction",
+      costPerCollage: "Cost per collage: 5 credits",
+      costPerDownload: "Download HD: 2 credits"
+    },
+    // 邀请系统
+    invite: {
+      title: "Invite Friends",
+      subtitle: "Earn credits by inviting friends",
+      description: "Both you and your friend get 10 credits when they register",
+      inviteCode: "Invite Code",
+      inviteLink: "Your Invite Link",
+      copyLink: "Copy Link",
+      copyCode: "Copy Code",
+      copied: "Copied",
+      linkCopied: "Link copied to clipboard",
+      share: "Share",
+      shareTitle: "AI Collager - Smart Photo Collage Tool",
+      shareText: "I'm using this amazing AI photo collage tool, come and try it!",
+      totalInvites: "Successful Invites",
+      earnedCredits: "Credits Earned",
+      pendingInvites: "Pending Invites",
+      inviteSuccess: "Invitation sent successfully",
+      inviteError: "Failed to get invite information"
+    },
+    // 编辑器
+    editor: {
+      title: "Collage Editor",
+      toolbar: "Toolbar",
+      canvas: "Canvas",
+      properties: "Properties",
+      layers: "Layers",
+      save: "Save",
+      export: "Export",
+      undo: "Undo",
+      redo: "Redo",
+      delete: "Delete",
+      copy: "Copy",
+      paste: "Paste",
+      selectElement: "Select an element to edit its properties",
+      position: "Position",
+      size: "Size",
+      rotation: "Rotation",
+      opacity: "Opacity",
+      flipH: "Flip Horizontal",
+      flipV: "Flip Vertical",
+      bringForward: "Bring Forward",
+      sendBackward: "Send Backward",
+      duplicate: "Duplicate",
+      lock: "Lock",
+      unlock: "Unlock",
+      show: "Show",
+      hide: "Hide",
+      addText: "Add Text",
+      addShape: "Add Shape",
+      addIcon: "Add Icon",
+      editText: "Click to edit text",
+      saving: "Saving...",
+      saveSuccess: "Save successful!",
+      saveError: "Save failed, please try again",
+      loadingEditor: "Loading editor..."
+    },
+    // AI生成相关
+    ai: {
+      generate: "AI Generate",
+      oneClickCollage: "One-Click Collage",
+      analyzing: "Analyzing images...",
+      generating: "Generating collage...",
+      processing: "AI processing...",
+      analysisComplete: "Analysis complete",
+      generationComplete: "Generation complete",
+      failed: "AI processing failed",
+      retry: "Retry",
+      dailyLimitReached: "Daily AI limit reached",
+      remainingUses: "Remaining uses today",
+      costNotice: "This operation will cost 5 credits"
+    },
+    // 一般界面文本
+    ui: {
+      close: "Close",
+      cancel: "Cancel",
+      confirm: "Confirm",
+      yes: "Yes",
+      no: "No",
+      ok: "OK",
+      next: "Next",
+      previous: "Previous",
+      finish: "Finish",
+      skip: "Skip",
+      retry: "Retry",
+      refresh: "Refresh",
+      search: "Search",
+      filter: "Filter",
+      sort: "Sort",
+      edit: "Edit",
+      view: "View",
+      delete: "Delete",
+      add: "Add",
+      remove: "Remove",
+      upload: "Upload",
+      download: "Download",
+      share: "Share",
+      preview: "Preview"
+    },
+    // 错误消息
+    errors: {
+      networkError: "Network error, please check your connection",
+      uploadError: "Upload failed, please try again",
+      processingError: "Processing failed, please try again",
+      downloadError: "Download failed, please try again",
+      saveError: "Save failed, please try again",
+      loadError: "Load failed, please try again",
+      permissionError: "Permission denied",
+      fileFormatError: "Unsupported file format",
+      fileSizeError: "File size too large",
+      unknownError: "Unknown error occurred"
+    },
     pricing: {
       title: "Pricing",
       free: {
@@ -78,12 +254,15 @@ export const dictionaries: Record<Locale, Dictionary> = {
       pricing: "Pricing",
       dashboard: "Dashboard",
       login: "Login",
-      signUp: "Sign Up"
+      signUp: "Sign Up",
+      create: "Create",
+      gallery: "Gallery",
+      editor: "Editor"
     }
   },
   zh: {
     appName: "AI拼图大师",
-    tagline: "用AI创建精美照片拼图",
+    tagline: "AI驱动的智能拼图工具",
     description: "使用AI技术创建精美的图像拼贴和设计作品",
     uploadButton: "上传图片",
     collageButton: "创建拼图",
@@ -117,6 +296,182 @@ export const dictionaries: Record<Locale, Dictionary> = {
     pleaseUploadImages: "请上传一些图片",
     uploadedImage: "已上传图片",
     addToPreview: "添加到预览",
+    loading: "加载中...",
+    processing: "处理中...",
+    // Hero section
+    hero: {
+      title: {
+        highlight: "一键生成",
+        main: "精美照片拼图"
+      },
+      subtitle: "告别繁琐的手动操作，AI智能分析你的照片内容，自动生成最佳布局和装饰效果",
+      features: {
+        aiLayout: "AI智能布局",
+        oneClick: "一键生成",
+        freeTrial: "免费试用3次"
+      },
+      cta: {
+        primary: "立即免费体验",
+        secondary: "观看演示"
+      },
+      freeTrialNotice: "🎉 免费试用 3 次，无需注册，立即体验AI魔法",
+      stats: {
+        users: {
+          number: "50K+",
+          label: "活跃用户"
+        },
+        rating: {
+          number: "4.9",
+          label: "用户评分"
+        },
+        collages: {
+          number: "1M+",
+          label: "拼图作品"
+        },
+        satisfaction: {
+          number: "99%",
+          label: "满意度"
+        }
+      },
+      inviteButton: {
+        text: "邀请好友得积分",
+        reward: "+20"
+      }
+    },
+    // 积分系统
+    credits: {
+      title: "积分",
+      balance: "积分余额",
+      myCredits: "我的积分",
+      addCredits: "增加积分",
+      getCredits: "获取积分",
+      creditsUsed: "已使用积分",
+      creditsRemaining: "剩余积分",
+      insufficient: "积分不足",
+      low: "积分不足",
+      sufficient: "积分充足",
+      abundant: "积分充沛",
+      empty: "积分已用完，请邀请朋友获取积分",
+      lowMessage: "积分不足，建议邀请朋友获取积分",
+      sufficientMessage: "积分充足",
+      abundantMessage: "积分充沛",
+      history: "积分历史",
+      transaction: "积分流水",
+      costPerCollage: "拼图生成: 5 积分/次",
+      costPerDownload: "下载高清: 2 积分/次"
+    },
+    // 邀请系统
+    invite: {
+      title: "邀请朋友获得积分",
+      subtitle: "邀请朋友一起使用",
+      description: "每邀请一位朋友注册，您和朋友都可获得 10 积分",
+      inviteCode: "邀请码",
+      inviteLink: "您的专属邀请链接",
+      copyLink: "复制链接",
+      copyCode: "复制",
+      copied: "已复制",
+      linkCopied: "链接已复制到剪贴板",
+      share: "分享",
+      shareTitle: "AI Collager - 智能拼图工具",
+      shareText: "我在使用这个超棒的AI拼图工具，快来一起体验吧！",
+      totalInvites: "成功邀请",
+      earnedCredits: "已获得积分",
+      pendingInvites: "待确认邀请",
+      inviteSuccess: "邀请发送成功",
+      inviteError: "获取邀请信息失败"
+    },
+    // 编辑器
+    editor: {
+      title: "拼图编辑器",
+      toolbar: "工具栏",
+      canvas: "画布",
+      properties: "属性",
+      layers: "图层",
+      save: "保存",
+      export: "导出",
+      undo: "撤销",
+      redo: "重做",
+      delete: "删除",
+      copy: "复制",
+      paste: "粘贴",
+      selectElement: "选择一个元素来编辑其属性",
+      position: "位置",
+      size: "尺寸",
+      rotation: "旋转",
+      opacity: "透明度",
+      flipH: "水平翻转",
+      flipV: "垂直翻转",
+      bringForward: "向前移动",
+      sendBackward: "向后移动",
+      duplicate: "复制",
+      lock: "锁定",
+      unlock: "解锁",
+      show: "显示",
+      hide: "隐藏",
+      addText: "添加文字",
+      addShape: "添加形状",
+      addIcon: "添加图标",
+      editText: "点击编辑文字",
+      saving: "保存中...",
+      saveSuccess: "保存成功！",
+      saveError: "保存失败，请重试",
+      loadingEditor: "加载编辑器中..."
+    },
+    // AI生成相关
+    ai: {
+      generate: "AI生成",
+      oneClickCollage: "一键拼图",
+      analyzing: "分析图片中...",
+      generating: "生成拼图中...",
+      processing: "AI处理中...",
+      analysisComplete: "分析完成",
+      generationComplete: "生成完成",
+      failed: "AI处理失败",
+      retry: "重试",
+      dailyLimitReached: "今日AI使用次数已达上限",
+      remainingUses: "今日剩余使用次数",
+      costNotice: "此操作将消耗 5 积分"
+    },
+    // 一般界面文本
+    ui: {
+      close: "关闭",
+      cancel: "取消",
+      confirm: "确认",
+      yes: "是",
+      no: "否",
+      ok: "确定",
+      next: "下一步",
+      previous: "上一步",
+      finish: "完成",
+      skip: "跳过",
+      retry: "重试",
+      refresh: "刷新",
+      search: "搜索",
+      filter: "筛选",
+      sort: "排序",
+      edit: "编辑",
+      view: "查看",
+      delete: "删除",
+      add: "添加",
+      remove: "移除",
+      upload: "上传",
+      download: "下载",
+      share: "分享",
+      preview: "预览"
+    },
+    // 错误消息
+    errors: {
+      networkError: "网络错误，请检查网络连接",
+      uploadError: "上传失败，请重试",
+      processingError: "处理失败，请重试",
+      downloadError: "下载失败，请重试",
+      saveError: "保存失败，请重试",
+      loadError: "加载失败，请重试",
+      permissionError: "权限不足",
+      fileFormatError: "不支持的文件格式",
+      fileSizeError: "文件大小超出限制",
+      unknownError: "发生未知错误"
+    },
     pricing: {
       title: "价格",
       free: {
@@ -128,14 +483,14 @@ export const dictionaries: Record<Locale, Dictionary> = {
       basic: {
         title: "基础版",
         description: "下载100张拼图",
-        price: "¥9.9/月",
+        price: "¥68/月",
         features: ["下载100张拼图", "AI布局", "添加文字", "优先支持"]
       },
       pro: {
         title: "专业版",
         description: "下载2000张拼图",
-        price: "¥99/月",
-        features: ["下载2000张拼图", "AI布局", "添加文字", "自定义图片编辑", "专属支持"]
+        price: "¥688/月",
+        features: ["下载2000张拼图", "AI布局", "添加文字", "自定义图像编辑", "专属支持"]
       }
     },
     nav: {
@@ -143,12 +498,15 @@ export const dictionaries: Record<Locale, Dictionary> = {
       pricing: "价格",
       dashboard: "控制台",
       login: "登录",
-      signUp: "注册"
+      signUp: "注册",
+      create: "创建",
+      gallery: "画廊",
+      editor: "编辑器"
     }
   },
   es: {
     appName: "AICollager",
-    tagline: "Crea hermosos collages de fotos con IA",
+    tagline: "Herramienta inteligente de collage de fotos con IA",
     description: "Utiliza la tecnología de IA para crear hermosos collages de imágenes y trabajos de diseño",
     uploadButton: "Subir Imágenes",
     collageButton: "Crear Collage",
@@ -182,6 +540,182 @@ export const dictionaries: Record<Locale, Dictionary> = {
     pleaseUploadImages: "Por favor, sube algunas imágenes",
     uploadedImage: "Imagen subida",
     addToPreview: "Añadir a vista previa",
+    loading: "Cargando...",
+    processing: "Procesando...",
+    // Hero section
+    hero: {
+      title: {
+        highlight: "Generar con Un Clic",
+        main: "Hermosos Collages de Fotos"
+      },
+      subtitle: "Olvídate de las operaciones manuales tediosas. La IA analiza inteligentemente el contenido de tus fotos y genera automáticamente el mejor diseño y efectos decorativos.",
+      features: {
+        aiLayout: "Diseño Inteligente con IA",
+        oneClick: "Generar con Un Clic",
+        freeTrial: "Prueba Gratis 3 Veces"
+      },
+      cta: {
+        primary: "Comenzar Prueba Gratis Ahora",
+        secondary: "Ver Demo"
+      },
+      freeTrialNotice: "🎉 Prueba gratis 3 veces, sin registro requerido, experimenta la magia de la IA al instante",
+      stats: {
+        users: {
+          number: "50K+",
+          label: "Usuarios Activos"
+        },
+        rating: {
+          number: "4.9",
+          label: "Calificación de Usuario"
+        },
+        collages: {
+          number: "1M+",
+          label: "Obras de Collage"
+        },
+        satisfaction: {
+          number: "99%",
+          label: "Satisfacción"
+        }
+      },
+      inviteButton: {
+        text: "Invitar Amigos por Créditos",
+        reward: "+20"
+      }
+    },
+    // Sistema de créditos
+    credits: {
+      title: "Créditos",
+      balance: "Saldo de Créditos",
+      myCredits: "Mis Créditos",
+      addCredits: "Añadir Créditos",
+      getCredits: "Obtener Créditos",
+      creditsUsed: "Créditos Usados",
+      creditsRemaining: "Créditos Restantes",
+      insufficient: "Créditos Insuficientes",
+      low: "Créditos Bajos",
+      sufficient: "Créditos Suficientes",
+      abundant: "Créditos Abundantes",
+      empty: "Créditos agotados, invita amigos para obtener créditos",
+      lowMessage: "Créditos insuficientes, invita amigos para obtener créditos",
+      sufficientMessage: "Créditos suficientes",
+      abundantMessage: "Créditos abundantes",
+      history: "Historial de Créditos",
+      transaction: "Transacción",
+      costPerCollage: "Costo por collage: 5 créditos",
+      costPerDownload: "Descarga HD: 2 créditos"
+    },
+    // Sistema de invitaciones
+    invite: {
+      title: "Invitar Amigos",
+      subtitle: "Gana créditos invitando amigos",
+      description: "Tanto tú como tu amigo obtienen 10 créditos cuando se registren",
+      inviteCode: "Código de Invitación",
+      inviteLink: "Tu Enlace de Invitación",
+      copyLink: "Copiar Enlace",
+      copyCode: "Copiar Código",
+      copied: "Copiado",
+      linkCopied: "Enlace copiado al portapapeles",
+      share: "Compartir",
+      shareTitle: "AI Collager - Herramienta de Collage Inteligente",
+      shareText: "¡Estoy usando esta increíble herramienta de collage con IA, ven y pruébala!",
+      totalInvites: "Invitaciones Exitosas",
+      earnedCredits: "Créditos Ganados",
+      pendingInvites: "Invitaciones Pendientes",
+      inviteSuccess: "Invitación enviada exitosamente",
+      inviteError: "Error al obtener información de invitación"
+    },
+    // Editor
+    editor: {
+      title: "Editor de Collage",
+      toolbar: "Barra de Herramientas",
+      canvas: "Lienzo",
+      properties: "Propiedades",
+      layers: "Capas",
+      save: "Guardar",
+      export: "Exportar",
+      undo: "Deshacer",
+      redo: "Rehacer",
+      delete: "Eliminar",
+      copy: "Copiar",
+      paste: "Pegar",
+      selectElement: "Selecciona un elemento para editar sus propiedades",
+      position: "Posición",
+      size: "Tamaño",
+      rotation: "Rotación",
+      opacity: "Opacidad",
+      flipH: "Voltear Horizontal",
+      flipV: "Voltear Vertical",
+      bringForward: "Traer Adelante",
+      sendBackward: "Enviar Atrás",
+      duplicate: "Duplicar",
+      lock: "Bloquear",
+      unlock: "Desbloquear",
+      show: "Mostrar",
+      hide: "Ocultar",
+      addText: "Añadir Texto",
+      addShape: "Añadir Forma",
+      addIcon: "Añadir Icono",
+      editText: "Clic para editar texto",
+      saving: "Guardando...",
+      saveSuccess: "¡Guardado exitoso!",
+      saveError: "Error al guardar, intenta de nuevo",
+      loadingEditor: "Cargando editor..."
+    },
+    // IA
+    ai: {
+      generate: "Generar con IA",
+      oneClickCollage: "Collage de Un Clic",
+      analyzing: "Analizando imágenes...",
+      generating: "Generando collage...",
+      processing: "Procesando con IA...",
+      analysisComplete: "Análisis completado",
+      generationComplete: "Generación completada",
+      failed: "Procesamiento de IA falló",
+      retry: "Reintentar",
+      dailyLimitReached: "Límite diario de IA alcanzado",
+      remainingUses: "Usos restantes hoy",
+      costNotice: "Esta operación costará 5 créditos"
+    },
+    // Interfaz general
+    ui: {
+      close: "Cerrar",
+      cancel: "Cancelar",
+      confirm: "Confirmar",
+      yes: "Sí",
+      no: "No",
+      ok: "OK",
+      next: "Siguiente",
+      previous: "Anterior",
+      finish: "Finalizar",
+      skip: "Omitir",
+      retry: "Reintentar",
+      refresh: "Actualizar",
+      search: "Buscar",
+      filter: "Filtrar",
+      sort: "Ordenar",
+      edit: "Editar",
+      view: "Ver",
+      delete: "Eliminar",
+      add: "Añadir",
+      remove: "Quitar",
+      upload: "Subir",
+      download: "Descargar",
+      share: "Compartir",
+      preview: "Vista previa"
+    },
+    // Mensajes de error
+    errors: {
+      networkError: "Error de red, verifica tu conexión",
+      uploadError: "Error de subida, intenta de nuevo",
+      processingError: "Error de procesamiento, intenta de nuevo",
+      downloadError: "Error de descarga, intenta de nuevo",
+      saveError: "Error al guardar, intenta de nuevo",
+      loadError: "Error de carga, intenta de nuevo",
+      permissionError: "Permiso denegado",
+      fileFormatError: "Formato de archivo no soportado",
+      fileSizeError: "Tamaño de archivo demasiado grande",
+      unknownError: "Error desconocido ocurrido"
+    },
     pricing: {
       title: "Precios",
       free: {
@@ -208,7 +742,10 @@ export const dictionaries: Record<Locale, Dictionary> = {
       pricing: "Precios",
       dashboard: "Panel",
       login: "Iniciar Sesión",
-      signUp: "Registrarse"
+      signUp: "Registrarse",
+      create: "Crear",
+      gallery: "Galería",
+      editor: "Editor"
     }
   },
   fr: {

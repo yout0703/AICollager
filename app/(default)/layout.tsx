@@ -5,7 +5,7 @@ import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { ReactNode } from "react";
 
-export default function ({ children }: { children: ReactNode }) {
+function DefaultLayout({ children }: { children: ReactNode }) {
   return (
     <AppContextProvider>
       <div className="w-screen h-screen">
@@ -16,3 +16,7 @@ export default function ({ children }: { children: ReactNode }) {
     </AppContextProvider>
   );
 }
+
+DefaultLayout.displayName = "DefaultLayout";
+
+export default DefaultLayout;

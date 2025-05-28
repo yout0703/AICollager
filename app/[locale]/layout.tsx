@@ -1,17 +1,14 @@
 import { notFound } from "next/navigation";
-import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import { locales } from "@/lib/config";
 import { Locale, getDictionary } from "@/lib/i18n";
 // 导入 Clerk 多语言包
 import { zhCN, enUS, esES, frFR, deDE, jaJP } from "@clerk/localizations";
 
-const inter = Inter({ subsets: ["latin"] });
-
 // 多语言字典映射
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const localizationMap: Record<string, any> = {
   en: enUS,
   zh: zhCN,
@@ -68,7 +65,6 @@ export default async function LocaleLayout({
       afterSignUpUrl={`/${locale}`}
     >
       <section lang={locale} suppressHydrationWarning>
-        <Toaster position="top-center" richColors />
         {children}
         <Analytics />
       </section>

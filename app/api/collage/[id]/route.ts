@@ -1,0 +1,163 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { CollageService } from '@/services/collageService';
+import { auth } from '@clerk/nextjs/server';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { userId } = await auth();
+    const { id: collageId } = await params;
+    
+    if (!collageId) {
+      return NextResponse.json(
+        { error: '拼图ID不能为空' },
+        { status: 400 }
+      );
+    }
+    
+    const collageService = new CollageService();
+    const collage = await collageService.getCollageById(collageId, userId || undefined);
+    
+    if (!collage) {
+      return NextResponse.json(
+        { error: '拼图不存在' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      collage: collage
+    });
+    
+  } catch (error) {
+    console.error('获取拼图详情错误:', error);
+    
+    if (error instanceof Error && error.message.includes('无权访问')) {
+      return NextResponse.json(
+        { error: '无权访问此拼图' },
+        { status: 403 }
+      );
+    }
+    
+    return NextResponse.json(
+      { 
+        error: '获取拼图详情失败',
+        details: process.env.NODE_ENV === 'development' ? 
+          (error instanceof Error ? error.message : '未知错误') : undefined
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { userId } = await auth();
+    const { id: collageId } = await params;
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      );
+    }
+    
+    if (!collageId) {
+      return NextResponse.json(
+        { error: '拼图ID不能为空' },
+        { status: 400 }
+      );
+    }
+    
+    const body = await request.json();
+    const { title, description, visibility } = body;
+    
+    const collageService = new CollageService();
+    const updatedCollage = await collageService.updateCollage(collageId, userId, {
+      title,
+      description,
+      visibility
+    });
+    
+    return NextResponse.json({
+      success: true,
+      collage: updatedCollage
+    });
+    
+  } catch (error) {
+    console.error('更新拼图错误:', error);
+    
+    if (error instanceof Error && error.message.includes('无权')) {
+      return NextResponse.json(
+        { error: '无权修改此拼图' },
+        { status: 403 }
+      );
+    }
+    
+    return NextResponse.json(
+      { 
+        error: '更新拼图失败',
+        details: process.env.NODE_ENV === 'development' ? 
+          (error instanceof Error ? error.message : '未知错误') : undefined
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { userId } = await auth();
+    const { id: collageId } = await params;
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      );
+    }
+    
+    if (!collageId) {
+      return NextResponse.json(
+        { error: '拼图ID不能为空' },
+        { status: 400 }
+      );
+    }
+    
+    const collageService = new CollageService();
+    await collageService.deleteCollage(collageId, userId);
+    
+    return NextResponse.json({
+      success: true,
+      message: '拼图已删除'
+    });
+    
+  } catch (error) {
+    console.error('删除拼图错误:', error);
+    
+    if (error instanceof Error && error.message.includes('无权')) {
+      return NextResponse.json(
+        { error: '无权删除此拼图' },
+        { status: 403 }
+      );
+    }
+    
+    return NextResponse.json(
+      { 
+        error: '删除拼图失败',
+        details: process.env.NODE_ENV === 'development' ? 
+          (error instanceof Error ? error.message : '未知错误') : undefined
+      },
+      { status: 500 }
+    );
+  }
+} 

@@ -1,9 +1,10 @@
-import Link from "next/link";
-import Image from "next/image";
-import { getDictionary, Locale, getTranslation } from "@/lib/i18n";
+import { getDictionary, Locale } from "@/lib/i18n";
 import Hero from "@/components/hero";
-import Samples from "@/components/samples";
-import Steps from "@/components/steps";
+import Features from "@/components/features";
+import HowItWorks from "@/components/how-it-works";
+import Testimonials from "@/components/testimonials";
+import Pricing from "@/components/pricing-preview";
+import FAQ from "@/components/faq";
 import CTA from "@/components/cta";
 
 export default async function HomePage({
@@ -14,24 +15,28 @@ export default async function HomePage({
   const { locale } = await params;
   const dict = getDictionary(locale);
 
-  // 辅助函数获取翻译
-  const t = (key: string): string => {
-    return getTranslation(dict, key);
-  };
-
   return (
-    <div className="w-full max-w-7xl mx-auto px-6 py-12 md:py-24">
-      {/* Hero Section */}
-      <Hero t={t} locale={locale} dict={dict} />
+    <div className="w-full">
+      {/* Hero Section - 主要价值主张 */}
+      <Hero locale={locale} dict={dict} />
 
-      {/* 示例图片展示 */}
-      <Samples t={t} dict={dict} />
+      {/* Features Section - 核心功能展示 */}
+      <Features dict={dict} />
 
-      {/* 使用步骤说明 */}
-      <Steps />
+      {/* How It Works - 使用步骤 */}
+      <HowItWorks dict={dict} />
 
-      {/* CTA区域 */}
-      <CTA t={t} locale={locale} dict={dict} />
+      {/* Testimonials - 社会证明 */}
+      <Testimonials dict={dict} />
+
+      {/* Pricing Preview - 定价预览 */}
+      <Pricing locale={locale} dict={dict} />
+
+      {/* FAQ - 常见问题 */}
+      <FAQ dict={dict} />
+
+      {/* Final CTA - 最终行动号召 */}
+      <CTA locale={locale} dict={dict} />
     </div>
   );
 } 

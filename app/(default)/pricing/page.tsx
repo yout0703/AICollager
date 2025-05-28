@@ -3,9 +3,11 @@
 import { Button } from "@/components/ui/button";
 import { CheckIcon } from "@heroicons/react/20/solid";
 import { loadStripe } from "@stripe/stripe-js";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { Check, Sparkles, Crown, Zap } from "lucide-react";
+import { toastMessage } from '@/lib/toast';
 
 const tiers = [
   {
@@ -54,7 +56,7 @@ function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-export default function () {
+function DefaultPricingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -84,16 +86,16 @@ export default function () {
       if (response.status === 401) {
         setLoading(false);
 
-        toast.error("need login");
+        toastMessage("need login", 'error');
         router.push("/sign-in");
         return;
       }
 
-      const { code, message, data } = await response.json();
+      const { message, data } = await response.json();
       if (!data) {
         setLoading(false);
 
-        toast.error(message);
+        toastMessage(message || "Unknown error", 'error');
         return;
       }
       const { public_key, session_id } = data;
@@ -102,7 +104,7 @@ export default function () {
       if (!stripe) {
         setLoading(false);
 
-        toast.error("checkout failed");
+        toastMessage("checkout failed", 'error');
         return;
       }
 
@@ -115,14 +117,14 @@ export default function () {
         setLoading(false);
 
         // 处理错误
-        toast.error(result.error.message);
+        toastMessage(result.error.message || "Checkout error", 'error');
       }
     } catch (e) {
       setLoading(false);
 
       console.log("checkout failed: ", e);
 
-      toast.error("checkout failed");
+      toastMessage("checkout failed", 'error');
     }
   };
 
@@ -201,3 +203,7 @@ export default function () {
     </div>
   );
 }
+
+DefaultPricingPage.displayName = "DefaultPricingPage";
+
+export default DefaultPricingPage;

@@ -1,11 +1,15 @@
-import { Dictionary } from "@/lib/i18n";
+import { Dictionary, getTranslation } from "@/lib/i18n";
 
 interface SamplesProps {
   dict: Dictionary;
-  t: (key: string) => string;
 }
 
-export default function Samples({ t }: SamplesProps) {
+export default function Samples({ dict }: SamplesProps) {
+  // 在组件内部创建 t 函数
+  const t = (key: string): string => {
+    return getTranslation(dict, key);
+  };
+
   return (
     <section className="mb-16">
       <div className="bg-gray-50 rounded-2xl p-8 shadow-inner">

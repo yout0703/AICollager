@@ -1,23 +1,19 @@
-import Covers from "@/components/covers";
 import Hero from "@/components/hero";
-import Input from "@/components/input";
-import { getDictionary, Locale, getTranslation } from "@/lib/i18n";
+import { getDictionary, Locale } from "@/lib/i18n";
 
-export default function () {
+function DefaultHomePage() {
   // 使用英语作为默认语言
   const locale = "en";
   const dict = getDictionary(locale as Locale);
-  
-  // 辅助函数获取翻译
-  const t = (key: string): string => {
-    return getTranslation(dict, key);
-  };
 
   return (
     <div className="w-full px-6">
-      <Hero dict={dict} locale={locale} t={t} />
-      <Input />
-      <Covers />
+      <Hero dict={dict} locale={locale} />
+      {/* TODO: 这里将来会替换为拼图创建组件 */}
     </div>
   );
 }
+
+DefaultHomePage.displayName = "DefaultHomePage";
+
+export default DefaultHomePage;

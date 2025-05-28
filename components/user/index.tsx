@@ -27,18 +27,18 @@ export default function ({ user }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarImage src={user.avatar_url} alt={user.nickname} />
-          <AvatarFallback>{user.nickname}</AvatarFallback>
+          <AvatarImage src={user.avatar_url} alt={user.display_name || user.username || user.email} />
+          <AvatarFallback>{user.display_name || user.username || user.email}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="mx-4">
         <DropdownMenuLabel className="text-center truncate">
-          {user.nickname ? user.nickname : user.email}
+          {user.display_name || user.username || user.email}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 
         <DropdownMenuCheckboxItem className="md:hidden text-center">
-          额度: {user.credits?.left_credits}
+          额度: {user.credits}
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator className="md:hidden" />
 

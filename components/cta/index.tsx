@@ -1,13 +1,17 @@
 import Link from "next/link";
-import { Dictionary } from "@/lib/i18n";
+import { Dictionary, getTranslation } from "@/lib/i18n";
 
 interface CTAProps {
   dict: Dictionary;
   locale: string;
-  t: (key: string) => string;
 }
 
-export default function CTA({ t, locale }: CTAProps) {
+export default function CTA({ dict, locale }: CTAProps) {
+  // 在组件内部创建 t 函数
+  const t = (key: string): string => {
+    return getTranslation(dict, key);
+  };
+
   return (
     <section className="text-center bg-gradient-to-r from-primary/90 to-primary rounded-2xl p-12 text-white shadow-lg">
       <h2 className="text-3xl font-bold mb-4">

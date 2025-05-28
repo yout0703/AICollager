@@ -1,12 +1,9 @@
-import { findUserByEmail, insertUser } from "@/models/user";
+import { findUserByEmail, createUser } from "@/models/user";
 import { respData, respErr } from "@/lib/resp";
 
-import { User } from "@/types/user";
 import { currentUser } from "@clerk/nextjs/server";
-import { genUuid } from "@/lib";
-import { getUserCredits } from "@/services/order";
 
-export async function POST(req: Request) {
+export async function POST() {
   const user = await currentUser();
   if (!user || !user.emailAddresses || user.emailAddresses.length === 0) {
     return respErr("not login");
@@ -14,29 +11,25 @@ export async function POST(req: Request) {
 
   try {
     const email = user.emailAddresses[0].emailAddress;
-    const nickname = user.firstName;
+    const nickname = user.firstName || "";
     const avatarUrl = user.imageUrl;
 
-    let userInfo: User = {
-      email: email,
-      nickname: nickname || "",
-      avatar_url: avatarUrl,
-      uuid: genUuid(),
-    };
-
-    const existUser = await findUserByEmail(email);
-    if (existUser) {
-      userInfo.uuid = existUser.uuid;
-    } else {
-      await insertUser(userInfo);
+    // 查找或创建用户
+    let userInfo = await findUserByEmail(email);
+    
+    if (!userInfo) {
+      // 创建新用户
+      userInfo = await createUser({
+        clerk_user_id: user.id,
+        email: email,
+        display_name: nickname,
+        avatar_url: avatarUrl
+      });
     }
-
-    const user_credits = await getUserCredits(email);
-    userInfo.credits = user_credits;
 
     return respData(userInfo);
   } catch (e) {
-    console.log("get user info failed");
+    console.log("get user info failed", e);
     return respErr("get user info failed");
   }
 }

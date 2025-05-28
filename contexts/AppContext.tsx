@@ -1,15 +1,16 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useUser } from '@clerk/nextjs';
+import { toastMessage } from '@/lib/toast';
 import { ContextProviderProps, ContextProviderValue } from "@/types/context";
-import { createContext, useEffect, useState } from "react";
 
-import { Cover } from "@/types/cover";
 import { User } from "@/types/user";
-import { toast } from "sonner";
 
 export const AppContext = createContext({} as ContextProviderValue);
 
 export const AppContextProvider = ({ children }: ContextProviderProps) => {
   const [user, setUser] = useState<User | null | undefined>(undefined);
-  const [covers, setCovers] = useState<Cover[] | null>(null);
+  // TODO: covers将被collages替代
+  // const [covers, setCovers] = useState<Cover[] | null>(null);
 
   const fetchUserInfo = async function () {
     try {
@@ -34,7 +35,7 @@ export const AppContextProvider = ({ children }: ContextProviderProps) => {
       setUser(null);
 
       console.log("get user info failed: ", e);
-      toast.error("get user info failed");
+      toastMessage("get user info failed", 'error');
     }
   };
 
@@ -43,7 +44,7 @@ export const AppContextProvider = ({ children }: ContextProviderProps) => {
   }, []);
 
   return (
-    <AppContext.Provider value={{ user, fetchUserInfo, covers, setCovers }}>
+    <AppContext.Provider value={{ user, fetchUserInfo }}>
       {children}
     </AppContext.Provider>
   );

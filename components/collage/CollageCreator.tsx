@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useUser, SignIn } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Dictionary, Locale, getTranslation } from "@/lib/i18n";
-import { toast } from "@/components/ui/Toast";
+import { toastMessage } from "@/lib/toast";
+import { Upload, Download, RotateCcw, Star, Share2, Trash2, Plus, X } from 'lucide-react';
 
 // 导入子组件和常量
 import { CollageImage, DEFAULT_LAYOUTS, ImageTransform, DEFAULT_IMAGE_TRANSFORM, DEFAULT_ASPECT_RATIOS, AspectRatio } from "./constants";
@@ -102,7 +103,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
       });
     }
     
-    toast.success(t("imagesUploaded"));
+    toastMessage(t("imagesUploaded"), 'success');
   }, [images, selectedLayout, t]);
 
   // 处理添加到预览区
@@ -125,7 +126,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
     // 如果找到空位置，则将图片添加到该位置
     if (position === -1) {
       // 如果没有空位置，提示用户
-      toast.warning(t("noEmptyPosition"));
+      toastMessage(t("noEmptyPosition"), 'warning');
       return;
     }
 
@@ -159,7 +160,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
     // 检查是否需要登录
     if (!isSignedIn) {
-      toast.info(t('loginRequired'));
+      toastMessage(t('loginRequired'), 'info');
       
       // 保存当前拼图状态到 localStorage，以防用户选择页面登录而不是弹窗登录
       try {
@@ -201,7 +202,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
       link.href = dataUrl;
       link.click();
 
-      toast.success(t("downloadSuccess"));
+      toastMessage(t("downloadSuccess"), 'success');
 
       // 使用requestAnimationFrame确保状态更新发生在渲染之后
       requestAnimationFrame(() => {
@@ -209,7 +210,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
       });
     } catch (error) {
       console.error("下载失败：", error);
-      toast.error(t("downloadFailed"));
+      toastMessage(t("downloadFailed"), 'error');
     } finally {
       setIsDownloading(false);
     }
@@ -246,7 +247,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
             }));
             
             setImages(processedImages);
-            toast.success(t('collageRestored'));
+            toastMessage(t('collageRestored'), 'success');
           }
           
           // 清除保存的状态
@@ -335,7 +336,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
   // 提交评分
   const handleSubmitRating = async (rating: number, comment: string) => {
     if (!isSignedIn || !user) {
-      toast.error(t('loginRequired'));
+      toastMessage(t('loginRequired'), 'error');
       return;
     }
 
@@ -352,10 +353,10 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
       });
 
       // 评分提交成功保留提示，这是重要的用户反馈
-      toast.success(t("ratingSubmitted"));
+      toastMessage(t("ratingSubmitted"), 'success');
       setShowRating(false);
     } catch (error) {
-      toast.error(t("ratingFailed"));
+      toastMessage(t("ratingFailed"), 'error');
     }
   };
 
@@ -391,7 +392,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
             }));
             
             setImages(processedImages);
-            toast.success(t('collageRestored'));
+            toastMessage(t('collageRestored'), 'success');
           }
           
           // 清除保存的状态

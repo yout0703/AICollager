@@ -7,11 +7,32 @@ import { locales, defaultLocale, publicRoutes } from "@/lib/config";
 
 // 获取用户首选语言
 function getLocale(request: Request): string {
-  const negotiatorHeaders: Record<string, string> = {};
-  request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
+  try {
+    const negotiatorHeaders: Record<string, string> = {};
+    request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
 
-  const languages = new Negotiator({ headers: negotiatorHeaders }).languages();
-  return match(languages, locales, defaultLocale);
+    const languages = new Negotiator({ headers: negotiatorHeaders }).languages();
+    
+    // 过滤和清理语言代码，只保留有效的语言代码
+    const validLanguages = languages
+      .map(lang => {
+        // 只取语言代码的主要部分（例如 'en-US' -> 'en'）
+        const mainLang = lang.split('-')[0].toLowerCase();
+        return locales.includes(mainLang) ? mainLang : null;
+      })
+      .filter(Boolean) as string[];
+
+    // 如果有有效的语言代码，使用第一个
+    if (validLanguages.length > 0) {
+      return validLanguages[0];
+    }
+
+    // 如果没有有效的语言代码，返回默认语言
+    return defaultLocale;
+  } catch (error) {
+    console.warn('Error getting locale from request headers:', error);
+    return defaultLocale;
+  }
 }
 
 // 创建公共路由匹配器

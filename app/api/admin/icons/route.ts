@@ -1,0 +1,102 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { IconService } from '@/services/iconService';
+import { checkUserPermission } from '@/services/userService';
+
+// 获取Icon统计信息
+export async function GET(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      );
+    }
+    
+    // 检查管理员权限
+    const hasPermission = await checkUserPermission(userId, 'admin');
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: '权限不足' },
+        { status: 403 }
+      );
+    }
+    
+    const result = await IconService.getStatistics();
+    
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error || '获取统计信息失败' },
+        { status: 500 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      icon_stats: result.icon_stats,
+      category_stats: result.category_stats
+    });
+    
+  } catch (error) {
+    console.error('Get icon statistics failed:', error);
+    return NextResponse.json(
+      { error: '获取统计信息失败' },
+      { status: 500 }
+    );
+  }
+}
+
+// 批量导入Icons
+export async function POST(req: NextRequest) {
+  try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: '请先登录' },
+        { status: 401 }
+      );
+    }
+    
+    // 检查管理员权限
+    const hasPermission = await checkUserPermission(userId, 'admin');
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: '权限不足' },
+        { status: 403 }
+      );
+    }
+    
+    const body = await req.json();
+    const { icons, action } = body;
+    
+    if (action === 'import' && Array.isArray(icons)) {
+      // 批量导入Icons
+      const result = await IconService.batchImportIcons(icons);
+      
+      return NextResponse.json({
+        success: result.success,
+        imported_count: result.imported_count,
+        skipped_count: result.skipped_count,
+        error_count: result.error_count,
+        errors: result.errors,
+        message: `导入完成: 成功 ${result.imported_count}, 跳过 ${result.skipped_count}, 失败 ${result.error_count}`
+      });
+      
+    } else {
+      return NextResponse.json(
+        { error: '无效的操作或数据格式' },
+        { status: 400 }
+      );
+    }
+    
+  } catch (error) {
+    console.error('Icon admin operation failed:', error);
+    return NextResponse.json(
+      { error: '操作失败' },
+      { status: 500 }
+    );
+  }
+} 
