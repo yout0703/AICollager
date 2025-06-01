@@ -14,7 +14,15 @@
     "db:backup": "node database/scripts/backup.js",
     "db:validate": "node database/scripts/validate.js",
     "db:seed": "node database/scripts/seed.js",
-    "db:reset": "node database/scripts/reset.js"
+    "db:reset": "node database/scripts/reset.js",
+    "supabase:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > types/supabase.ts",
+    "supabase:link": "supabase link",
+    "supabase:push": "supabase db push",
+    "supabase:pull": "supabase db pull",
+    "supabase:status": "supabase status",
+    "test:db": "curl http://localhost:3000/api/test-db",
+    "test:supabase": "curl http://localhost:3000/api/test-supabase",
+    "test:db-selection": "node scripts/test-db-selection.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.700.0",
@@ -28,6 +36,7 @@
     "@radix-ui/react-dropdown-menu": "^2.1.12",
     "@radix-ui/react-slot": "^1.2.0",
     "@stripe/stripe-js": "^2.4.0",
+    "@supabase/supabase-js": "^2.49.8",
     "@vercel/analytics": "^1.5.0",
     "axios": "^1.9.0",
     "class-variance-authority": "^0.7.1",
