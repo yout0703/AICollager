@@ -1,12 +1,11 @@
-import { Pool } from 'pg';
 import { Collage, CreateCollageRequest, UpdateCollageRequest, CanvasConfig, CollageElement } from '@/types/collage';
-import { getDb } from './db';
+import { DatabaseAdapter } from '@/lib/database-adapter';
 
 export class CollageModel {
-  private db: Pool;
+  private dbAdapter: DatabaseAdapter;
 
   constructor() {
-    this.db = getDb();
+    this.dbAdapter = new DatabaseAdapter(true);
   }
 
   /**
@@ -43,7 +42,10 @@ export class CollageModel {
     ];
 
     try {
-      const result = await this.db.query(query, values);
+      const result = await this.dbAdapter.query(query, values);
+      if (!result.rows || result.rows.length === 0) {
+        throw new Error('创建拼图失败：未返回数据');
+      }
       return this.formatCollageResult(result.rows[0]);
     } catch (error) {
       console.error('创建拼图失败:', error);
@@ -61,8 +63,8 @@ export class CollageModel {
     `;
 
     try {
-      const result = await this.db.query(query, [id]);
-      if (result.rows.length === 0) {
+      const result = await this.dbAdapter.query(query, [id]);
+      if (!result.rows || result.rows.length === 0) {
         return null;
       }
       return this.formatCollageResult(result.rows[0]);
@@ -96,11 +98,14 @@ export class CollageModel {
     `;
 
     try {
-      const countResult = await this.db.query(countQuery, [userId]);
+      const countResult = await this.dbAdapter.query(countQuery, [userId]);
+      if (!countResult.rows || countResult.rows.length === 0) {
+        throw new Error('查询计数失败');
+      }
       const total = parseInt(countResult.rows[0].count);
       
-      const result = await this.db.query(query, [userId, limit, offset]);
-      const collages = result.rows.map(this.formatCollageResult);
+      const result = await this.dbAdapter.query(query, [userId, limit, offset]);
+      const collages = result.rows?.map(this.formatCollageResult) || [];
 
       return {
         collages,
@@ -125,8 +130,8 @@ export class CollageModel {
     `;
 
     try {
-      const result = await this.db.query(query, [sessionId]);
-      return result.rows.map(this.formatCollageResult);
+      const result = await this.dbAdapter.query(query, [sessionId]);
+      return result.rows?.map(this.formatCollageResult) || [];
     } catch (error) {
       console.error('查询会话拼图列表失败:', error);
       throw new Error('查询会话拼图列表失败');
@@ -179,8 +184,8 @@ export class CollageModel {
     `;
 
     try {
-      const result = await this.db.query(query, values);
-      if (result.rows.length === 0) {
+      const result = await this.dbAdapter.query(query, values);
+      if (!result.rows || result.rows.length === 0) {
         throw new Error('拼图不存在或已删除');
       }
       return this.formatCollageResult(result.rows[0]);
@@ -244,7 +249,7 @@ export class CollageModel {
     `;
 
     try {
-      await this.db.query(query, values);
+      await this.dbAdapter.query(query, values);
     } catch (error) {
       console.error('更新拼图状态失败:', error);
       throw new Error('更新拼图状态失败');
@@ -262,7 +267,7 @@ export class CollageModel {
     `;
 
     try {
-      await this.db.query(query, [id]);
+      await this.dbAdapter.query(query, [id]);
     } catch (error) {
       console.error('删除拼图失败:', error);
       throw new Error('删除拼图失败');
@@ -280,7 +285,7 @@ export class CollageModel {
     `;
 
     try {
-      await this.db.query(query, [id]);
+      await this.dbAdapter.query(query, [id]);
     } catch (error) {
       console.error('增加下载次数失败:', error);
       throw new Error('增加下载次数失败');
@@ -298,7 +303,7 @@ export class CollageModel {
     `;
 
     try {
-      await this.db.query(query, [id]);
+      await this.dbAdapter.query(query, [id]);
     } catch (error) {
       console.error('增加查看次数失败:', error);
       throw new Error('增加查看次数失败');
@@ -325,7 +330,10 @@ export class CollageModel {
     `;
 
     try {
-      const result = await this.db.query(query, [userId]);
+      const result = await this.dbAdapter.query(query, [userId]);
+      if (!result.rows || result.rows.length === 0) {
+        throw new Error('获取用户统计失败：未返回数据');
+      }
       const row = result.rows[0];
       
       return {
@@ -354,8 +362,8 @@ export class CollageModel {
     `;
 
     try {
-      const result = await this.db.query(query, [limit]);
-      return result.rows.map(this.formatCollageResult);
+      const result = await this.dbAdapter.query(query, [limit]);
+      return result.rows?.map(this.formatCollageResult) || [];
     } catch (error) {
       console.error('获取精选拼图失败:', error);
       throw new Error('获取精选拼图失败');

@@ -20,7 +20,7 @@ export class AIStatsService {
     metadata?: Record<string, any>;
   }): Promise<boolean> {
     try {
-      return await recordAIRequest({
+      await recordAIRequest({
         type: params.type,
         success: params.success,
         cached: params.cached,
@@ -28,6 +28,7 @@ export class AIStatsService {
         estimated_cost: params.estimatedCost,
         metadata: params.metadata
       });
+      return true;
     } catch (error) {
       console.error('Record AI request failed:', error);
       return false;

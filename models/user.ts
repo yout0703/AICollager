@@ -1,5 +1,5 @@
 import { User, UserSession, CreateUserRequest } from "@/types/user";
-import { getDb } from "@/models/db";
+import { DatabaseAdapter } from "@/lib/database-adapter";
 import { v4 as uuidv4 } from 'uuid';
 
 // 生成邀请码
@@ -9,168 +9,188 @@ function generateInviteCode(): string {
 
 // 创建用户
 export async function createUser(userData: CreateUserRequest): Promise<User> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   const inviteCode = generateInviteCode();
   const now = new Date().toISOString();
   
-  const res = await db.query(
-    `INSERT INTO ac_users 
-      (clerk_user_id, email, username, display_name, avatar_url, invite_code, invited_by_code, created_at, updated_at) 
-      VALUES 
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING *`,
-    [
-      userData.clerk_user_id,
-      userData.email,
-      userData.username,
-      userData.display_name,
-      userData.avatar_url,
-      inviteCode,
-      userData.invited_by_code,
-      now,
-      now
-    ]
-  );
+  const insertData = {
+    clerk_user_id: userData.clerk_user_id,
+    email: userData.email,
+    username: userData.username,
+    display_name: userData.display_name,
+    avatar_url: userData.avatar_url,
+    invite_code: inviteCode,
+    invited_by_code: userData.invited_by_code,
+    created_at: now,
+    updated_at: now
+  };
 
-  if (res.rowCount === 0) {
+  const result = await db.insert('ac_users', insertData);
+  
+  if (result.error) {
+    throw new Error('Failed to create user: ' + result.error.message);
+  }
+
+  const insertedData = result.data?.[0] || result.rows?.[0];
+  if (!insertedData) {
     throw new Error('Failed to create user');
   }
 
-  return formatUser(res.rows[0]);
+  return formatUser(insertedData);
 }
 
 // 根据邮箱查找用户
 export async function findUserByEmail(email: string): Promise<User | undefined> {
-  const db = getDb();
-  const res = await db.query(
-    `SELECT * FROM ac_users WHERE email = $1 AND status = 'active' LIMIT 1`,
-    [email]
-  );
+  const db = new DatabaseAdapter(true);
+  const result = await db.select('ac_users', {
+    where: { email, status: 'active' },
+    limit: 1
+  });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to find user by email: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatUser(res.rows[0]);
+  return formatUser(rows[0]);
 }
 
 // 根据UUID查找用户
 export async function findUserByUuid(uuid: string): Promise<User | undefined> {
-  const db = getDb();
-  const res = await db.query(
-    `SELECT * FROM ac_users WHERE uuid = $1 AND status = 'active' LIMIT 1`,
-    [uuid]
-  );
+  const db = new DatabaseAdapter(true);
+  const result = await db.select('ac_users', {
+    where: { uuid, status: 'active' },
+    limit: 1
+  });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to find user by UUID: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatUser(res.rows[0]);
+  return formatUser(rows[0]);
 }
 
 // 根据Clerk用户ID查找用户
 export async function findUserByClerkId(clerkUserId: string): Promise<User | undefined> {
-  const db = getDb();
-  const res = await db.query(
-    `SELECT * FROM ac_users WHERE clerk_user_id = $1 AND status = 'active' LIMIT 1`,
-    [clerkUserId]
-  );
+  const db = new DatabaseAdapter(true);
+  const result = await db.select('ac_users', {
+    where: { clerk_user_id: clerkUserId, status: 'active' },
+    limit: 1
+  });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to find user by Clerk ID: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatUser(res.rows[0]);
+  return formatUser(rows[0]);
 }
 
 // 根据邀请码查找用户
 export async function findUserByInviteCode(inviteCode: string): Promise<User | undefined> {
-  const db = getDb();
-  const res = await db.query(
-    `SELECT * FROM ac_users WHERE invite_code = $1 AND status = 'active' LIMIT 1`,
-    [inviteCode]
-  );
+  const db = new DatabaseAdapter(true);
+  const result = await db.select('ac_users', {
+    where: { invite_code: inviteCode, status: 'active' },
+    limit: 1
+  });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to find user by invite code: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatUser(res.rows[0]);
+  return formatUser(rows[0]);
 }
 
 // 更新用户信息
 export async function updateUser(uuid: string, updates: Partial<User>): Promise<User | undefined> {
-  const db = getDb();
-  const updateFields: string[] = [];
-  const values: any[] = [];
-  let paramIndex = 1;
+  const db = new DatabaseAdapter(true);
+  const updateData: Record<string, any> = {};
 
-  // 构建动态更新查询
+  // 构建更新数据
   Object.entries(updates).forEach(([key, value]) => {
     if (value !== undefined && key !== 'id' && key !== 'uuid' && key !== 'created_at') {
-      updateFields.push(`${key} = $${paramIndex}`);
-      values.push(value);
-      paramIndex++;
+      updateData[key] = value;
     }
   });
 
-  if (updateFields.length === 0) {
+  if (Object.keys(updateData).length === 0) {
     return findUserByUuid(uuid);
   }
 
-  updateFields.push(`updated_at = $${paramIndex}`);
-  values.push(new Date().toISOString());
-  values.push(uuid);
+  updateData.updated_at = new Date().toISOString();
 
-  const query = `
-    UPDATE ac_users 
-    SET ${updateFields.join(', ')}
-    WHERE uuid = $${paramIndex + 1} AND status = 'active'
-    RETURNING *
-  `;
-
-  const res = await db.query(query, values);
+  const result = await db.update('ac_users', updateData, { uuid, status: 'active' });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to update user: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatUser(res.rows[0]);
+  return formatUser(rows[0]);
 }
 
 // 更新用户积分
 export async function updateUserCredits(uuid: string, newCredits: number): Promise<boolean> {
-  const db = getDb();
-  const res = await db.query(
-    `UPDATE ac_users 
-     SET credits = $1, updated_at = $2 
-     WHERE uuid = $3 AND status = 'active'`,
-    [newCredits, new Date().toISOString(), uuid]
-  );
+  const db = new DatabaseAdapter(true);
+  const result = await db.update('ac_users', {
+    credits: newCredits,
+    updated_at: new Date().toISOString()
+  }, { uuid, status: 'active' });
 
-  return (res.rowCount || 0) > 0;
+  if (result.error) {
+    throw new Error('Failed to update user credits: ' + result.error.message);
+  }
+
+  return (result.data?.length || result.rows?.length || 0) > 0;
 }
 
 // 增加用户AI使用次数
 export async function incrementUserAIUsage(uuid: string): Promise<boolean> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   const today = new Date().toISOString().split('T')[0];
   
-  const res = await db.query(
-    `UPDATE ac_users 
-     SET daily_ai_usage = CASE 
-       WHEN last_ai_usage_date = $1 THEN daily_ai_usage + 1 
-       ELSE 1 
-     END,
-     last_ai_usage_date = $1,
-     total_ai_usage = total_ai_usage + 1,
-     updated_at = $2
-     WHERE uuid = $3 AND status = 'active'`,
-    [today, new Date().toISOString(), uuid]
-  );
+  // 使用原始查询处理复杂的更新逻辑
+  const query = `
+    UPDATE ac_users 
+    SET daily_ai_usage = CASE 
+      WHEN last_ai_usage_date = $1 THEN daily_ai_usage + 1 
+      ELSE 1 
+    END,
+    last_ai_usage_date = $1,
+    total_ai_usage = total_ai_usage + 1,
+    updated_at = $2
+    WHERE uuid = $3 AND status = 'active'
+  `;
+  
+  const result = await db.rawQuery(query, [today, new Date().toISOString(), uuid]);
 
-  return (res.rowCount || 0) > 0;
+  if (result.error) {
+    throw new Error('Failed to increment user AI usage: ' + result.error.message);
+  }
+
+  return (result.data?.length || result.rows?.length || 0) > 0;
 }
 
 // 创建用户会话
@@ -180,72 +200,99 @@ export async function createUserSession(sessionData: {
   ip_address?: string;
   user_agent?: string;
 }): Promise<UserSession> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30天后过期
 
-  const res = await db.query(
-    `INSERT INTO ac_user_sessions 
-      (session_id, user_id, ip_address, user_agent, created_at, expires_at) 
-      VALUES 
-      ($1, $2, $3, $4, $5, $6)
-      RETURNING *`,
-    [
-      sessionData.session_id,
-      sessionData.user_id,
-      sessionData.ip_address,
-      sessionData.user_agent,
-      now,
-      expiresAt
-    ]
-  );
+  const insertData = {
+    session_id: sessionData.session_id,
+    user_id: sessionData.user_id,
+    ip_address: sessionData.ip_address,
+    user_agent: sessionData.user_agent,
+    created_at: now,
+    expires_at: expiresAt
+  };
 
-  if (res.rowCount === 0) {
+  const result = await db.insert('ac_user_sessions', insertData);
+  
+  if (result.error) {
+    throw new Error('Failed to create user session: ' + result.error.message);
+  }
+
+  const insertedData = result.data?.[0] || result.rows?.[0];
+  if (!insertedData) {
     throw new Error('Failed to create user session');
   }
 
-  return formatUserSession(res.rows[0]);
+  return formatUserSession(insertedData);
 }
 
 // 查找用户会话
 export async function findUserSession(sessionId: string): Promise<UserSession | undefined> {
-  const db = getDb();
-  const res = await db.query(
-    `SELECT * FROM ac_user_sessions 
-     WHERE session_id = $1 AND expires_at > NOW() 
-     LIMIT 1`,
-    [sessionId]
-  );
+  const db = new DatabaseAdapter(true);
+  const result = await db.select('ac_user_sessions', {
+    where: { session_id: sessionId },
+    limit: 1
+  });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to find user session: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatUserSession(res.rows[0]);
+  return formatUserSession(rows[0]);
 }
 
-// 更新会话试用次数
+// 增加会话试用次数
 export async function incrementSessionTrialUsage(sessionId: string): Promise<boolean> {
-  const db = getDb();
-  const res = await db.query(
-    `UPDATE ac_user_sessions 
-     SET trial_usage_count = trial_usage_count + 1, 
-         last_activity_at = NOW()
-     WHERE session_id = $1 AND expires_at > NOW()`,
-    [sessionId]
-  );
+  const db = new DatabaseAdapter(true);
+  const result = await db.update('ac_user_sessions', {
+    trial_usage: db.rawQuery('trial_usage + 1', []),
+    updated_at: new Date().toISOString()
+  }, { session_id: sessionId });
 
-  return (res.rowCount || 0) > 0;
+  if (result.error) {
+    // 使用原始查询处理
+    const query = `
+      UPDATE ac_user_sessions 
+      SET trial_usage = trial_usage + 1, updated_at = $1
+      WHERE session_id = $2
+    `;
+    
+    const rawResult = await db.rawQuery(query, [new Date().toISOString(), sessionId]);
+    
+    if (rawResult.error) {
+      throw new Error('Failed to increment session trial usage: ' + rawResult.error.message);
+    }
+
+    return (rawResult.data?.length || rawResult.rows?.length || 0) > 0;
+  }
+
+  return (result.data?.length || result.rows?.length || 0) > 0;
 }
 
 // 清理过期会话
 export async function cleanupExpiredSessions(): Promise<number> {
-  const db = getDb();
-  const res = await db.query(
-    `DELETE FROM ac_user_sessions WHERE expires_at <= NOW()`
-  );
+  const db = new DatabaseAdapter(true);
+  
+  // 使用原始查询删除过期会话
+  const query = `
+    DELETE FROM ac_user_sessions 
+    WHERE expires_at < NOW()
+    RETURNING session_id
+  `;
+  
+  const result = await db.rawQuery(query);
+  
+  if (result.error) {
+    throw new Error('Failed to cleanup expired sessions: ' + result.error.message);
+  }
 
-  return res.rowCount || 0;
+  return result.data?.length || result.rows?.length || 0;
 }
 
 // 格式化用户数据

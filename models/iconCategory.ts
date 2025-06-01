@@ -1,8 +1,8 @@
-import { getDb } from "@/models/db";
+import { DatabaseAdapter } from "@/lib/database-adapter";
 import { v4 as uuidv4 } from 'uuid';
 import { IconCategory } from '@/types/icons';
 
-// 创建新Icon分类
+// 创建新的图标分类
 export async function createIconCategory(params: {
   category_id: string;
   category_name: string;
@@ -13,69 +13,78 @@ export async function createIconCategory(params: {
   display_order?: number;
   icon_color?: string;
 }): Promise<IconCategory> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   const uuid = uuidv4();
   const now = new Date().toISOString();
 
-  const res = await db.query(
-    `INSERT INTO ac_icon_categories 
-      (uuid, category_id, category_name, parent_category_id, description, ai_description, 
-       ai_keywords, display_order, icon_color, created_at, updated_at) 
-      VALUES 
-      ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING *`,
-    [
-      uuid,
-      params.category_id,
-      params.category_name,
-      params.parent_category_id,
-      params.description,
-      params.ai_description,
-      params.ai_keywords || [],
-      params.display_order || 0,
-      params.icon_color || '#666666',
-      now,
-      now
-    ]
-  );
+  const insertData = {
+    uuid,
+    category_id: params.category_id,
+    category_name: params.category_name,
+    parent_category_id: params.parent_category_id,
+    description: params.description,
+    ai_description: params.ai_description,
+    ai_keywords: params.ai_keywords || [],
+    display_order: params.display_order || 0,
+    icon_color: params.icon_color || '#6B7280',
+    created_at: now,
+    updated_at: now
+  };
 
-  if (res.rowCount === 0) {
+  const result = await db.insert('ac_icon_categories', insertData);
+  
+  if (result.error) {
+    throw new Error('Failed to create icon category: ' + result.error.message);
+  }
+
+  const insertedData = result.data?.[0] || result.rows?.[0];
+  if (!insertedData) {
     throw new Error('Failed to create icon category');
   }
 
-  return formatIconCategory(res.rows[0]);
+  return formatIconCategory(insertedData);
 }
 
 // 根据ID查找Icon分类
 export async function findIconCategoryById(categoryId: string): Promise<IconCategory | undefined> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
-  const res = await db.query(
-    'SELECT * FROM ac_icon_categories WHERE category_id = $1 AND is_active = true LIMIT 1',
-    [categoryId]
-  );
+  const result = await db.select('ac_icon_categories', {
+    where: { category_id: categoryId, is_active: true },
+    limit: 1
+  });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to find icon category by ID: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatIconCategory(res.rows[0]);
+  return formatIconCategory(rows[0]);
 }
 
 // 根据UUID查找Icon分类
 export async function findIconCategoryByUuid(uuid: string): Promise<IconCategory | undefined> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
-  const res = await db.query(
-    'SELECT * FROM ac_icon_categories WHERE uuid = $1 AND is_active = true LIMIT 1',
-    [uuid]
-  );
+  const result = await db.select('ac_icon_categories', {
+    where: { uuid, is_active: true },
+    limit: 1
+  });
   
-  if (res.rowCount === 0) {
+  if (result.error) {
+    throw new Error('Failed to find icon category by UUID: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  if (rows.length === 0) {
     return undefined;
   }
 
-  return formatIconCategory(res.rows[0]);
+  return formatIconCategory(rows[0]);
 }
 
 // 获取所有启用的Icon分类
@@ -83,7 +92,7 @@ export async function getAllIconCategories(options: {
   include_inactive?: boolean;
   include_count?: boolean;
 } = {}): Promise<IconCategory[]> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
   let whereClause = '';
   if (!options.include_inactive) {
@@ -92,18 +101,25 @@ export async function getAllIconCategories(options: {
   
   let query = `SELECT * FROM ac_icon_categories ${whereClause} ORDER BY display_order ASC, category_name ASC`;
   
-  const res = await db.query(query);
+  const result = await db.rawQuery(query);
   
-  let categories = res.rows.map(formatIconCategory);
+  if (result.error) {
+    throw new Error('Failed to get all icon categories: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  let categories = rows.map(formatIconCategory);
   
   // 如果需要包含Icon数量，查询每个分类的Icon数量
   if (options.include_count) {
     for (const category of categories) {
-      const countRes = await db.query(
-        'SELECT COUNT(*) as count FROM ac_icons WHERE category_id = $1 AND is_active = true',
-        [category.category_id]
-      );
-      category.icon_count = parseInt(countRes.rows[0]?.count || '0');
+      const countQuery = 'SELECT COUNT(*) as count FROM ac_icons WHERE category_id = $1 AND is_active = true';
+      const countResult = await db.rawQuery(countQuery, [category.category_id]);
+      
+      if (!countResult.error) {
+        const countRows = countResult.data || countResult.rows || [];
+        category.icon_count = parseInt(countRows[0]?.count || '0');
+      }
     }
   }
   
@@ -114,7 +130,7 @@ export async function getAllIconCategories(options: {
 export async function getTopLevelCategories(options: {
   include_count?: boolean;
 } = {}): Promise<IconCategory[]> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
   const query = `
     SELECT * FROM ac_icon_categories 
@@ -122,17 +138,25 @@ export async function getTopLevelCategories(options: {
     ORDER BY display_order ASC, category_name ASC
   `;
   
-  const res = await db.query(query);
-  let categories = res.rows.map(formatIconCategory);
+  const result = await db.rawQuery(query);
+  
+  if (result.error) {
+    throw new Error('Failed to get top level categories: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  let categories = rows.map(formatIconCategory);
   
   // 如果需要包含Icon数量
   if (options.include_count) {
     for (const category of categories) {
-      const countRes = await db.query(
-        'SELECT COUNT(*) as count FROM ac_icons WHERE category_id = $1 AND is_active = true',
-        [category.category_id]
-      );
-      category.icon_count = parseInt(countRes.rows[0]?.count || '0');
+      const countQuery = 'SELECT COUNT(*) as count FROM ac_icons WHERE category_id = $1 AND is_active = true';
+      const countResult = await db.rawQuery(countQuery, [category.category_id]);
+      
+      if (!countResult.error) {
+        const countRows = countResult.data || countResult.rows || [];
+        category.icon_count = parseInt(countRows[0]?.count || '0');
+      }
     }
   }
   
@@ -141,16 +165,22 @@ export async function getTopLevelCategories(options: {
 
 // 获取子分类
 export async function getChildCategories(parentCategoryId: string): Promise<IconCategory[]> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
-  const res = await db.query(
-    `SELECT * FROM ac_icon_categories 
-     WHERE parent_category_id = $1 AND is_active = true 
-     ORDER BY display_order ASC, category_name ASC`,
-    [parentCategoryId]
-  );
+  const query = `
+    SELECT * FROM ac_icon_categories 
+    WHERE parent_category_id = $1 AND is_active = true 
+    ORDER BY display_order ASC, category_name ASC
+  `;
   
-  return res.rows.map(formatIconCategory);
+  const result = await db.rawQuery(query, [parentCategoryId]);
+  
+  if (result.error) {
+    throw new Error('Failed to get child categories: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  return rows.map(formatIconCategory);
 }
 
 // 获取分类树结构
@@ -176,7 +206,7 @@ export async function searchIconCategories(params: {
   ai_keywords?: string[];
   limit?: number;
 }): Promise<IconCategory[]> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
   let whereClause = 'WHERE is_active = true';
   const queryParams: any[] = [];
@@ -214,20 +244,27 @@ export async function searchIconCategories(params: {
     queryParams.push(params.limit);
   }
   
-  const res = await db.query(query, queryParams);
+  const result = await db.rawQuery(query, queryParams);
   
-  return res.rows.map(formatIconCategory);
+  if (result.error) {
+    throw new Error('Failed to search icon categories: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  return rows.map(formatIconCategory);
 }
 
 // 更新分类使用次数
 export async function updateCategoryUsage(categoryId: string): Promise<boolean> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
   try {
-    await db.query(
-      'UPDATE ac_icon_categories SET usage_count = usage_count + 1 WHERE category_id = $1',
-      [categoryId]
-    );
+    const query = 'UPDATE ac_icon_categories SET usage_count = usage_count + 1 WHERE category_id = $1';
+    const result = await db.rawQuery(query, [categoryId]);
+    
+    if (result.error) {
+      throw new Error('Failed to update category usage: ' + result.error.message);
+    }
     
     return true;
   } catch (error) {
@@ -238,20 +275,25 @@ export async function updateCategoryUsage(categoryId: string): Promise<boolean> 
 
 // 更新分类中的Icon数量
 export async function updateCategoryIconCount(categoryId: string): Promise<boolean> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
   try {
-    const countRes = await db.query(
-      'SELECT COUNT(*) as count FROM ac_icons WHERE category_id = $1 AND is_active = true',
-      [categoryId]
-    );
+    const countQuery = 'SELECT COUNT(*) as count FROM ac_icons WHERE category_id = $1 AND is_active = true';
+    const countResult = await db.rawQuery(countQuery, [categoryId]);
     
-    const iconCount = parseInt(countRes.rows[0]?.count || '0');
+    if (countResult.error) {
+      throw new Error('Failed to count icons: ' + countResult.error.message);
+    }
+
+    const countRows = countResult.data || countResult.rows || [];
+    const iconCount = parseInt(countRows[0]?.count || '0');
     
-    await db.query(
-      'UPDATE ac_icon_categories SET icon_count = $1 WHERE category_id = $2',
-      [iconCount, categoryId]
-    );
+    const updateQuery = 'UPDATE ac_icon_categories SET icon_count = $1 WHERE category_id = $2';
+    const updateResult = await db.rawQuery(updateQuery, [iconCount, categoryId]);
+    
+    if (updateResult.error) {
+      throw new Error('Failed to update category icon count: ' + updateResult.error.message);
+    }
     
     return true;
   } catch (error) {
@@ -266,64 +308,64 @@ export async function updateAllCategoryIconCounts(): Promise<{
   updated_categories: number;
   message?: string;
 }> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
   try {
-    // 更新所有分类的Icon数量
-    const updateRes = await db.query(`
+    // 使用原始查询批量更新
+    const query = `
       UPDATE ac_icon_categories 
-      SET icon_count = subquery.icon_count 
-      FROM (
-        SELECT 
-          category_id,
-          COUNT(*) as icon_count 
+      SET icon_count = (
+        SELECT COUNT(*) 
         FROM ac_icons 
-        WHERE is_active = true 
-        GROUP BY category_id
-      ) AS subquery 
-      WHERE ac_icon_categories.category_id = subquery.category_id
-    `);
-    
-    // 将没有Icon的分类设为0
-    await db.query(`
-      UPDATE ac_icon_categories 
-      SET icon_count = 0 
-      WHERE category_id NOT IN (
-        SELECT DISTINCT category_id 
-        FROM ac_icons 
-        WHERE is_active = true
+        WHERE ac_icons.category_id = ac_icon_categories.category_id 
+          AND ac_icons.is_active = true
       )
-    `);
+      WHERE is_active = true
+      RETURNING category_id
+    `;
+    
+    const result = await db.rawQuery(query);
+    
+    if (result.error) {
+      throw new Error('Failed to update all category icon counts: ' + result.error.message);
+    }
+
+    const rows = result.data || result.rows || [];
     
     return {
       success: true,
-      updated_categories: updateRes.rowCount || 0,
-      message: '成功更新所有分类的Icon数量'
+      updated_categories: rows.length,
+      message: `Successfully updated ${rows.length} categories`
     };
-    
   } catch (error) {
     console.error('Update all category icon counts failed:', error);
     return {
       success: false,
       updated_categories: 0,
-      message: '更新分类Icon数量失败'
+      message: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
 
 // 获取最受欢迎的分类
 export async function getPopularCategories(limit: number = 10): Promise<IconCategory[]> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
-  const res = await db.query(
-    `SELECT * FROM ac_icon_categories 
-     WHERE is_active = true 
-     ORDER BY usage_count DESC, icon_count DESC 
-     LIMIT $1`,
-    [limit]
-  );
+  const query = `
+    SELECT * FROM ac_icon_categories 
+    WHERE is_active = true 
+    ORDER BY usage_count DESC, icon_count DESC 
+    LIMIT $1
+  `;
   
-  return res.rows.map(formatIconCategory);
+  const result = await db.rawQuery(query, [limit]);
+  
+  if (result.error) {
+    throw new Error('Failed to get popular categories: ' + result.error.message);
+  }
+
+  const rows = result.data || result.rows || [];
+  return rows.map(formatIconCategory);
 }
 
 // 获取分类统计信息
@@ -335,31 +377,46 @@ export async function getCategoryStats(): Promise<{
   avg_icons_per_category: number;
   most_popular_category: IconCategory | null;
 }> {
-  const db = getDb();
+  const db = new DatabaseAdapter(true);
   
-  const [totalRes, activeRes, withIconsRes, iconCountRes, popularRes] = await Promise.all([
-    db.query('SELECT COUNT(*) as total FROM ac_icon_categories'),
-    db.query('SELECT COUNT(*) as active FROM ac_icon_categories WHERE is_active = true'),
-    db.query('SELECT COUNT(*) as with_icons FROM ac_icon_categories WHERE icon_count > 0 AND is_active = true'),
-    db.query('SELECT SUM(icon_count) as total, AVG(icon_count) as avg FROM ac_icon_categories WHERE is_active = true'),
-    db.query('SELECT * FROM ac_icon_categories WHERE is_active = true ORDER BY usage_count DESC LIMIT 1')
-  ]);
+  const queries = [
+    'SELECT COUNT(*) as total FROM ac_icon_categories',
+    'SELECT COUNT(*) as active FROM ac_icon_categories WHERE is_active = true',
+    'SELECT COUNT(*) as with_icons FROM ac_icon_categories WHERE icon_count > 0 AND is_active = true',
+    'SELECT SUM(icon_count) as total_icons, AVG(icon_count) as avg_icons FROM ac_icon_categories WHERE is_active = true',
+    'SELECT * FROM ac_icon_categories WHERE is_active = true ORDER BY usage_count DESC LIMIT 1'
+  ];
   
-  const totalCategories = parseInt(totalRes.rows[0]?.total || '0');
-  const activeCategories = parseInt(activeRes.rows[0]?.active || '0');
-  const categoriesWithIcons = parseInt(withIconsRes.rows[0]?.with_icons || '0');
-  const totalIconCount = parseInt(iconCountRes.rows[0]?.total || '0');
-  const avgIconsPerCategory = parseFloat(iconCountRes.rows[0]?.avg || '0');
-  const mostPopularCategory = popularRes.rows[0] ? formatIconCategory(popularRes.rows[0]) : null;
-  
-  return {
-    total_categories: totalCategories,
-    active_categories: activeCategories,
-    categories_with_icons: categoriesWithIcons,
-    total_icon_count: totalIconCount,
-    avg_icons_per_category: Math.round(avgIconsPerCategory * 100) / 100,
-    most_popular_category: mostPopularCategory
-  };
+  try {
+    const results = await Promise.all(queries.map(query => db.rawQuery(query)));
+    
+    // 检查是否有错误
+    for (const result of results) {
+      if (result.error) {
+        throw new Error('Failed to get category stats: ' + result.error.message);
+      }
+    }
+    
+    const [totalResult, activeResult, withIconsResult, iconStatsResult, popularResult] = results;
+    
+    const totalRows = totalResult.data || totalResult.rows || [];
+    const activeRows = activeResult.data || activeResult.rows || [];
+    const withIconsRows = withIconsResult.data || withIconsResult.rows || [];
+    const iconStatsRows = iconStatsResult.data || iconStatsResult.rows || [];
+    const popularRows = popularResult.data || popularResult.rows || [];
+    
+    return {
+      total_categories: parseInt(totalRows[0]?.total || '0'),
+      active_categories: parseInt(activeRows[0]?.active || '0'),
+      categories_with_icons: parseInt(withIconsRows[0]?.with_icons || '0'),
+      total_icon_count: parseInt(iconStatsRows[0]?.total_icons || '0'),
+      avg_icons_per_category: parseFloat(iconStatsRows[0]?.avg_icons || '0'),
+      most_popular_category: popularRows.length > 0 ? formatIconCategory(popularRows[0]) : null
+    };
+  } catch (error) {
+    console.error('Error getting category stats:', error);
+    throw error;
+  }
 }
 
 // 格式化Icon分类数据

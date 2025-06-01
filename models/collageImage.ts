@@ -1,12 +1,11 @@
-import { Pool } from 'pg';
 import { CollageImage } from '@/types/collage';
-import { getDb } from './db';
+import { DatabaseAdapter } from '@/lib/database-adapter';
 
 export class CollageImageModel {
-  private db: Pool;
+  private db: DatabaseAdapter;
 
   constructor() {
-    this.db = getDb();
+    this.db = new DatabaseAdapter(true); // 使用服务端客户端
   }
 
   /**
@@ -27,35 +26,30 @@ export class CollageImageModel {
     dominant_colors?: string[];
     content_tags?: string[];
   }): Promise<CollageImage> {
-    const query = `
-      INSERT INTO ac_collage_images (
-        collage_id, image_index, element_id, original_url, processed_url,
-        file_name, file_size, mime_type, original_dimensions, processed_dimensions,
-        ai_analysis, dominant_colors, content_tags, processing_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-      RETURNING *
-    `;
-
-    const values = [
-      data.collage_id,
-      data.image_index,
-      data.element_id || null,
-      data.original_url,
-      data.processed_url || null,
-      data.file_name || null,
-      data.file_size || null,
-      data.mime_type || null,
-      data.original_dimensions ? JSON.stringify(data.original_dimensions) : null,
-      data.processed_dimensions ? JSON.stringify(data.processed_dimensions) : null,
-      data.ai_analysis ? JSON.stringify(data.ai_analysis) : null,
-      data.dominant_colors || null,
-      data.content_tags || null,
-      'uploaded'
-    ];
+    const insertData = {
+      collage_id: data.collage_id,
+      image_index: data.image_index,
+      element_id: data.element_id || null,
+      original_url: data.original_url,
+      processed_url: data.processed_url || null,
+      file_name: data.file_name || null,
+      file_size: data.file_size || null,
+      mime_type: data.mime_type || null,
+      original_dimensions: data.original_dimensions ? JSON.stringify(data.original_dimensions) : null,
+      processed_dimensions: data.processed_dimensions ? JSON.stringify(data.processed_dimensions) : null,
+      ai_analysis: data.ai_analysis ? JSON.stringify(data.ai_analysis) : null,
+      dominant_colors: data.dominant_colors || null,
+      content_tags: data.content_tags || null,
+      processing_status: 'uploaded'
+    };
 
     try {
-      const result = await this.db.query(query, values);
-      return this.formatImageResult(result.rows[0]);
+      const result = await this.db.insert('ac_collage_images', insertData);
+      if (result.error) {
+        throw new Error(result.error.message || '添加拼图图片失败');
+      }
+      const insertedData = result.data?.[0] || result.rows?.[0];
+      return this.formatImageResult(insertedData);
     } catch (error) {
       console.error('添加拼图图片失败:', error);
       throw new Error('添加拼图图片失败');
@@ -82,44 +76,15 @@ export class CollageImageModel {
   }>): Promise<CollageImage[]> {
     if (images.length === 0) return [];
 
-    const query = `
-      INSERT INTO ac_collage_images (
-        collage_id, image_index, element_id, original_url, processed_url,
-        file_name, file_size, mime_type, original_dimensions, processed_dimensions,
-        ai_analysis, dominant_colors, content_tags, processing_status
-      ) VALUES ${images.map((_, i) => {
-        const baseIndex = i * 14;
-        return `($${baseIndex + 1}, $${baseIndex + 2}, $${baseIndex + 3}, $${baseIndex + 4}, 
-                $${baseIndex + 5}, $${baseIndex + 6}, $${baseIndex + 7}, $${baseIndex + 8}, 
-                $${baseIndex + 9}, $${baseIndex + 10}, $${baseIndex + 11}, $${baseIndex + 12}, 
-                $${baseIndex + 13}, $${baseIndex + 14})`;
-      }).join(', ')}
-      RETURNING *
-    `;
-
-    const values: any[] = [];
-    images.forEach(image => {
-      values.push(
-        image.collage_id,
-        image.image_index,
-        image.element_id || null,
-        image.original_url,
-        image.processed_url || null,
-        image.file_name || null,
-        image.file_size || null,
-        image.mime_type || null,
-        image.original_dimensions ? JSON.stringify(image.original_dimensions) : null,
-        image.processed_dimensions ? JSON.stringify(image.processed_dimensions) : null,
-        image.ai_analysis ? JSON.stringify(image.ai_analysis) : null,
-        image.dominant_colors || null,
-        image.content_tags || null,
-        'uploaded'
-      );
-    });
-
+    // 对于批量插入，我们需要逐个插入（Supabase 支持批量，但为了兼容性）
+    const results: CollageImage[] = [];
+    
     try {
-      const result = await this.db.query(query, values);
-      return result.rows.map(this.formatImageResult);
+      for (const image of images) {
+        const result = await this.create(image);
+        results.push(result);
+      }
+      return results;
     } catch (error) {
       console.error('批量添加拼图图片失败:', error);
       throw new Error('批量添加拼图图片失败');
@@ -130,15 +95,18 @@ export class CollageImageModel {
    * 根据拼图ID获取所有图片
    */
   async findByCollageId(collageId: string): Promise<CollageImage[]> {
-    const query = `
-      SELECT * FROM ac_collage_images 
-      WHERE collage_id = $1
-      ORDER BY image_index ASC
-    `;
-
     try {
-      const result = await this.db.query(query, [collageId]);
-      return result.rows.map(this.formatImageResult);
+      const result = await this.db.select('ac_collage_images', {
+        where: { collage_id: collageId },
+        orderBy: 'image_index ASC'
+      });
+      
+      if (result.error) {
+        throw new Error(result.error.message || '查询拼图图片失败');
+      }
+      
+      const rows = result.data || result.rows || [];
+      return rows.map(this.formatImageResult);
     } catch (error) {
       console.error('查询拼图图片失败:', error);
       throw new Error('查询拼图图片失败');
@@ -149,17 +117,20 @@ export class CollageImageModel {
    * 根据ID获取图片
    */
   async findById(id: string): Promise<CollageImage | null> {
-    const query = `
-      SELECT * FROM ac_collage_images 
-      WHERE uuid = $1
-    `;
-
     try {
-      const result = await this.db.query(query, [id]);
-      if (result.rows.length === 0) {
+      const result = await this.db.select('ac_collage_images', {
+        where: { uuid: id }
+      });
+      
+      if (result.error) {
+        throw new Error(result.error.message || '查询图片失败');
+      }
+      
+      const rows = result.data || result.rows || [];
+      if (rows.length === 0) {
         return null;
       }
-      return this.formatImageResult(result.rows[0]);
+      return this.formatImageResult(rows[0]);
     } catch (error) {
       console.error('查询图片失败:', error);
       throw new Error('查询图片失败');
@@ -180,43 +151,32 @@ export class CollageImageModel {
       content_tags?: string[];
     }
   ): Promise<void> {
-    const updateFields = ['processing_status = $2'];
-    const values: any[] = [id, status];
-    let paramCount = 3;
+    const updateData: Record<string, any> = {
+      processing_status: status
+    };
 
     if (additionalData?.processed_url !== undefined) {
-      updateFields.push(`processed_url = $${paramCount++}`);
-      values.push(additionalData.processed_url);
+      updateData.processed_url = additionalData.processed_url;
     }
 
     if (additionalData?.processed_dimensions !== undefined) {
-      updateFields.push(`processed_dimensions = $${paramCount++}`);
-      values.push(JSON.stringify(additionalData.processed_dimensions));
+      updateData.processed_dimensions = JSON.stringify(additionalData.processed_dimensions);
     }
 
     if (additionalData?.ai_analysis !== undefined) {
-      updateFields.push(`ai_analysis = $${paramCount++}`);
-      values.push(JSON.stringify(additionalData.ai_analysis));
+      updateData.ai_analysis = JSON.stringify(additionalData.ai_analysis);
     }
 
     if (additionalData?.dominant_colors !== undefined) {
-      updateFields.push(`dominant_colors = $${paramCount++}`);
-      values.push(additionalData.dominant_colors);
+      updateData.dominant_colors = additionalData.dominant_colors;
     }
 
     if (additionalData?.content_tags !== undefined) {
-      updateFields.push(`content_tags = $${paramCount++}`);
-      values.push(additionalData.content_tags);
+      updateData.content_tags = additionalData.content_tags;
     }
 
-    const query = `
-      UPDATE ac_collage_images 
-      SET ${updateFields.join(', ')}
-      WHERE uuid = $1
-    `;
-
     try {
-      await this.db.query(query, values);
+      await this.db.update('ac_collage_images', updateData, { uuid: id });
     } catch (error) {
       console.error('更新图片处理状态失败:', error);
       throw new Error('更新图片处理状态失败');
@@ -239,12 +199,11 @@ export class CollageImageModel {
     `;
 
     try {
-      await this.db.query(query, [
-        id,
-        JSON.stringify(aiAnalysis),
-        dominantColors,
-        contentTags
-      ]);
+      await this.db.update('ac_collage_images', {
+        ai_analysis: JSON.stringify(aiAnalysis),
+        dominant_colors: dominantColors,
+        content_tags: contentTags
+      }, { uuid: id });
     } catch (error) {
       console.error('更新图片AI分析结果失败:', error);
       throw new Error('更新图片AI分析结果失败');
@@ -255,13 +214,8 @@ export class CollageImageModel {
    * 删除拼图的所有图片
    */
   async deleteByCollageId(collageId: string): Promise<void> {
-    const query = `
-      DELETE FROM ac_collage_images 
-      WHERE collage_id = $1
-    `;
-
     try {
-      await this.db.query(query, [collageId]);
+      await this.db.delete('ac_collage_images', { collage_id: collageId });
     } catch (error) {
       console.error('删除拼图图片失败:', error);
       throw new Error('删除拼图图片失败');
@@ -272,13 +226,8 @@ export class CollageImageModel {
    * 删除指定图片
    */
   async deleteById(id: string): Promise<void> {
-    const query = `
-      DELETE FROM ac_collage_images 
-      WHERE uuid = $1
-    `;
-
     try {
-      await this.db.query(query, [id]);
+      await this.db.delete('ac_collage_images', { uuid: id });
     } catch (error) {
       console.error('删除图片失败:', error);
       throw new Error('删除图片失败');
@@ -289,16 +238,19 @@ export class CollageImageModel {
    * 获取处理失败的图片
    */
   async getFailedImages(limit = 100): Promise<CollageImage[]> {
-    const query = `
-      SELECT * FROM ac_collage_images 
-      WHERE processing_status = 'failed'
-      ORDER BY created_at DESC
-      LIMIT $1
-    `;
-
     try {
-      const result = await this.db.query(query, [limit]);
-      return result.rows.map(this.formatImageResult);
+      const result = await this.db.select('ac_collage_images', {
+        where: { processing_status: 'failed' },
+        orderBy: 'created_at DESC',
+        limit: limit
+      });
+      
+      if (result.error) {
+        throw new Error(result.error.message || '查询处理失败的图片失败');
+      }
+      
+      const rows = result.data || result.rows || [];
+      return rows.map(this.formatImageResult);
     } catch (error) {
       console.error('查询处理失败的图片失败:', error);
       throw new Error('查询处理失败的图片失败');
@@ -309,16 +261,23 @@ export class CollageImageModel {
    * 获取待处理的图片
    */
   async getPendingImages(limit = 50): Promise<CollageImage[]> {
-    const query = `
-      SELECT * FROM ac_collage_images 
-      WHERE processing_status IN ('uploaded', 'processing')
-      ORDER BY created_at ASC
-      LIMIT $1
-    `;
-
     try {
-      const result = await this.db.query(query, [limit]);
-      return result.rows.map(this.formatImageResult);
+      // 对于复杂的 WHERE 条件，我们使用原始查询
+      const query = `
+        SELECT * FROM ac_collage_images 
+        WHERE processing_status IN ('uploaded', 'processing')
+        ORDER BY created_at ASC
+        LIMIT $1
+      `;
+      
+      const result = await this.db.rawQuery(query, [limit]);
+      
+      if (result.error) {
+        throw new Error(result.error.message || '查询待处理图片失败');
+      }
+      
+      const rows = result.data || result.rows || [];
+      return rows.map(this.formatImageResult);
     } catch (error) {
       console.error('查询待处理图片失败:', error);
       throw new Error('查询待处理图片失败');
@@ -335,26 +294,32 @@ export class CollageImageModel {
     completedImages: number;
     failedImages: number;
   }> {
-    const query = `
-      SELECT 
-        COUNT(*) as total_images,
-        COUNT(CASE WHEN processing_status = 'uploaded' THEN 1 END) as uploaded_images,
-        COUNT(CASE WHEN processing_status = 'processing' THEN 1 END) as processing_images,
-        COUNT(CASE WHEN processing_status = 'completed' THEN 1 END) as completed_images,
-        COUNT(CASE WHEN processing_status = 'failed' THEN 1 END) as failed_images
-      FROM ac_collage_images
-    `;
-
     try {
-      const result = await this.db.query(query);
-      const row = result.rows[0];
+      // 使用原始查询来获取统计信息
+      const query = `
+        SELECT 
+          COUNT(*) as total_images,
+          COUNT(CASE WHEN processing_status = 'uploaded' THEN 1 END) as uploaded_images,
+          COUNT(CASE WHEN processing_status = 'processing' THEN 1 END) as processing_images,
+          COUNT(CASE WHEN processing_status = 'completed' THEN 1 END) as completed_images,
+          COUNT(CASE WHEN processing_status = 'failed' THEN 1 END) as failed_images
+        FROM ac_collage_images
+      `;
+      
+      const result = await this.db.rawQuery(query);
+      
+      if (result.error) {
+        throw new Error(result.error.message || '获取图片统计信息失败');
+      }
+      
+      const row = result.data?.[0] || result.rows?.[0];
       
       return {
-        totalImages: parseInt(row.total_images),
-        uploadedImages: parseInt(row.uploaded_images),
-        processingImages: parseInt(row.processing_images),
-        completedImages: parseInt(row.completed_images),
-        failedImages: parseInt(row.failed_images)
+        totalImages: parseInt(row.total_images) || 0,
+        uploadedImages: parseInt(row.uploaded_images) || 0,
+        processingImages: parseInt(row.processing_images) || 0,
+        completedImages: parseInt(row.completed_images) || 0,
+        failedImages: parseInt(row.failed_images) || 0
       };
     } catch (error) {
       console.error('获取图片统计信息失败:', error);
@@ -366,16 +331,22 @@ export class CollageImageModel {
    * 清理过期的上传图片（超过24小时未处理的）
    */
   async cleanupExpiredImages(): Promise<number> {
-    const query = `
-      DELETE FROM ac_collage_images 
-      WHERE processing_status = 'uploaded' 
-        AND uploaded_at < NOW() - INTERVAL '24 hours'
-      RETURNING uuid
-    `;
-
     try {
-      const result = await this.db.query(query);
-      return result.rows.length;
+      // 使用原始查询来删除过期图片
+      const query = `
+        DELETE FROM ac_collage_images 
+        WHERE processing_status = 'uploaded' 
+          AND uploaded_at < NOW() - INTERVAL '24 hours'
+        RETURNING uuid
+      `;
+      
+      const result = await this.db.rawQuery(query);
+      
+      if (result.error) {
+        throw new Error(result.error.message || '清理过期图片失败');
+      }
+      
+      return result.data?.length || result.rows?.length || 0;
     } catch (error) {
       console.error('清理过期图片失败:', error);
       throw new Error('清理过期图片失败');
