@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // 检查是否可以创建邀请
-    const canCreateResult = await checkCanCreateInvite(user.uuid);
+    // 检查是否可以创建邀请（传递 Clerk ID）
+    const canCreateResult = await checkCanCreateInvite(userId);
     if (!canCreateResult.canCreate) {
       return NextResponse.json(
         { error: canCreateResult.reason || '无法创建邀请' },
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const { email, method, custom_reward } = body;
     
     const result = await generateInviteLink({
-      inviterId: user.uuid,
+      inviterId: userId, // 传递 Clerk ID
       email,
       method: method || 'link',
       customReward: custom_reward

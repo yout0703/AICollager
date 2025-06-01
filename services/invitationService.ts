@@ -26,8 +26,19 @@ export async function generateInviteLink(params: {
   try {
     const { inviterId, email, method = 'link', customReward } = params;
     
+    // inviterId 可能是 Clerk ID，需要转换为数据库 UUID
+    const { getUserInfo } = await import('@/services/userService');
+    const user = await getUserInfo(inviterId, 'clerk_id');
+    
+    if (!user) {
+      return {
+        success: false,
+        message: '用户不存在'
+      };
+    }
+    
     const invitation = await createInvitation({
-      inviter_id: inviterId,
+      inviter_id: user.uuid, // 使用数据库 UUID
       email,
       invitation_method: method,
       inviter_reward: customReward?.inviterReward || 20,
@@ -204,9 +215,26 @@ export async function getUserInviteHistory(
   try {
     const { limit = 20, offset = 0 } = options;
     
+    // userId 可能是 Clerk ID，需要转换为数据库 UUID
+    const { getUserInfo } = await import('@/services/userService');
+    const user = await getUserInfo(userId, 'clerk_id');
+    
+    if (!user) {
+      return {
+        invitations: [],
+        stats: {
+          total: 0,
+          completed: 0,
+          pending: 0,
+          totalRewards: 0
+        },
+        success: false
+      };
+    }
+    
     const [invitations, stats] = await Promise.all([
-      getUserInvitations(userId, limit, offset),
-      getUserInvitationStats(userId)
+      getUserInvitations(user.uuid, limit, offset),
+      getUserInvitationStats(user.uuid)
     ]);
     
     return {
@@ -273,7 +301,18 @@ export async function checkCanCreateInvite(userId: string): Promise<{
   maxInvites?: number;
 }> {
   try {
-    const stats = await getUserInvitationStats(userId);
+    // userId 可能是 Clerk ID，需要转换为数据库 UUID
+    const { getUserInfo } = await import('@/services/userService');
+    const user = await getUserInfo(userId, 'clerk_id');
+    
+    if (!user) {
+      return {
+        canCreate: false,
+        reason: '用户不存在'
+      };
+    }
+    
+    const stats = await getUserInvitationStats(user.uuid);
     
     // 设置邀请限制（可以根据用户等级调整）
     const maxInvites = 100; // 最大邀请数限制

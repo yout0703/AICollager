@@ -258,6 +258,247 @@ export const dictionaries: Record<Locale, Dictionary> = {
       create: "Create",
       gallery: "Gallery",
       editor: "Editor"
+    },
+    // Features section
+    features: {
+      title: "Core Features",
+      subtitle: "Why Choose",
+      highlight: "AI Collager",
+      description: "Our AI technology makes photo collaging incredibly simple and intelligent, enabling everyone to create professional-level visual works",
+      aiAnalysis: {
+        title: "AI Smart Analysis",
+        description: "Automatically recognizes photo content, colors, and composition to recommend the best collage layout for you"
+      },
+      oneClick: {
+        title: "One-Click Generation", 
+        description: "Say goodbye to tedious operations. Upload photos and generate beautiful collages with one click, saving 90% of your time"
+      },
+      smartColor: {
+        title: "Smart Color Matching",
+        description: "AI automatically extracts main colors from photos and generates harmonious color schemes and decorative elements"
+      },
+      multiLayout: {
+        title: "Diverse Layouts",
+        description: "Supports 2-20 photos with grid, collage, artistic and other layout styles"
+      },
+      smartDecoration: {
+        title: "Smart Decoration",
+        description: "Automatically adds icons, text and decorative elements based on photo themes to make works more vivid"
+      },
+      hdDownload: {
+        title: "HD Download",
+        description: "Supports multiple sizes and formats for download, meeting social sharing and printing needs"
+      },
+      stats: {
+        title: "Data Speaks, Amazing Results",
+        subtitle: "See the real value our AI technology brings to users",
+        avgTime: "Average generation time",
+        layoutTemplates: "Layout templates", 
+        decorativeIcons: "Decorative icons",
+        hdOutput: "HD output"
+      }
+    },
+    // How it works section
+    howItWorks: {
+      title: "Simple",
+      subtitle: "Steps",
+      highlight: "4",
+      description: "No design experience needed, no complex operations, AI handles all the creative work",
+      tagline: "How to Use",
+      steps: {
+        upload: {
+          title: "Upload Photos",
+          description: "Select 2-20 photos you want to collage, supports JPG, PNG and other common formats",
+          details: {
+            batchUpload: "Batch upload support",
+            autoOptimize: "Auto compression optimization", 
+            duplicateDetection: "Smart duplicate detection"
+          }
+        },
+        analyze: {
+          title: "AI Smart Analysis",
+          description: "AI automatically analyzes photo content, colors and composition to generate the best collage solution",
+          details: {
+            contentRecognition: "Content recognition analysis",
+            colorMatching: "Color matching suggestions",
+            layoutRecommendation: "Smart layout recommendations"
+          }
+        },
+        generate: {
+          title: "One-Click Generation",
+          description: "Click the generate button, AI automatically creates beautiful collages with decorative elements",
+          details: {
+            smartLayout: "Smart layout arrangement",
+            autoDecoration: "Auto add decorations",
+            realTimePreview: "Real-time preview effects"
+          }
+        },
+        download: {
+          title: "Download & Share",
+          description: "Choose appropriate size and format, download HD collage works and share",
+          details: {
+            multipleSizes: "Multiple size options",
+            hdNoWatermark: "HD without watermark",
+            oneClickShare: "One-click social sharing"
+          }
+        }
+      },
+      cta: {
+        title: "Ready to create your first AI collage?",
+        description: "Free trial 3 times, no registration required, experience the magic of AI instantly",
+        button: "Start Free Trial Now"
+      }
+    },
+    // FAQ section
+    faq: {
+      title: "Everything You Want to Know",
+      subtitle: "Is Here",
+      description: "Quickly find answers to your concerns. If you have more questions, contact our customer service team anytime",
+      tagline: "FAQ",
+      categories: {
+        basic: "Basic Usage",
+        pricing: "Pricing & Credits",
+        technical: "Technical Issues",
+        account: "Account & Security"
+      },
+      basic: {
+        whatIs: {
+          question: "What is AI Collager?",
+          answer: "AI Collager is an AI-powered smart collage tool. It automatically analyzes your photo content, colors, and composition to generate optimal collage layouts and decorative effects, allowing you to create professional-level photo collages without design experience."
+        },
+        howToStart: {
+          question: "How to get started?",
+          answer: "Very simple! New users get 3 free trials with no registration required. Just upload 2-20 photos and AI will automatically analyze and generate beautiful collages. If satisfied, register an account to get more credits for continued use."
+        },
+        supportedFormats: {
+          question: "What image formats are supported?",
+          answer: "We support common image formats including JPG, JPEG, PNG, WebP, etc. We recommend uploading high-quality images for best results. Single image size should not exceed 10MB."
+        }
+      },
+      pricing: {
+        howCreditsWork: {
+          question: "How does the credit system work?",
+          answer: "Our credit system is very flexible. Each collage generation costs 5 credits, HD download costs 2 credits. You can purchase credit packages as needed, and credits never expire."
+        },
+        freeTrials: {
+          question: "Are there really 3 free trials?",
+          answer: "Yes! New users get 3 completely free trials without registration. This allows you to fully experience our AI technology before deciding whether to purchase."
+        },
+        refundPolicy: {
+          question: "What is the refund policy?",
+          answer: "We offer a 7-day unconditional refund policy. If you're not satisfied with our service within 7 days of purchase, you can contact customer service for a full refund."
+        }
+      },
+      technical: {
+        processingTime: {
+          question: "How long does AI processing take?",
+          answer: "Our AI processing is very fast, typically taking only 5-10 seconds to complete analysis and generation. Processing time may be slightly longer during peak hours."
+        },
+        photoQuality: {
+          question: "What photo quality is required?",
+          answer: "We recommend using clear, well-lit photos with resolution above 500x500 pixels. Higher quality input photos will yield better collage results."
+        },
+        browserSupport: {
+          question: "Which browsers are supported?",
+          answer: "We support all modern browsers including Chrome, Firefox, Safari, Edge, etc. We recommend using the latest browser version for the best experience."
+        }
+      },
+      account: {
+        dataSecurity: {
+          question: "Is my photo data secure?",
+          answer: "Absolutely! We use bank-level encryption technology to protect your photos. Uploaded photos are only used for collage generation and are automatically deleted after 24 hours."
+        },
+        accountDeletion: {
+          question: "Can I delete my account?",
+          answer: "Yes, you can delete your account and all associated data anytime through account settings. This action is irreversible, so please consider carefully."
+        },
+        changePassword: {
+          question: "How to change password?",
+          answer: "Go to account settings, click 'Change Password', enter your current password and new password, then click confirm to complete the change."
+        }
+      },
+      contact: {
+        title: "Have other questions?",
+        description: "Our customer service team is always here to help",
+        contactSupport: "Contact Support",
+        joinCommunity: "Join Community"
+      }
+    },
+    // CTA section
+    cta: {
+      title: "Start Creating Beautiful Photo Collages Now",
+      description: "No design experience needed, create professional-quality photo collages in just a few simple steps"
+    },
+    // Pricing section
+    pricingSection: {
+      title: "Pricing Plans",
+      tagline: "Pricing Plans",
+      subtitle: "Choose Your",
+      highlight: "Credit Package",
+      description: "Flexible credit system, pay as you use, no monthly fees. 5 credits per beautiful collage",
+      freePackage: {
+        name: "Free Trial",
+        price: "Free",
+        credits: "3 times",
+        description: "Free trial for new users",
+        features: [
+          "3 free trials",
+          "Basic AI collage",
+          "Standard quality download",
+          "Basic layout templates"
+        ],
+        buttonText: "Try Now"
+      },
+      basicPackage: {
+        name: "Basic Package",
+        price: "$19",
+        credits: "50 credits", 
+        description: "Perfect for personal users",
+        features: [
+          "50 credits (10 collages)",
+          "All AI features",
+          "HD download",
+          "20+ layout templates",
+          "Smart decorative elements",
+          "Email customer support"
+        ],
+        buttonText: "Buy Now"
+      },
+      proPackage: {
+        name: "Pro Package",
+        price: "$49",
+        credits: "150 credits",
+        description: "Perfect for designers and creators",
+        features: [
+          "150 credits (30 collages)",
+          "All AI features", 
+          "4K ultra HD download",
+          "50+ professional templates",
+          "Premium decorative materials",
+          "Batch processing",
+          "Priority customer support"
+        ],
+        buttonText: "Buy Now"
+      },
+      bonusFeatures: {
+        title: "More Benefits Waiting for You",
+        inviteReward: {
+          title: "Invite Rewards",
+          description: "Get 20 credits for each successful friend invitation",
+          highlight: "+20 credits"
+        },
+        creditsNeverExpire: {
+          title: "Credits Never Expire",
+          description: "Purchased credits are valid permanently, use anytime",
+          highlight: "Permanent validity"
+        },
+        aiUpgrades: {
+          title: "AI Continuous Upgrades",
+          description: "Enjoy better results from continuous AI algorithm optimization",
+          highlight: "Free upgrades"
+        }
+      },
+      bottomNotice: "💡 Tip: Each collage costs 5 credits, credits never expire and can be used anytime"
     }
   },
   zh: {
@@ -502,6 +743,247 @@ export const dictionaries: Record<Locale, Dictionary> = {
       create: "创建",
       gallery: "画廊",
       editor: "编辑器"
+    },
+    // Features section
+    features: {
+      title: "核心功能",
+      subtitle: "为什么选择",
+      highlight: "AI Collager",
+      description: "我们的AI技术让照片拼图变得前所未有的简单和智能，每个人都能创作出专业级的视觉作品",
+      aiAnalysis: {
+        title: "AI智能分析",
+        description: "自动识别照片内容、色彩和构图，为你推荐最佳拼图布局"
+      },
+      oneClick: {
+        title: "一键生成", 
+        description: "告别繁琐操作，上传照片后一键生成精美拼图，节省90%时间"
+      },
+      smartColor: {
+        title: "智能配色",
+        description: "AI自动提取照片主色调，生成和谐配色方案和装饰元素"
+      },
+      multiLayout: {
+        title: "多样布局",
+        description: "支持2-20张照片，提供网格、拼贴、艺术等多种布局风格"
+      },
+      smartDecoration: {
+        title: "智能装饰",
+        description: "根据照片主题自动添加图标、文字和装饰元素，让作品更生动"
+      },
+      hdDownload: {
+        title: "高清下载",
+        description: "支持多种尺寸和格式下载，满足社交分享和打印需求"
+      },
+      stats: {
+        title: "数据说话，效果惊人",
+        subtitle: "看看我们的AI技术为用户带来的实际价值",
+        avgTime: "平均生成时间",
+        layoutTemplates: "布局模板", 
+        decorativeIcons: "装饰图标",
+        hdOutput: "高清输出"
+      }
+    },
+    // How it works section
+    howItWorks: {
+      title: "简单",
+      subtitle: "步",
+      highlight: "4",
+      description: "无需设计经验，无需复杂操作，AI帮你完成一切创意工作",
+      tagline: "使用步骤",
+      steps: {
+        upload: {
+          title: "上传照片",
+          description: "选择2-20张你想要拼接的照片，支持JPG、PNG等常见格式",
+          details: {
+            batchUpload: "支持批量上传",
+            autoOptimize: "自动压缩优化", 
+            duplicateDetection: "智能去重检测"
+          }
+        },
+        analyze: {
+          title: "AI智能分析",
+          description: "AI自动分析照片内容、色彩和构图，生成最佳拼图方案",
+          details: {
+            contentRecognition: "内容识别分析",
+            colorMatching: "色彩搭配建议",
+            layoutRecommendation: "布局智能推荐"
+          }
+        },
+        generate: {
+          title: "一键生成",
+          description: "点击生成按钮，AI自动创建精美拼图，包含装饰元素",
+          details: {
+            smartLayout: "智能布局排版",
+            autoDecoration: "自动添加装饰",
+            realTimePreview: "实时预览效果"
+          }
+        },
+        download: {
+          title: "下载分享",
+          description: "选择合适的尺寸和格式，下载高清拼图作品并分享",
+          details: {
+            multipleSizes: "多种尺寸选择",
+            hdNoWatermark: "高清无水印",
+            oneClickShare: "一键社交分享"
+          }
+        }
+      },
+      cta: {
+        title: "准备好创作你的第一个AI拼图了吗？",
+        description: "免费试用3次，无需注册，立即体验AI的神奇魅力",
+        button: "立即免费体验"
+      }
+    },
+    // FAQ section
+    faq: {
+      title: "你想了解的",
+      subtitle: "都在这里",
+      description: "快速找到你关心的问题答案，如果还有疑问，随时联系我们的客服团队",
+      tagline: "常见问题",
+      categories: {
+        basic: "基础使用",
+        pricing: "价格积分",
+        technical: "技术问题",
+        account: "账户安全"
+      },
+      basic: {
+        whatIs: {
+          question: "什么是AI Collager？",
+          answer: "AI Collager是一款基于人工智能的智能拼图工具。它能自动分析你的照片内容、色彩和构图，然后生成最佳的拼图布局和装饰效果，让你无需设计经验就能创作出专业级的照片拼图作品。"
+        },
+        howToStart: {
+          question: "如何开始使用？",
+          answer: "非常简单！新用户可以免费试用3次，无需注册。只需上传2-20张照片，AI会自动分析并生成精美的拼图。如果满意效果，可以注册账户获得更多积分继续使用。"
+        },
+        supportedFormats: {
+          question: "支持哪些图片格式？",
+          answer: "我们支持常见的图片格式，包括JPG、JPEG、PNG、WebP等。建议上传高质量的图片以获得最佳效果。单张图片大小建议不超过10MB。"
+        }
+      },
+      pricing: {
+        howCreditsWork: {
+          question: "积分制度如何运作？",
+          answer: "我们的积分制度非常灵活。每次拼图生成消耗5积分，高清下载消耗2积分。你可以根据需要购买积分包，积分永不过期。"
+        },
+        freeTrials: {
+          question: "真的有3次免费试用吗？",
+          answer: "是的！新用户可以获得3次完全免费的试用机会，无需注册。这让你能在决定购买前充分体验我们的AI技术。"
+        },
+        refundPolicy: {
+          question: "退款政策如何？",
+          answer: "我们提供7天无条件退款政策。如果你在购买后7天内对我们的服务不满意，可以联系客服申请全额退款。"
+        }
+      },
+      technical: {
+        processingTime: {
+          question: "AI处理需要多长时间？",
+          answer: "我们的AI处理速度非常快，通常只需5-10秒就能完成分析和生成。在高峰时段处理时间可能会稍长一些。"
+        },
+        photoQuality: {
+          question: "对照片质量有什么要求？",
+          answer: "我们建议使用清晰、光线充足的照片，分辨率在500x500像素以上。输入照片质量越高，拼图效果越好。"
+        },
+        browserSupport: {
+          question: "支持哪些浏览器？",
+          answer: "我们支持所有现代浏览器，包括Chrome、Firefox、Safari、Edge等。建议使用最新版本的浏览器以获得最佳体验。"
+        }
+      },
+      account: {
+        dataSecurity: {
+          question: "我的照片数据安全吗？",
+          answer: "绝对安全！我们使用银行级别的加密技术保护你的照片。上传的照片仅用于拼图生成，24小时后自动删除。"
+        },
+        accountDeletion: {
+          question: "可以删除我的账户吗？",
+          answer: "可以，你可以随时通过账户设置删除账户和所有相关数据。此操作不可逆转，请谨慎考虑。"
+        },
+        changePassword: {
+          question: "如何修改密码？",
+          answer: "进入账户设置，点击\"修改密码\"，输入当前密码和新密码，点击确认即可完成修改。"
+        }
+      },
+      contact: {
+        title: "还有其他问题？",
+        description: "我们的客服团队随时为你提供帮助",
+        contactSupport: "联系客服",
+        joinCommunity: "加入社区"
+      }
+    },
+    // CTA section
+    cta: {
+      title: "立即开始创建精美照片拼图",
+      description: "无需设计经验，简单几步即可创建专业水准的照片拼图"
+    },
+    // Pricing section
+    pricingSection: {
+      title: "定价方案",
+      tagline: "定价方案",
+      subtitle: "选择适合你的",
+      highlight: "积分套餐",
+      description: "灵活的积分制度，按需使用，无月费负担。每5积分制作一个精美拼图",
+      freePackage: {
+        name: "免费体验",
+        price: "¥0",
+        credits: "3次",
+        description: "新用户免费试用",
+        features: [
+          "免费试用3次",
+          "基础AI拼图",
+          "标准清晰度下载",
+          "基础布局模板"
+        ],
+        buttonText: "立即试用"
+      },
+      basicPackage: {
+        name: "基础套餐",
+        price: "¥19",
+        credits: "50积分", 
+        description: "适合个人用户",
+        features: [
+          "50积分 (可制作10个拼图)",
+          "全部AI功能",
+          "高清下载",
+          "20+布局模板",
+          "智能装饰元素",
+          "邮件客服支持"
+        ],
+        buttonText: "立即购买"
+      },
+      proPackage: {
+        name: "专业套餐",
+        price: "¥49",
+        credits: "150积分",
+        description: "适合设计师和创作者",
+        features: [
+          "150积分 (可制作30个拼图)",
+          "全部AI功能", 
+          "4K超高清下载",
+          "50+专业模板",
+          "高级装饰素材",
+          "批量处理功能",
+          "优先客服支持"
+        ],
+        buttonText: "立即购买"
+      },
+      bonusFeatures: {
+        title: "更多福利等你来拿",
+        inviteReward: {
+          title: "邀请奖励",
+          description: "邀请好友注册获得20积分奖励",
+          highlight: "+20积分"
+        },
+        creditsNeverExpire: {
+          title: "积分永不过期",
+          description: "购买的积分永久有效，随时使用",
+          highlight: "永久有效"
+        },
+        aiUpgrades: {
+          title: "AI持续升级",
+          description: "享受AI算法持续优化带来的更好效果",
+          highlight: "免费升级"
+        }
+      },
+      bottomNotice: "💡 提示：每个拼图消耗5积分，积分永不过期，可随时使用"
     }
   },
   es: {
@@ -581,140 +1063,6 @@ export const dictionaries: Record<Locale, Dictionary> = {
         text: "Invitar Amigos por Créditos",
         reward: "+20"
       }
-    },
-    // Sistema de créditos
-    credits: {
-      title: "Créditos",
-      balance: "Saldo de Créditos",
-      myCredits: "Mis Créditos",
-      addCredits: "Añadir Créditos",
-      getCredits: "Obtener Créditos",
-      creditsUsed: "Créditos Usados",
-      creditsRemaining: "Créditos Restantes",
-      insufficient: "Créditos Insuficientes",
-      low: "Créditos Bajos",
-      sufficient: "Créditos Suficientes",
-      abundant: "Créditos Abundantes",
-      empty: "Créditos agotados, invita amigos para obtener créditos",
-      lowMessage: "Créditos insuficientes, invita amigos para obtener créditos",
-      sufficientMessage: "Créditos suficientes",
-      abundantMessage: "Créditos abundantes",
-      history: "Historial de Créditos",
-      transaction: "Transacción",
-      costPerCollage: "Costo por collage: 5 créditos",
-      costPerDownload: "Descarga HD: 2 créditos"
-    },
-    // Sistema de invitaciones
-    invite: {
-      title: "Invitar Amigos",
-      subtitle: "Gana créditos invitando amigos",
-      description: "Tanto tú como tu amigo obtienen 10 créditos cuando se registren",
-      inviteCode: "Código de Invitación",
-      inviteLink: "Tu Enlace de Invitación",
-      copyLink: "Copiar Enlace",
-      copyCode: "Copiar Código",
-      copied: "Copiado",
-      linkCopied: "Enlace copiado al portapapeles",
-      share: "Compartir",
-      shareTitle: "AI Collager - Herramienta de Collage Inteligente",
-      shareText: "¡Estoy usando esta increíble herramienta de collage con IA, ven y pruébala!",
-      totalInvites: "Invitaciones Exitosas",
-      earnedCredits: "Créditos Ganados",
-      pendingInvites: "Invitaciones Pendientes",
-      inviteSuccess: "Invitación enviada exitosamente",
-      inviteError: "Error al obtener información de invitación"
-    },
-    // Editor
-    editor: {
-      title: "Editor de Collage",
-      toolbar: "Barra de Herramientas",
-      canvas: "Lienzo",
-      properties: "Propiedades",
-      layers: "Capas",
-      save: "Guardar",
-      export: "Exportar",
-      undo: "Deshacer",
-      redo: "Rehacer",
-      delete: "Eliminar",
-      copy: "Copiar",
-      paste: "Pegar",
-      selectElement: "Selecciona un elemento para editar sus propiedades",
-      position: "Posición",
-      size: "Tamaño",
-      rotation: "Rotación",
-      opacity: "Opacidad",
-      flipH: "Voltear Horizontal",
-      flipV: "Voltear Vertical",
-      bringForward: "Traer Adelante",
-      sendBackward: "Enviar Atrás",
-      duplicate: "Duplicar",
-      lock: "Bloquear",
-      unlock: "Desbloquear",
-      show: "Mostrar",
-      hide: "Ocultar",
-      addText: "Añadir Texto",
-      addShape: "Añadir Forma",
-      addIcon: "Añadir Icono",
-      editText: "Clic para editar texto",
-      saving: "Guardando...",
-      saveSuccess: "¡Guardado exitoso!",
-      saveError: "Error al guardar, intenta de nuevo",
-      loadingEditor: "Cargando editor..."
-    },
-    // IA
-    ai: {
-      generate: "Generar con IA",
-      oneClickCollage: "Collage de Un Clic",
-      analyzing: "Analizando imágenes...",
-      generating: "Generando collage...",
-      processing: "Procesando con IA...",
-      analysisComplete: "Análisis completado",
-      generationComplete: "Generación completada",
-      failed: "Procesamiento de IA falló",
-      retry: "Reintentar",
-      dailyLimitReached: "Límite diario de IA alcanzado",
-      remainingUses: "Usos restantes hoy",
-      costNotice: "Esta operación costará 5 créditos"
-    },
-    // Interfaz general
-    ui: {
-      close: "Cerrar",
-      cancel: "Cancelar",
-      confirm: "Confirmar",
-      yes: "Sí",
-      no: "No",
-      ok: "OK",
-      next: "Siguiente",
-      previous: "Anterior",
-      finish: "Finalizar",
-      skip: "Omitir",
-      retry: "Reintentar",
-      refresh: "Actualizar",
-      search: "Buscar",
-      filter: "Filtrar",
-      sort: "Ordenar",
-      edit: "Editar",
-      view: "Ver",
-      delete: "Eliminar",
-      add: "Añadir",
-      remove: "Quitar",
-      upload: "Subir",
-      download: "Descargar",
-      share: "Compartir",
-      preview: "Vista previa"
-    },
-    // Mensajes de error
-    errors: {
-      networkError: "Error de red, verifica tu conexión",
-      uploadError: "Error de subida, intenta de nuevo",
-      processingError: "Error de procesamiento, intenta de nuevo",
-      downloadError: "Error de descarga, intenta de nuevo",
-      saveError: "Error al guardar, intenta de nuevo",
-      loadError: "Error de carga, intenta de nuevo",
-      permissionError: "Permiso denegado",
-      fileFormatError: "Formato de archivo no soportado",
-      fileSizeError: "Tamaño de archivo demasiado grande",
-      unknownError: "Error desconocido ocurrido"
     },
     pricing: {
       title: "Precios",

@@ -133,32 +133,32 @@ export function PreferenceSelector({
   ];
 
   return (
-    <div className={`space-y-8 ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {/* 风格选择 */}
       <div>
-        <div className="flex items-center mb-4">
-          <Sparkles className="w-5 h-5 text-purple-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">选择风格</h3>
+        <div className="flex items-center mb-2">
+          <Sparkles className="w-4 h-4 text-purple-600 mr-2" />
+          <h3 className="text-sm font-medium text-gray-900">选择风格</h3>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {styles.map((style) => (
             <button
               key={style.id}
               onClick={() => updatePreference('style', style.id)}
               className={`
-                relative p-4 rounded-lg border-2 transition-all
+                relative p-3 rounded-lg border-2 transition-all group
                 ${preferences.style === style.id
-                  ? 'border-purple-500 bg-purple-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-purple-500 bg-purple-50 shadow-md'
+                  : 'border-gray-200 hover:border-purple-300 hover:shadow-sm'
                 }
               `}
             >
-              <div className={`w-full h-16 rounded-md mb-3 ${style.preview}`} />
-              <h4 className="font-medium text-sm text-gray-900">{style.name}</h4>
-              <p className="text-xs text-gray-500 mt-1">{style.description}</p>
+              <div className={`w-full h-10 rounded-lg mb-2 ${style.preview} group-hover:scale-105 transition-transform`} />
+              <h4 className="font-medium text-xs text-gray-900">{style.name}</h4>
+              <p className="text-xs text-gray-500 mt-0.5 leading-tight">{style.description}</p>
               {preferences.style === style.id && (
-                <div className="absolute top-2 right-2">
-                  <Check className="w-4 h-4 text-purple-600" />
+                <div className="absolute top-2 right-2 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
             </button>
@@ -168,31 +168,30 @@ export function PreferenceSelector({
 
       {/* 主题选择 */}
       <div>
-        <div className="flex items-center mb-4">
-          <Layout className="w-5 h-5 text-blue-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">选择主题</h3>
+        <div className="flex items-center mb-2">
+          <Layout className="w-4 h-4 text-blue-600 mr-2" />
+          <h3 className="text-sm font-medium text-gray-900">选择主题</h3>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-5 gap-1.5">
           {themes.map((theme) => (
             <button
               key={theme.id}
               onClick={() => updatePreference('theme', theme.id)}
               className={`
-                relative p-4 rounded-lg border-2 transition-all text-center
+                relative p-2 rounded-lg border-2 transition-all text-center group
                 ${preferences.theme === theme.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50 shadow-md'
+                  : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
                 }
               `}
             >
-              <div className={`w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center ${theme.color}`}>
-                <span className="text-lg">{theme.icon}</span>
+              <div className={`w-6 h-6 rounded-full mx-auto mb-1 flex items-center justify-center ${theme.color} group-hover:scale-110 transition-transform`}>
+                <span className="text-xs">{theme.icon}</span>
               </div>
-              <h4 className="font-medium text-sm text-gray-900">{theme.name}</h4>
-              <p className="text-xs text-gray-500 mt-1">{theme.description}</p>
+              <h4 className="font-medium text-xs text-gray-900">{theme.name}</h4>
               {preferences.theme === theme.id && (
-                <div className="absolute top-2 right-2">
-                  <Check className="w-4 h-4 text-blue-600" />
+                <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                  <Check className="w-2 h-2 text-white" />
                 </div>
               )}
             </button>
@@ -202,33 +201,33 @@ export function PreferenceSelector({
 
       {/* 配色方案 */}
       <div>
-        <div className="flex items-center mb-4">
-          <Palette className="w-5 h-5 text-green-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">配色方案</h3>
+        <div className="flex items-center mb-2">
+          <Palette className="w-4 h-4 text-green-600 mr-2" />
+          <h3 className="text-sm font-medium text-gray-900">配色方案</h3>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-2">
           {colorSchemes.map((scheme) => (
             <button
               key={scheme.id}
               onClick={() => updatePreference('colorScheme', scheme.id)}
               className={`
-                relative p-4 rounded-lg border-2 transition-all
+                relative p-3 rounded-lg border-2 transition-all group
                 ${preferences.colorScheme === scheme.id
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-green-500 bg-green-50 shadow-md'
+                  : 'border-gray-200 hover:border-green-300 hover:shadow-sm'
                 }
               `}
             >
-              <div className="flex space-x-1 mb-3">
+              <div className="flex space-x-0.5 mb-2 group-hover:scale-105 transition-transform">
                 {scheme.preview.map((color, index) => (
-                  <div key={index} className={`w-3 h-8 rounded ${color}`} />
+                  <div key={index} className={`flex-1 h-5 rounded ${color}`} />
                 ))}
               </div>
-              <h4 className="font-medium text-sm text-gray-900">{scheme.name}</h4>
-              <p className="text-xs text-gray-500 mt-1">{scheme.description}</p>
+              <h4 className="font-medium text-xs text-gray-900">{scheme.name}</h4>
+              <p className="text-xs text-gray-500 mt-0.5 leading-tight">{scheme.description}</p>
               {preferences.colorScheme === scheme.id && (
-                <div className="absolute top-2 right-2">
-                  <Check className="w-4 h-4 text-green-600" />
+                <div className="absolute top-2 right-2 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                  <Check className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
             </button>
@@ -238,28 +237,28 @@ export function PreferenceSelector({
 
       {/* 画布比例 */}
       <div>
-        <div className="flex items-center mb-4">
-          <Ratio className="w-5 h-5 text-indigo-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">画布比例</h3>
+        <div className="flex items-center mb-2">
+          <Ratio className="w-4 h-4 text-indigo-600 mr-2" />
+          <h3 className="text-sm font-medium text-gray-900">画布比例</h3>
         </div>
-        <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-3 gap-1.5">
           {aspectRatios.map((ratio) => (
             <button
               key={ratio.id}
               onClick={() => updatePreference('aspectRatio', ratio.id)}
               className={`
-                relative p-3 rounded-lg border-2 transition-all text-center
+                relative p-2.5 rounded-lg border-2 transition-all text-center group
                 ${preferences.aspectRatio === ratio.id
-                  ? 'border-indigo-500 bg-indigo-50'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
+                  : 'border-gray-200 hover:border-indigo-300 hover:shadow-sm'
                 }
               `}
             >
-              <h4 className="font-medium text-sm text-gray-900">{ratio.name}</h4>
-              <p className="text-xs text-gray-500 mt-1">{ratio.description}</p>
+              <h4 className="font-medium text-xs text-gray-900 group-hover:scale-105 transition-transform">{ratio.name}</h4>
+              <p className="text-xs text-gray-500 mt-0.5 leading-tight">{ratio.description}</p>
               {preferences.aspectRatio === ratio.id && (
-                <div className="absolute top-1 right-1">
-                  <Check className="w-3 h-3 text-indigo-600" />
+                <div className="absolute top-1 right-1 w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center">
+                  <Check className="w-2 h-2 text-white" />
                 </div>
               )}
             </button>

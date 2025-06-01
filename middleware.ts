@@ -51,13 +51,40 @@ const isPublicRoute = createRouteMatcher([
 
 // 使用 Clerk 的中间件
 export default clerkMiddleware(async (auth, request) => {
-  // 检查当前路由是否需要保护
-  if (!isPublicRoute(request)) {
-    await auth.protect();
+  const pathname = request.nextUrl.pathname;
+  
+  // 如果是API路由，只进行Clerk认证处理，跳过语言路由
+  if (pathname.startsWith('/api/')) {
+    // API路由可能需要认证，这里让Clerk处理
+    return NextResponse.next();
   }
   
-  // 处理语言重定向
-  const pathname = request.nextUrl.pathname;
+  // 如果是静态文件或Next.js内部路由，直接跳过
+  if (pathname.startsWith('/_next/') || pathname.includes('.')) {
+    return NextResponse.next();
+  }
+  
+  // 如果路径包含 :locale 占位符，说明有重定向问题，直接返回错误页面
+  if (pathname.includes(':locale')) {
+    console.error('Invalid URL with :locale placeholder:', pathname);
+    const locale = getLocale(request);
+    const cleanPath = pathname.replace('/:locale', '').replace(':locale', '') || '/';
+    request.nextUrl.pathname = `/${locale}${cleanPath === '/' ? '' : cleanPath}`;
+    return NextResponse.redirect(request.nextUrl);
+  }
+
+  // 检查路径是否已经有语言前缀
+  const pathnameHasLocale = locales.some(
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+  );
+
+  // 如果路径已经有语言前缀，检查当前路由是否需要保护
+  if (pathnameHasLocale) {
+    if (!isPublicRoute(request)) {
+      await auth.protect();
+    }
+    return NextResponse.next();
+  }
 
   // 处理 Clerk 重定向
   // 如果是 Clerk 重定向到根路径（登录/注册成功），根据用户的语言偏好重定向
@@ -69,14 +96,6 @@ export default clerkMiddleware(async (auth, request) => {
     request.nextUrl.pathname = `/${locale}`;
     return NextResponse.redirect(request.nextUrl);
   }
-  
-  // 检查路径是否已经有语言前缀
-  const pathnameHasLocale = locales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
-  );
-
-  // 如果路径已经有语言前缀，不做处理
-  if (pathnameHasLocale) return NextResponse.next();
 
   // 重定向未带语言前缀的路径
   const locale = getLocale(request);
@@ -92,10 +111,9 @@ export default clerkMiddleware(async (auth, request) => {
 
 export const config = {
   matcher: [
-    // 跳过 Next.js 内部路由和静态文件
-    "/((?!_next|.*\\..*|api).*)",
+    // 现在包含API路由，让Clerk可以处理认证
+    "/((?!_next|.*\\.).*)",
     "/",
-    // 包含 API 路由
     "/(api|trpc)(.*)",
   ],
 };

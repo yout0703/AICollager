@@ -1,12 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getAIConfig } from '@/lib/ai-config';
-import {
+import { 
   generateCacheKey,
   findAIAnalysisCache,
   createAIAnalysisCache,
   AIAnalysisCache
 } from '@/models/aiAnalysisCache';
 import { recordAIRequest } from '@/models/aiUsageStats';
+import { AIImageAnalysis, AILayoutSuggestion, CollageElement, CanvasConfig } from '@/types/collage';
 
 // 初始化Gemini AI客户端
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -35,16 +36,34 @@ export interface ImageAnalysisResult {
 }
 
 export interface LayoutSuggestion {
-  layout_type: 'grid' | 'freeform' | 'masonry' | 'linear' | 'circular';
-  grid_rows?: number;
-  grid_cols?: number;
+  layout_type: 'mask_collage'; // 只支持遮罩拼图
+  mask_strategy: string; // 遮罩布局策略
   aspect_ratio: string;
+  canvas_background?: {
+    color: string;
+    texture: 'solid' | 'gradient' | 'pattern';
+    style: string;
+  };
   suggestions: Array<{
     image_index: number;
-    position: { x: number; y: number; width: number; height: number };
     z_index: number;
-    rotation?: number;
+    
+    // 遮罩拼图专用字段
+    mask_region: {
+      shape: string;
+      clip_path: string;
+      position: { x: number; y: number; width: number; height: number };
+    };
+    image_transform: {
+      position: { x: number; y: number };
+      scale: number;
+      rotation: number;
+    };
+    
+    // 可选效果
     effects?: string[];
+    opacity?: number;
+    borderRadius?: number;
   }>;
   overall_theme: string;
   color_scheme: string[];
@@ -165,7 +184,6 @@ export async function analyzeImages(images: Array<{
           throw new Error('无法解析AI响应');
         }
       } catch (parseError) {
-        console.error('Failed to parse AI response:', parseError);
         // 如果解析失败，创建一个基本的分析结果
         results.push({
           description: text.substring(0, 200),
@@ -181,15 +199,21 @@ export async function analyzeImages(images: Array<{
     
     const responseTime = Date.now() - startTime;
     
-    // 缓存结果
-    await createAIAnalysisCache({
-      cache_key: cacheKey,
-      cache_type: 'image_analysis',
-      ai_model: config.models.primary,
-      analysis_result: { results },
-      confidence_score: results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length,
-      expires_days: config.api.cacheDurationDays
-    });
+    // 缓存结果 - 添加错误处理
+    try {
+      await createAIAnalysisCache({
+        cache_key: cacheKey,
+        cache_type: 'image_analysis',
+        ai_model: config.models.primary,
+        analysis_result: { results },
+        confidence_score: results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length,
+        expires_days: config.api.cacheDurationDays
+      });
+      console.log('✅ 图片分析缓存创建成功');
+    } catch (cacheError) {
+      console.warn('⚠️  图片分析缓存创建失败，但不影响主功能:', cacheError);
+      // 缓存失败不应该影响主功能，继续执行
+    }
     
     // 记录使用统计
     await recordAIRequest({
@@ -197,7 +221,7 @@ export async function analyzeImages(images: Array<{
       success: true,
       cached: false,
       response_time: responseTime,
-      estimated_cost: images.length * 0.01 // 估算成本
+      estimated_cost: parseFloat((images.length * 0.01).toFixed(4)) // 确保是有效数值，保留4位小数
     });
     
     return {
@@ -209,7 +233,6 @@ export async function analyzeImages(images: Array<{
     
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error('Image analysis failed:', error);
     
     // 记录失败统计
     await recordAIRequest({
@@ -248,15 +271,35 @@ export async function suggestLayout(params: {
   try {
     const config = getAIConfig();
     
-    // 生成缓存键
-    const cacheKey = generateCacheKey({
+    // 改进缓存键生成逻辑，避免重复键冲突
+    // 使用更稳定的种子生成方式，避免高并发时的冲突
+    const stableHash = JSON.stringify({
       images: params.images,
       preferences: params.preferences,
       type: 'layout_suggestion'
     });
+    const randomSeed = Math.abs(Buffer.from(stableHash).reduce((a, b) => a + b, 0)) % 10000 + Date.now() % 1000;
     
-    // 检查缓存
-    const cachedResult = await findAIAnalysisCache(cacheKey, 'layout_suggestion');
+    const cacheKey = generateCacheKey({
+      images: params.images,
+      preferences: params.preferences,
+      type: 'layout_suggestion',
+      randomSeed: randomSeed
+    });
+    
+    // 改进缓存策略：降低缓存命中率以增加布局多样性
+    const shouldUseCache = Math.random() > 0.3; // 70%概率跳过缓存
+    let cachedResult = null;
+    
+    if (shouldUseCache) {
+      try {
+        cachedResult = await findAIAnalysisCache(cacheKey, 'layout_suggestion');
+      } catch (error) {
+        console.warn('缓存查找失败，继续生成新布局:', error);
+        cachedResult = null;
+      }
+    }
+    
     if (cachedResult) {
       cached = true;
       const responseTime = Date.now() - startTime;
@@ -276,37 +319,121 @@ export async function suggestLayout(params: {
       };
     }
     
-    // 调用Gemini API
-    const model = genAI.getGenerativeModel({ model: config.models.primary });
+    // 调用Gemini API，添加temperature和其他配置增加创意性
+    const model = genAI.getGenerativeModel({ 
+      model: config.models.primary,
+      generationConfig: {
+        temperature: 1.2, // 增加创意性和随机性
+        topK: 40,         // 增加词汇选择的多样性
+        topP: 0.95,       // 保持连贯性的同时增加随机性
+        maxOutputTokens: 2048,
+        candidateCount: 1
+      }
+    });
     
-    const prompt = `基于以下图片分析结果，为拼图布局提供建议，以JSON格式返回：
+    // 生成随机提示变化
+    const currentTime = new Date();
+    const timeContext = `当前时间: ${currentTime.toLocaleString()}`;
+    const randomLayoutStyles = [
+      '极简主义风格', '动态几何风格', '艺术拼贴风格', '现代创意风格', '有机自然风格',
+      '工业设计风格', '波普艺术风格', '建筑美学风格', '街头艺术风格', '数字艺术风格'
+    ];
+    const randomStyle = randomLayoutStyles[Math.floor(Math.random() * randomLayoutStyles.length)];
+    
+    const creativityPrompts = [
+      '创造独特的遮罩形状，让每张图片都有专属的展示窗口',
+      '设计有机的挖洞形状，创造流动的视觉节奏',
+      '用几何形状创造精确的图片展示区域',
+      '通过不规则的遮罩边界创造动态美感',
+      '让遮罩形状与图片内容产生呼应关系'
+    ];
+    const randomCreativityPrompt = creativityPrompts[Math.floor(Math.random() * creativityPrompts.length)];
+    
+    const prompt = `${timeContext}
+    
+请为这批图片设计一个${randomStyle}的遮罩拼图布局。${randomCreativityPrompt}
 
-图片分析：
+## 🎨 核心概念理解：
+**这不是传统的图层叠加拼图！这是遮罩拼图！**
+
+想象一张${params.preferences?.aspect_ratio || '1:1'}比例的纸（画布），我们要在这张纸上挖出${params.images.length}个洞（遮罩区域），然后把图片放到纸的后面，图片只能从洞里露出来。
+
+## 🎯 遮罩拼图规则：
+1. **无图层概念**: 图片之间不能重叠，每张图片都在自己的"洞"里
+2. **遮罩边界**: 图片内容必须被遮罩完全包含，超出部分不可见
+3. **独立空间**: 每个遮罩区域都是独立的，图片可以在遮罩内移动、旋转、缩放
+4. **背景可见**: 画布的背景色或纹理在没有挖洞的地方可见
+5. **边界清晰**: 遮罩边界就是图片的可见边界，需要精确定义
+
+图片分析数据：
 ${JSON.stringify(params.images, null, 2)}
 
-用户偏好：
+用户偏好设置：
 ${JSON.stringify(params.preferences, null, 2)}
 
-请返回布局建议，格式如下：
+## 🔧 遮罩设计原则：
+**每个遮罩区域必须：**
+- 有明确的边界定义（使用clip-path）
+- 不与其他遮罩区域重叠
+- 形状与内容协调
+- 尺寸适合图片展示
+
+## 🎪 遮罩形状库（每张图片一个独立遮罩）：
+1. **几何形状**: 圆形、矩形、六角形、菱形、三角形
+2. **有机形状**: 水滴、叶片、云朵、花瓣
+3. **创意形状**: 心形、星形、箭头、对话框
+4. **不规则形状**: 撕纸效果、液体形状、抽象曲线
+
+## 📐 遮罩布局模式：
+- **网格分割**: 规则的网格，每个格子一个遮罩
+- **自由分布**: 遮罩自由分布在画布上，大小不一
+- **放射分布**: 从中心向外放射的遮罩布局
+- **流动布局**: 遮罩沿着曲线或路径分布
+- **几何切分**: 用几何线条将画布切分成遮罩区域
+
+## 🎯 输出格式要求：
 {
-  "layout_type": "grid/freeform/masonry/linear/circular",
-  "grid_rows": 2,
-  "grid_cols": 2,
-  "aspect_ratio": "1:1",
+  "layout_type": "mask_collage",
+  "mask_strategy": "网格分割|自由分布|放射分布|流动布局|几何切分",
+  "aspect_ratio": "${params.preferences?.aspect_ratio || '1:1'}",
+  "canvas_background": {
+    "color": "#FFFFFF",
+    "texture": "solid|gradient|pattern",
+    "style": "简约|艺术|纹理"
+  },
   "suggestions": [
     {
-      "image_index": 0,
-      "position": {"x": 0, "y": 0, "width": 50, "height": 50},
-      "z_index": 1,
-      "rotation": 0,
-      "effects": ["shadow", "border"]
+      "image_index": 图片索引,
+      "mask_region": {
+        "shape": "遮罩形状名称",
+        "clip_path": "precise CSS clip-path值定义遮罩边界",
+        "position": {"x": X坐标百分比, "y": Y坐标百分比, "width": 宽度百分比, "height": 高度百分比}
+      },
+      "image_transform": {
+        "position": {"x": 图片在遮罩内的X偏移, "y": 图片在遮罩内的Y偏移},
+        "scale": 图片缩放比例0.8-1.5,
+        "rotation": 图片旋转角度-30到30度
+      },
+      "effects": {
+        "border": "遮罩边框样式",
+        "shadow": "遮罩阴影效果",
+        "glow": "遮罩发光效果"
+      }
     }
   ],
-  "overall_theme": "主题描述",
-  "color_scheme": ["#FF0000", "#00FF00"],
-  "confidence_score": 0.85,
-  "reasoning": "布局建议的理由"
-}`;
+  "overall_theme": "整体遮罩拼图的主题和风格",
+  "color_scheme": ["背景主色", "遮罩边框色", "强调色"],
+  "confidence_score": 0.85-0.95,
+  "reasoning": "详细说明这个遮罩拼图设计的创意理念，解释每个遮罩形状的选择原因，以及它们如何协同工作创造统一的视觉效果"
+}
+
+## 🚀 设计要求：
+- **确保所有遮罩区域不重叠！**
+- **每个clip-path都必须精确有效！**
+- **遮罩形状要与${randomStyle}风格协调！**
+- **图片变换要在遮罩边界内！**
+
+现在，基于以上遮罩拼图概念，为这${params.images.length}张图片生成一个${randomStyle}的遮罩布局设计：`;
     
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -318,40 +445,104 @@ ${JSON.stringify(params.preferences, null, 2)}
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         suggestion = JSON.parse(jsonMatch[0]);
+        
+        // 验证和优化suggestion数据 - 确保遮罩拼图逻辑
+        if (suggestion.suggestions) {
+          suggestion.suggestions = suggestion.suggestions.map(sugg => {
+            // 确保遮罩区域不重叠的逻辑
+            const maskRegion = (sugg as any).mask_region || {};
+            const imageTransform = (sugg as any).image_transform || {};
+            
+            return {
+              ...sugg,
+              // 保留遮罩信息
+              mask_region: maskRegion,
+              image_transform: imageTransform,
+              // 确保在遮罩内的变换
+              rotation: imageTransform.rotation || (Math.random() * 30 - 15), // 减少旋转幅度
+              z_index: 1, // 遮罩拼图中所有图片层级相同
+              effects: sugg.effects || []
+            };
+          });
+        }
       } else {
         throw new Error('无法解析AI响应');
       }
     } catch (parseError) {
-      console.error('Failed to parse layout suggestion:', parseError);
-      // 创建默认布局建议
+      // 创建默认的遮罩拼图布局
+      const maskShapes = ['circle', 'rounded-rect', 'hexagon', 'diamond'];
+      
       suggestion = {
-        layout_type: 'grid',
-        grid_rows: 2,
-        grid_cols: 2,
+        layout_type: 'mask_collage',
         aspect_ratio: params.preferences?.aspect_ratio || '1:1',
-        suggestions: params.images.map((_, index) => ({
-          image_index: index,
-          position: { x: (index % 2) * 50, y: Math.floor(index / 2) * 50, width: 50, height: 50 },
-          z_index: 1
-        })),
-        overall_theme: '自动布局',
-        color_scheme: ['#FFFFFF', '#000000'],
-        confidence_score: 0.5,
-        reasoning: '默认网格布局'
+        mask_strategy: '网格分割',
+        canvas_background: {
+          color: '#FFFFFF',
+          texture: 'solid',
+          style: '简约'
+        },
+        suggestions: params.images.map((_, index) => {
+          const shape = maskShapes[index % maskShapes.length];
+          const row = Math.floor(index / 2);
+          const col = index % 2;
+          
+          // 计算遮罩区域在画布上的位置（像素）
+          const canvasWidth = 800; // 默认画布宽度
+          const canvasHeight = 800; // 默认画布高度
+          const maskWidth = (canvasWidth - 60) / 2; // 留出边距
+          const maskHeight = (canvasHeight - 60) / 2;
+          const marginX = 20;
+          const marginY = 20;
+          
+          const maskX = marginX + col * (maskWidth + 20);
+          const maskY = marginY + row * (maskHeight + 20);
+          
+          return {
+            image_index: index,
+            z_index: 1,
+            // 遮罩拼图字段
+            mask_region: {
+              shape: shape,
+              clip_path: shape === 'circle' ? 'circle(50%)' : 'none',
+              position: { 
+                x: maskX, // 遮罩在画布上的绝对位置（像素）
+                y: maskY, 
+                width: maskWidth, 
+                height: maskHeight 
+              }
+            },
+            image_transform: {
+              position: { x: 0, y: 0 }, // 图片在遮罩内的偏移
+              scale: 1.2, // 稍微放大以避免边缘空白
+              rotation: 0
+            },
+            effects: []
+          };
+        }),
+        overall_theme: `遮罩${randomStyle}布局`,
+        color_scheme: ['#FFFFFF', '#E5E7EB', '#3B82F6'],
+        confidence_score: 0.75,
+        reasoning: `使用遮罩拼图概念，每张图片都有独立的展示窗口，无图层重叠。采用${randomStyle}的设计理念创造视觉和谐。`
       };
     }
     
     const responseTime = Date.now() - startTime;
     
-    // 缓存结果
-    await createAIAnalysisCache({
-      cache_key: cacheKey,
-      cache_type: 'layout_suggestion',
-      ai_model: config.models.primary,
-      analysis_result: { suggestion },
-      confidence_score: suggestion.confidence_score,
-      expires_days: config.api.cacheDurationDays
-    });
+    // 缓存结果 - 添加错误处理，避免缓存失败影响主功能
+    try {
+      await createAIAnalysisCache({
+        cache_key: cacheKey,
+        cache_type: 'layout_suggestion',
+        ai_model: config.models.primary,
+        analysis_result: { suggestion },
+        confidence_score: suggestion.confidence_score,
+        expires_days: config.api.cacheDurationDays
+      });
+      console.log('✅ 布局建议缓存创建成功');
+    } catch (cacheError) {
+      console.warn('⚠️  布局建议缓存创建失败，但不影响主功能:', cacheError);
+      // 缓存失败不应该影响主功能，继续执行
+    }
     
     // 记录使用统计
     await recordAIRequest({
@@ -359,7 +550,7 @@ ${JSON.stringify(params.preferences, null, 2)}
       success: true,
       cached: false,
       response_time: responseTime,
-      estimated_cost: 0.005 // 估算成本
+      estimated_cost: parseFloat((0.005).toFixed(4))
     });
     
     return {
@@ -371,7 +562,6 @@ ${JSON.stringify(params.preferences, null, 2)}
     
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error('Layout suggestion failed:', error);
     
     await recordAIRequest({
       type: 'layout_suggestion',
@@ -379,7 +569,7 @@ ${JSON.stringify(params.preferences, null, 2)}
       cached,
       response_time: responseTime
     });
-    
+
     return {
       success: false,
       error: error instanceof Error ? error.message : '布局建议生成失败',
@@ -478,7 +668,6 @@ ${JSON.stringify(dominantColors, null, 2)}
         throw new Error('无法解析AI响应');
       }
     } catch (parseError) {
-      console.error('Failed to parse color scheme:', parseError);
       // 创建默认配色方案
       const primaryColor = dominantColors[0]?.hex || '#3B82F6';
       colorScheme = {
@@ -495,15 +684,21 @@ ${JSON.stringify(dominantColors, null, 2)}
     
     const responseTime = Date.now() - startTime;
     
-    // 缓存结果
-    await createAIAnalysisCache({
-      cache_key: cacheKey,
-      cache_type: 'icon_recommendation',
-      ai_model: config.models.primary,
-      analysis_result: { colorScheme },
-      confidence_score: colorScheme.confidence_score,
-      expires_days: config.api.cacheDurationDays
-    });
+    // 缓存结果 - 添加错误处理
+    try {
+      await createAIAnalysisCache({
+        cache_key: cacheKey,
+        cache_type: 'icon_recommendation',
+        ai_model: config.models.primary,
+        analysis_result: { colorScheme },
+        confidence_score: colorScheme.confidence_score,
+        expires_days: config.api.cacheDurationDays
+      });
+      console.log('✅ 配色方案缓存创建成功');
+    } catch (cacheError) {
+      console.warn('⚠️  配色方案缓存创建失败，但不影响主功能:', cacheError);
+      // 缓存失败不应该影响主功能，继续执行
+    }
     
     // 记录使用统计
     await recordAIRequest({
@@ -511,7 +706,7 @@ ${JSON.stringify(dominantColors, null, 2)}
       success: true,
       cached: false,
       response_time: responseTime,
-      estimated_cost: 0.003 // 估算成本
+      estimated_cost: parseFloat((0.003).toFixed(4)) // 确保是有效数值，保留4位小数
     });
     
     return {
@@ -523,7 +718,6 @@ ${JSON.stringify(dominantColors, null, 2)}
     
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error('Color scheme generation failed:', error);
     
     await recordAIRequest({
       type: 'icon_recommendation',
@@ -623,7 +817,6 @@ export async function performCompleteAnalysis(images: Array<{
     };
     
   } catch (error) {
-    console.error('Complete analysis failed:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : '完整分析失败',

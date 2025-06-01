@@ -21,56 +21,45 @@ const PricingPreview = ({ dict, locale }: PricingPreviewProps) => {
     return getTranslation(dict, key);
   };
 
+  // 安全获取数组类型的翻译
+  const getArrayTranslation = (key: string): string[] => {
+    const value = getTranslation(dict, key);
+    if (Array.isArray(value)) {
+      return value;
+    }
+    return [];
+  };
+
   const plans = [
     {
-      name: "免费体验",
-      price: "¥0",
-      credits: "3次",
-      description: "新用户免费试用",
-      features: [
-        "免费试用3次",
-        "基础AI拼图",
-        "标准清晰度下载",
-        "基础布局模板"
-      ],
-      buttonText: "立即试用",
+      name: t('pricingSection.freePackage.name'),
+      price: t('pricingSection.freePackage.price'),
+      credits: t('pricingSection.freePackage.credits'),
+      description: t('pricingSection.freePackage.description'),
+      features: getArrayTranslation('pricingSection.freePackage.features'),
+      buttonText: t('pricingSection.freePackage.buttonText'),
       buttonStyle: "bg-gray-600 hover:bg-gray-700",
       popular: false,
       icon: Gift
     },
     {
-      name: "基础套餐",
-      price: "¥19",
-      credits: "50积分",
-      description: "适合个人用户",
-      features: [
-        "50积分 (可制作10个拼图)",
-        "全部AI功能",
-        "高清下载",
-        "20+布局模板",
-        "智能装饰元素",
-        "邮件客服支持"
-      ],
-      buttonText: "立即购买",
+      name: t('pricingSection.basicPackage.name'),
+      price: t('pricingSection.basicPackage.price'),
+      credits: t('pricingSection.basicPackage.credits'),
+      description: t('pricingSection.basicPackage.description'),
+      features: getArrayTranslation('pricingSection.basicPackage.features'),
+      buttonText: t('pricingSection.basicPackage.buttonText'),
       buttonStyle: "bg-blue-600 hover:bg-blue-700",
       popular: true,
       icon: Star
     },
     {
-      name: "专业套餐", 
-      price: "¥49",
-      credits: "150积分",
-      description: "适合设计师和创作者",
-      features: [
-        "150积分 (可制作30个拼图)",
-        "全部AI功能",
-        "4K超高清下载",
-        "50+专业模板",
-        "高级装饰素材",
-        "批量处理功能",
-        "优先客服支持"
-      ],
-      buttonText: "立即购买",
+      name: t('pricingSection.proPackage.name'), 
+      price: t('pricingSection.proPackage.price'),
+      credits: t('pricingSection.proPackage.credits'),
+      description: t('pricingSection.proPackage.description'),
+      features: getArrayTranslation('pricingSection.proPackage.features'),
+      buttonText: t('pricingSection.proPackage.buttonText'),
       buttonStyle: "bg-purple-600 hover:bg-purple-700",
       popular: false,
       icon: Crown
@@ -80,21 +69,21 @@ const PricingPreview = ({ dict, locale }: PricingPreviewProps) => {
   const bonusFeatures = [
     {
       icon: Users,
-      title: "邀请奖励",
-      description: "邀请好友注册获得20积分奖励",
-      highlight: "+20积分"
+      title: t('pricingSection.bonusFeatures.inviteReward.title'),
+      description: t('pricingSection.bonusFeatures.inviteReward.description'),
+      highlight: t('pricingSection.bonusFeatures.inviteReward.highlight')
     },
     {
       icon: Zap,
-      title: "积分永不过期",
-      description: "购买的积分永久有效，随时使用",
-      highlight: "永久有效"
+      title: t('pricingSection.bonusFeatures.creditsNeverExpire.title'),
+      description: t('pricingSection.bonusFeatures.creditsNeverExpire.description'),
+      highlight: t('pricingSection.bonusFeatures.creditsNeverExpire.highlight')
     },
     {
       icon: Sparkles,
-      title: "AI持续升级",
-      description: "享受AI算法持续优化带来的更好效果",
-      highlight: "免费升级"
+      title: t('pricingSection.bonusFeatures.aiUpgrades.title'),
+      description: t('pricingSection.bonusFeatures.aiUpgrades.description'),
+      highlight: t('pricingSection.bonusFeatures.aiUpgrades.highlight')
     }
   ];
 
@@ -106,19 +95,19 @@ const PricingPreview = ({ dict, locale }: PricingPreviewProps) => {
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 mb-6">
             <Crown className="w-4 h-4 text-blue-600 mr-2" />
             <span className="text-sm font-medium text-blue-700">
-              定价方案
+              {t('pricingSection.tagline')}
             </span>
           </div>
           
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            选择适合你的
+            {t('pricingSection.subtitle')}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}积分套餐
+              {" "}{t('pricingSection.highlight')}
             </span>
           </h2>
           
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            灵活的积分制度，按需使用，无月费负担。每5积分制作一个精美拼图
+            {t('pricingSection.description')}
           </p>
         </div>
 
@@ -197,11 +186,11 @@ const PricingPreview = ({ dict, locale }: PricingPreviewProps) => {
         {/* 额外福利 */}
         <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
           <h3 className="text-2xl font-bold text-gray-900 text-center mb-8">
-            更多福利等你来拿
+            {t('pricingSection.bonusFeatures.title')}
           </h3>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {bonusFeatures.map((feature, index) => {
+            {bonusFeatures.map((feature: any, index: number) => {
               const IconComponent = feature.icon;
               return (
                 <div key={index} className="text-center">
@@ -228,7 +217,7 @@ const PricingPreview = ({ dict, locale }: PricingPreviewProps) => {
         {/* 底部说明 */}
         <div className="text-center mt-12">
           <p className="text-gray-500 text-sm">
-            💡 提示：每个拼图消耗5积分，积分永不过期，可随时使用
+            {t('pricingSection.bottomNotice')}
           </p>
         </div>
       </div>

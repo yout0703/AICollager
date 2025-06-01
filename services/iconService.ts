@@ -275,7 +275,7 @@ export class IconService {
         success: true,
         cached: false,
         response_time: responseTime,
-        estimated_cost: 0.002
+        estimated_cost: parseFloat((0.002).toFixed(4)) // 确保是有效数值，保留4位小数
       });
       
       return {

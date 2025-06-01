@@ -114,8 +114,7 @@ export class AIStatsService {
     try {
       const stats = await getAIStatsInRange(
         params.startDate,
-        params.endDate,
-        params.statType || 'daily'
+        params.endDate
       );
       
       if (stats.length === 0) {

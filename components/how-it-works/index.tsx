@@ -23,12 +23,12 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
     {
       step: "01",
       icon: Upload,
-      title: "上传照片",
-      description: "选择2-20张你想要拼接的照片，支持JPG、PNG等常见格式",
+      title: t('howItWorks.steps.upload.title'),
+      description: t('howItWorks.steps.upload.description'),
       details: [
-        "支持批量上传",
-        "自动压缩优化",
-        "智能去重检测"
+        t('howItWorks.steps.upload.details.batchUpload'),
+        t('howItWorks.steps.upload.details.autoOptimize'),
+        t('howItWorks.steps.upload.details.duplicateDetection')
       ],
       color: "from-blue-500 to-cyan-500",
       bgColor: "bg-blue-50"
@@ -36,12 +36,12 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
     {
       step: "02", 
       icon: Sparkles,
-      title: "AI智能分析",
-      description: "AI自动分析照片内容、色彩和构图，生成最佳拼图方案",
+      title: t('howItWorks.steps.analyze.title'),
+      description: t('howItWorks.steps.analyze.description'),
       details: [
-        "内容识别分析",
-        "色彩搭配建议", 
-        "布局智能推荐"
+        t('howItWorks.steps.analyze.details.contentRecognition'),
+        t('howItWorks.steps.analyze.details.colorMatching'), 
+        t('howItWorks.steps.analyze.details.layoutRecommendation')
       ],
       color: "from-purple-500 to-pink-500",
       bgColor: "bg-purple-50"
@@ -49,12 +49,12 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
     {
       step: "03",
       icon: Wand2,
-      title: "一键生成",
-      description: "点击生成按钮，AI自动创建精美拼图，包含装饰元素",
+      title: t('howItWorks.steps.generate.title'),
+      description: t('howItWorks.steps.generate.description'),
       details: [
-        "智能布局排版",
-        "自动添加装饰",
-        "实时预览效果"
+        t('howItWorks.steps.generate.details.smartLayout'),
+        t('howItWorks.steps.generate.details.autoDecoration'),
+        t('howItWorks.steps.generate.details.realTimePreview')
       ],
       color: "from-green-500 to-emerald-500", 
       bgColor: "bg-green-50"
@@ -62,12 +62,12 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
     {
       step: "04",
       icon: Download,
-      title: "下载分享",
-      description: "选择合适的尺寸和格式，下载高清拼图作品并分享",
+      title: t('howItWorks.steps.download.title'),
+      description: t('howItWorks.steps.download.description'),
       details: [
-        "多种尺寸选择",
-        "高清无水印",
-        "一键社交分享"
+        t('howItWorks.steps.download.details.multipleSizes'),
+        t('howItWorks.steps.download.details.hdNoWatermark'),
+        t('howItWorks.steps.download.details.oneClickShare')
       ],
       color: "from-orange-500 to-red-500",
       bgColor: "bg-orange-50"
@@ -82,20 +82,20 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 mb-6">
             <Wand2 className="w-4 h-4 text-blue-600 mr-2" />
             <span className="text-sm font-medium text-blue-700">
-              使用步骤
+              {t('howItWorks.tagline')}
             </span>
           </div>
           
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            简单
+            {t('howItWorks.title')}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}4步
+              {" "}{t('howItWorks.highlight')}
             </span>
-            ，创作精美拼图
+            {t('howItWorks.subtitle')}，创作精美拼图
           </h2>
           
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            无需设计经验，无需复杂操作，AI帮你完成一切创意工作
+            {t('howItWorks.description')}
           </p>
         </div>
 
@@ -158,14 +158,14 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
         <div className="text-center mt-16">
           <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 max-w-2xl mx-auto">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              准备好创作你的第一个AI拼图了吗？
+              {t('howItWorks.cta.title')}
             </h3>
             <p className="text-gray-600 mb-6">
-              免费试用3次，无需注册，立即体验AI的神奇魅力
+              {t('howItWorks.cta.description')}
             </p>
             <button className="group inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
               <Sparkles className="w-5 h-5 mr-2" />
-              立即免费体验
+              {t('howItWorks.cta.button')}
               <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>

@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { locales } from "@/lib/config";
 import { Locale, getDictionary } from "@/lib/i18n";
+import UserProvider from "@/components/providers/UserProvider";
 // 导入 Clerk 多语言包
 import { zhCN, enUS, esES, frFR, deDE, jaJP } from "@clerk/localizations";
 
@@ -64,10 +65,12 @@ export default async function LocaleLayout({
       afterSignInUrl={`/${locale}`}
       afterSignUpUrl={`/${locale}`}
     >
-      <section lang={locale} suppressHydrationWarning>
-        {children}
-        <Analytics />
-      </section>
+      <UserProvider>
+        <section lang={locale} suppressHydrationWarning>
+          {children}
+          <Analytics />
+        </section>
+      </UserProvider>
     </ClerkProvider>
   );
 } 

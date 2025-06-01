@@ -74,15 +74,32 @@ export async function PUT(
         { status: 400 }
       );
     }
-    
+
     const body = await request.json();
-    const { title, description, visibility } = body;
+    const { title, description, visibility, canvas_config, elements } = body;
+    
+    // 验证canvas_config和elements的数据类型（如果提供的话）
+    if (canvas_config && typeof canvas_config !== 'object') {
+      return NextResponse.json(
+        { error: '无效的画布配置数据' },
+        { status: 400 }
+      );
+    }
+    
+    if (elements && !Array.isArray(elements)) {
+      return NextResponse.json(
+        { error: '无效的元素数据' },
+        { status: 400 }
+      );
+    }
     
     const collageService = new CollageService();
     const updatedCollage = await collageService.updateCollage(collageId, userId, {
       title,
       description,
-      visibility
+      visibility,
+      canvas_config,
+      elements
     });
     
     return NextResponse.json({

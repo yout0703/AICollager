@@ -30,13 +30,17 @@ pnpm install
 ```
 OPENAI_API_KEY=""
 
+# Database
 POSTGRES_URL=""
 
-AWS_AK=""
-AWS_SK=""
-AWS_REGION=""
-AWS_BUCKET=""
+# Cloudflare R2 Storage
+R2_ACCOUNT_ID=""
+R2_ACCESS_KEY_ID=""
+R2_SECRET_ACCESS_KEY=""
+R2_BUCKET_NAME=""
+R2_PUBLIC_URL=""  # 可选：自定义域名或 R2.dev 域名
 
+***REMOVED***
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
 NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
@@ -61,7 +65,7 @@ pnpm dev
 
 - [Next.js](https://nextjs.org/docs) - 全栈开发框架
 - [Clerk](https://clerk.com/docs/quickstarts/nextjs) - 用户认证
-- [AWS S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/upload-objects.html) - 图像存储
+- [Cloudflare R2](https://developers.cloudflare.com/r2/) - 图像存储
 - [Stripe](https://stripe.com/docs/development) - 支付处理
 - [node-postgres](https://node-postgres.com/) - 数据处理
 - [Tailwind CSS](https://tailwindcss.com/) - 页面构建 

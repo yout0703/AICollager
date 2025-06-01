@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 # Next.js 版本说明
 
@@ -14,3 +14,6 @@ alwaysApply: false
   ```
 
 如需升级或变更 Next.js 版本，请务必同步更新 [package.json](mdc:package.json) 并进行充分测试。
+
+
+使用 pnpm 管理依赖。

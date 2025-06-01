@@ -267,7 +267,14 @@ export async function incrementSessionTrialUsageCount(sessionId: string): Promis
 // 用户注册后绑定会话
 export async function bindUserSession(sessionId: string, userId: string): Promise<boolean> {
   try {
-    return await bindSessionToUser(sessionId, userId);
+    // userId 可能是 Clerk ID，需要转换为数据库 UUID
+    const user = await getUserInfo(userId, 'clerk_id');
+    if (!user) {
+      console.error('Cannot bind session: user not found');
+      return false;
+    }
+    
+    return await bindSessionToUser(sessionId, user.uuid);
     
   } catch (error) {
     console.error('Bind user session failed:', error);
@@ -278,7 +285,13 @@ export async function bindUserSession(sessionId: string, userId: string): Promis
 // 获取用户的所有活跃会话
 export async function getUserActiveSessions(userId: string): Promise<UserSession[]> {
   try {
-    return await getUserSessions(userId);
+    // userId 可能是 Clerk ID，需要转换为数据库 UUID
+    const user = await getUserInfo(userId, 'clerk_id');
+    if (!user) {
+      return [];
+    }
+    
+    return await getUserSessions(user.uuid);
     
   } catch (error) {
     console.error('Get user active sessions failed:', error);

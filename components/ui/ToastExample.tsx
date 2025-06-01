@@ -22,7 +22,11 @@ export function ToastExample({ locale = 'zh' }: ToastExampleProps) {
   const simulateAsyncOperation = () => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        Math.random() > 0.5 ? resolve('操作成功') : reject('操作失败');
+        if (Math.random() > 0.5) {
+          resolve('操作成功');
+        } else {
+          reject('操作失败');
+        }
       }, 2000);
     });
   };

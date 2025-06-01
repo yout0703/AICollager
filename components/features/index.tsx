@@ -27,48 +27,48 @@ const Features = ({ dict }: FeaturesProps) => {
   const features = [
     {
       icon: Sparkles,
-      title: "AI智能分析",
-      description: "自动识别照片内容、色彩和构图，为你推荐最佳拼图布局",
+      title: t('features.aiAnalysis.title'),
+      description: t('features.aiAnalysis.description'),
       color: "from-blue-500 to-cyan-500",
       bgColor: "bg-blue-50",
       iconColor: "text-blue-600"
     },
     {
       icon: Zap,
-      title: "一键生成",
-      description: "告别繁琐操作，上传照片后一键生成精美拼图，节省90%时间",
+      title: t('features.oneClick.title'),
+      description: t('features.oneClick.description'),
       color: "from-purple-500 to-pink-500",
       bgColor: "bg-purple-50",
       iconColor: "text-purple-600"
     },
     {
       icon: Palette,
-      title: "智能配色",
-      description: "AI自动提取照片主色调，生成和谐配色方案和装饰元素",
+      title: t('features.smartColor.title'),
+      description: t('features.smartColor.description'),
       color: "from-green-500 to-emerald-500",
       bgColor: "bg-green-50",
       iconColor: "text-green-600"
     },
     {
       icon: Layout,
-      title: "多样布局",
-      description: "支持2-20张照片，提供网格、拼贴、艺术等多种布局风格",
+      title: t('features.multiLayout.title'),
+      description: t('features.multiLayout.description'),
       color: "from-orange-500 to-red-500",
       bgColor: "bg-orange-50",
       iconColor: "text-orange-600"
     },
     {
       icon: Wand2,
-      title: "智能装饰",
-      description: "根据照片主题自动添加图标、文字和装饰元素，让作品更生动",
+      title: t('features.smartDecoration.title'),
+      description: t('features.smartDecoration.description'),
       color: "from-indigo-500 to-purple-500",
       bgColor: "bg-indigo-50",
       iconColor: "text-indigo-600"
     },
     {
       icon: Download,
-      title: "高清下载",
-      description: "支持多种尺寸和格式下载，满足社交分享和打印需求",
+      title: t('features.hdDownload.title'),
+      description: t('features.hdDownload.description'),
       color: "from-pink-500 to-rose-500",
       bgColor: "bg-pink-50",
       iconColor: "text-pink-600"
@@ -76,10 +76,10 @@ const Features = ({ dict }: FeaturesProps) => {
   ];
 
   const stats = [
-    { number: "5秒", label: "平均生成时间", icon: Clock },
-    { number: "20+", label: "布局模板", icon: Layout },
-    { number: "1000+", label: "装饰图标", icon: Star },
-    { number: "4K", label: "高清输出", icon: Image }
+    { number: "5秒", label: t('features.stats.avgTime'), icon: Clock },
+    { number: "20+", label: t('features.stats.layoutTemplates'), icon: Layout },
+    { number: "1000+", label: t('features.stats.decorativeIcons'), icon: Star },
+    { number: "4K", label: t('features.stats.hdOutput'), icon: Image }
   ];
 
   return (
@@ -90,20 +90,19 @@ const Features = ({ dict }: FeaturesProps) => {
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 mb-6">
             <Sparkles className="w-4 h-4 text-blue-600 mr-2" />
             <span className="text-sm font-medium text-blue-700">
-              核心功能
+              {t('features.title')}
             </span>
           </div>
           
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            为什么选择
+            {t('features.subtitle')}
             <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}AI Collager
+              {" "}{t('features.highlight')}
             </span>
           </h2>
           
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            我们的AI技术让照片拼图变得前所未有的简单和智能，
-            每个人都能创作出专业级的视觉作品
+            {t('features.description')}
           </p>
         </div>
 
@@ -140,10 +139,10 @@ const Features = ({ dict }: FeaturesProps) => {
         <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-3xl p-8 md:p-12">
           <div className="text-center mb-8">
             <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              数据说话，效果惊人
+              {t('features.stats.title')}
             </h3>
             <p className="text-gray-600">
-              看看我们的AI技术为用户带来的实际价值
+              {t('features.stats.subtitle')}
             </p>
           </div>
           

@@ -113,26 +113,26 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
 
   if (state.elements.length === 0) {
     return (
-      <div className={`p-4 text-center text-gray-500 ${className}`}>
-        <p className="text-sm">暂无图层</p>
-        <p className="text-xs text-gray-400 mt-1">添加元素后将在此显示</p>
+      <div className={`p-3 text-center text-gray-500 ${className}`}>
+        <p className="text-xs">暂无图层</p>
+        <p className="text-xs text-gray-400 mt-0.5">添加元素后将在此显示</p>
       </div>
     );
   }
 
   return (
     <div className={`p-2 ${className}`}>
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-medium text-sm">图层</h3>
-        <span className="text-xs text-gray-500">{state.elements.length} 个</span>
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="font-medium text-xs">图层</h3>
+        <span className="text-xs text-gray-500">{state.elements.length}</span>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {sortedElements.map((element) => (
           <div
             key={element.id}
             className={`
-              flex items-center p-2 rounded cursor-pointer transition-colors
+              flex items-center p-1.5 rounded cursor-pointer transition-colors
               ${state.selectedElementId === element.id 
                 ? 'bg-blue-50 border border-blue-200' 
                 : 'hover:bg-gray-50 border border-transparent'
@@ -142,41 +142,41 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
             onClick={() => handleSelectElement(element.id)}
           >
             {/* 元素图标 */}
-            <div className="flex-shrink-0 mr-2">
+            <div className="flex-shrink-0 mr-1.5">
               {getElementIcon(element)}
             </div>
 
             {/* 元素名称 */}
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium truncate">
+              <div className="text-xs font-medium truncate">
                 {getElementName(element)}
               </div>
-              <div className="text-xs text-gray-500">
-                {element.type} • z: {element.zIndex}
+              <div className="text-xs text-gray-400">
+                z:{element.zIndex}
               </div>
             </div>
 
             {/* 操作按钮 */}
-            <div className="flex items-center space-x-1 ml-2">
+            <div className="flex items-center space-x-0.5 ml-1">
               {/* 图层顺序 */}
               <div className="flex flex-col">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-3 w-4 p-0"
+                  className="h-3 w-3 p-0"
                   onClick={(e) => handleMoveUp(element, e)}
                   disabled={element.zIndex >= Math.max(...state.elements.map(el => el.zIndex))}
                 >
-                  <ChevronUp size={10} />
+                  <ChevronUp size={8} />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-3 w-4 p-0"
+                  className="h-3 w-3 p-0"
                   onClick={(e) => handleMoveDown(element, e)}
                   disabled={element.zIndex <= Math.min(...state.elements.map(el => el.zIndex))}
                 >
-                  <ChevronDown size={10} />
+                  <ChevronDown size={8} />
                 </Button>
               </div>
 
@@ -184,13 +184,13 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0"
+                className="h-5 w-5 p-0"
                 onClick={(e) => handleToggleVisible(element, e)}
               >
                 {element.isVisible ? (
-                  <Eye size={12} className="text-gray-600" />
+                  <Eye size={10} className="text-gray-600" />
                 ) : (
-                  <EyeOff size={12} className="text-gray-400" />
+                  <EyeOff size={10} className="text-gray-400" />
                 )}
               </Button>
 
@@ -198,36 +198,28 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0"
+                className="h-5 w-5 p-0"
                 onClick={(e) => handleToggleLock(element, e)}
               >
                 {element.isLocked ? (
-                  <Lock size={12} className="text-orange-600" />
+                  <Lock size={10} className="text-red-600" />
                 ) : (
-                  <Unlock size={12} className="text-gray-400" />
+                  <Unlock size={10} className="text-gray-400" />
                 )}
               </Button>
 
-              {/* 删除 */}
+              {/* 删除按钮 */}
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
+                className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
                 onClick={(e) => handleDeleteElement(element.id, e)}
               >
-                <Trash2 size={12} />
+                <Trash2 size={10} />
               </Button>
             </div>
           </div>
         ))}
-      </div>
-
-      {/* 图层操作说明 */}
-      <div className="mt-4 p-3 bg-gray-50 rounded text-xs text-gray-600">
-        <p>• 点击选择图层</p>
-        <p>• 使用 ↑↓ 调整层级</p>
-        <p>• 👁️ 显示/隐藏</p>
-        <p>• 🔒 锁定/解锁</p>
       </div>
     </div>
   );

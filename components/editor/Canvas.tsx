@@ -2,7 +2,7 @@
 
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { useEditor } from '@/contexts/EditorContext';
-import { CollageElement } from '@/types/collage';
+import { CollageElement, ImageElement, MaskRegion, ImageTransform } from '@/types/collage';
 
 interface CanvasProps {
   className?: string;
@@ -11,335 +11,396 @@ interface CanvasProps {
 export default function Canvas({ className = '' }: CanvasProps) {
   const { state, selectElement, updateElement } = useEditor();
   const canvasRef = useRef<HTMLDivElement>(null);
+  
+  // 拖拽相关状态
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragElement, setDragElement] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [elementStart, setElementStart] = useState({ x: 0, y: 0 });
 
-  // 处理元素点击选择
-  const handleElementClick = useCallback((e: React.MouseEvent, elementId: string) => {
-    e.stopPropagation();
-    selectElement(elementId);
-  }, [selectElement]);
-
-  // 处理画布点击（取消选择）
-  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      selectElement(null);
-    }
-  }, [selectElement]);
-
-  // 处理鼠标按下（开始拖拽）
+  // 处理鼠标按下事件 - 遮罩模式
   const handleMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    setIsDragging(true);
-    setDragElement(elementId);
-    setDragStart({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    });
+    const element = state.elements.find(el => el.id === elementId) as ImageElement;
+    if (!element || element.isLocked || element.type !== 'image' || !element.maskRegion) return;
     
     selectElement(elementId);
-  }, [selectElement]);
-
-  // 处理鼠标移动（拖拽中）
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging || !dragElement || !canvasRef.current) return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const currentX = e.clientX - rect.left;
-    const currentY = e.clientY - rect.top;
     
-    const deltaX = currentX - dragStart.x;
-    const deltaY = currentY - dragStart.y;
-
-    // 找到拖拽的元素
-    const element = state.elements.find(el => el.id === dragElement);
-    if (!element) return;
-
-    // 更新元素位置
-    updateElement(dragElement, {
-      transform: {
-        ...element.transform,
-        x: Math.max(0, element.transform.x + deltaX),
-        y: Math.max(0, element.transform.y + deltaY)
-      }
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+    
+    setIsDragging(true);
+    setDragElement(elementId);
+    setDragStart({ x: clientX, y: clientY });
+    // 记录图片在遮罩内的起始位置
+    setElementStart({ 
+      x: element.imageTransform?.position.x || 0, 
+      y: element.imageTransform?.position.y || 0 
     });
+  }, [state.elements, selectElement]);
 
-    setDragStart({ x: currentX, y: currentY });
-  }, [isDragging, dragElement, dragStart, state.elements, updateElement]);
+  // 处理鼠标移动事件 - 遮罩模式
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!dragElement || !isDragging) return;
+    
+    const element = state.elements.find(el => el.id === dragElement) as ImageElement;
+    if (!element || element.type !== 'image' || !element.maskRegion) return;
+    
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+    
+    // 计算鼠标移动的距离
+    const deltaX = clientX - dragStart.x;
+    const deltaY = clientY - dragStart.y;
+    
+    // 更新图片在遮罩内的位置
+    const newImageTransform: ImageTransform = {
+      ...element.imageTransform,
+      position: {
+        x: elementStart.x + deltaX,
+        y: elementStart.y + deltaY
+      },
+      scale: element.imageTransform?.scale || 1,
+      rotation: element.imageTransform?.rotation || 0,
+      anchor: element.imageTransform?.anchor || { x: 0.5, y: 0.5 }
+    };
+    
+    updateElement(dragElement, {
+      imageTransform: newImageTransform
+    });
+  }, [isDragging, dragElement, dragStart, elementStart, state.elements, updateElement]);
 
-  // 处理鼠标抬起（结束拖拽）
+  // 处理鼠标抬起事件
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     setDragElement(null);
   }, []);
 
-  // 绑定全局鼠标事件
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
+  // 处理画布点击事件
+  const handleCanvasClick = useCallback((e: React.MouseEvent) => {
+    if (e.target === canvasRef.current) {
+      selectElement(null);
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [selectElement]);
 
-  // 渲染元素的样式
-  const getElementStyle = useCallback((element: CollageElement): React.CSSProperties => {
-    const baseStyle: React.CSSProperties = {
-      position: 'absolute',
-      left: element.transform.x,
-      top: element.transform.y,
-      width: element.transform.width,
-      height: element.transform.height,
-      transform: `rotate(${element.transform.rotation}deg) scaleX(${element.transform.scaleX}) scaleY(${element.transform.scaleY})`,
-      opacity: element.style.opacity,
-      borderRadius: element.style.borderRadius,
-      zIndex: element.zIndex,
-      cursor: isDragging && dragElement === element.id ? 'grabbing' : 'grab',
-      userSelect: 'none',
-      pointerEvents: element.isLocked ? 'none' : 'auto',
-      display: element.isVisible ? 'block' : 'none'
-    };
-
-    // 添加边框
-    if (element.style.border) {
-      baseStyle.border = `${element.style.border.width}px ${element.style.border.style} ${element.style.border.color}`;
-    }
-
-    // 添加阴影
-    if (element.style.shadow) {
-      baseStyle.boxShadow = `${element.style.shadow.offsetX}px ${element.style.shadow.offsetY}px ${element.style.shadow.blur}px ${element.style.shadow.color}`;
-    }
-
-    // 添加滤镜
-    if (element.style.filter) {
-      const filters = [];
-      if (element.style.filter.brightness !== 1) filters.push(`brightness(${element.style.filter.brightness})`);
-      if (element.style.filter.contrast !== 1) filters.push(`contrast(${element.style.filter.contrast})`);
-      if (element.style.filter.saturation !== 1) filters.push(`saturate(${element.style.filter.saturation})`);
-      if (element.style.filter.blur > 0) filters.push(`blur(${element.style.filter.blur}px)`);
-      if (filters.length > 0) {
-        baseStyle.filter = filters.join(' ');
-      }
-    }
-
-    return baseStyle;
-  }, [isDragging, dragElement]);
-
-  // 渲染图片元素
-  const renderImageElement = useCallback((element: CollageElement) => {
-    if (element.type !== 'image') return null;
-
-    return (
-      <img
-        src={element.src}
-        alt={element.alt || ''}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: element.cropArea ? 'cover' : 'contain',
-          objectPosition: element.cropArea ? 
-            `${-element.cropArea.x}px ${-element.cropArea.y}px` : 'center'
-        }}
-        draggable={false}
-      />
-    );
-  }, []);
-
-  // 渲染Icon元素
-  const renderIconElement = useCallback((element: CollageElement) => {
-    if (element.type !== 'icon') return null;
-
-    return (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          color: element.color,
-          fontSize: element.size,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}
-        dangerouslySetInnerHTML={{ __html: element.svgContent }}
-      />
-    );
-  }, []);
-
-  // 渲染文字元素
-  const renderTextElement = useCallback((element: CollageElement) => {
-    if (element.type !== 'text') return null;
-
-    return (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          fontSize: element.fontSize,
-          fontFamily: element.fontFamily,
-          fontWeight: element.fontWeight,
-          color: element.color,
-          textAlign: element.textAlign,
-          lineHeight: element.lineHeight,
-          letterSpacing: element.letterSpacing,
-          display: 'flex',
-          alignItems: 'center',
-          overflow: 'hidden',
-          whiteSpace: 'pre-wrap'
-        }}
-      >
-        {element.content}
-      </div>
-    );
-  }, []);
-
-  // 渲染形状元素
-  const renderShapeElement = useCallback((element: CollageElement) => {
-    if (element.type !== 'shape') return null;
-
-    let shapeStyle: React.CSSProperties = {
-      width: '100%',
-      height: '100%',
-      backgroundColor: element.fillColor
-    };
-
-    if (element.strokeColor && element.strokeWidth) {
-      shapeStyle.border = `${element.strokeWidth}px solid ${element.strokeColor}`;
-    }
-
-    switch (element.shapeType) {
-      case 'circle':
-        shapeStyle.borderRadius = '50%';
-        break;
-      case 'rectangle':
-        // 默认矩形样式
-        break;
-      case 'triangle':
-        // 使用CSS创建三角形
-        shapeStyle = {
-          width: 0,
-          height: 0,
-          borderLeft: `${element.transform.width/2}px solid transparent`,
-          borderRight: `${element.transform.width/2}px solid transparent`,
-          borderBottom: `${element.transform.height}px solid ${element.fillColor}`,
-          backgroundColor: 'transparent'
-        };
-        break;
-      case 'star':
-      case 'heart':
-        // 这些复杂形状可以使用SVG或CSS clip-path
-        shapeStyle.clipPath = getClipPath(element.shapeType);
-        break;
-    }
-
-    return <div style={shapeStyle} />;
-  }, []);
-
-  // 渲染边框元素
-  const renderBorderElement = useCallback((element: CollageElement) => {
-    if (element.type !== 'border') return null;
-
-    return (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-          border: `${element.thickness}px solid ${element.color}`,
-          borderStyle: element.borderType === 'decorative' ? 'dashed' : 'solid'
-        }}
-      />
-    );
-  }, []);
-
-  // 获取裁剪路径
-  const getClipPath = (shapeType: string): string => {
-    switch (shapeType) {
-      case 'star':
-        return 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)';
-      case 'heart':
-        return 'path("M12,21.35l-1.45-1.32C5.4,15.36,2,12.28,2,8.5 C2,5.42,4.42,3,7.5,3c1.74,0,3.41,0.81,4.5,2.09C13.09,3.81,14.76,3,16.5,3 C19.58,3,22,5.42,22,8.5c0,3.78-3.4,6.86-8.55,11.54L12,21.35z")';
-      default:
-        return 'none';
-    }
-  };
-
-  // 渲染单个元素
-  const renderElement = useCallback((element: CollageElement) => {
-    const isSelected = state.selectedElementId === element.id;
+  // 处理键盘事件 - 遮罩模式
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (!state.selectedElementId) return;
     
-    return (
-      <div
-        key={element.id}
-        style={{
-          ...getElementStyle(element),
-          outline: isSelected ? '2px solid #3b82f6' : 'none',
-          outlineOffset: '2px'
-        }}
-        onClick={(e) => handleElementClick(e, element.id)}
-        onMouseDown={(e) => handleMouseDown(e, element.id)}
-      >
-        {element.type === 'image' && renderImageElement(element)}
-        {element.type === 'icon' && renderIconElement(element)}
-        {element.type === 'text' && renderTextElement(element)}
-        {element.type === 'shape' && renderShapeElement(element)}
-        {element.type === 'border' && renderBorderElement(element)}
-        
-        {/* 选中时显示操作控制点 */}
-        {isSelected && !element.isLocked && (
-          <div className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-nw-resize" />
-        )}
-        {isSelected && !element.isLocked && (
-          <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-ne-resize" />
-        )}
-        {isSelected && !element.isLocked && (
-          <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-sw-resize" />
-        )}
-        {isSelected && !element.isLocked && (
-          <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-se-resize" />
-        )}
-      </div>
-    );
-  }, [state.selectedElementId, getElementStyle, handleElementClick, handleMouseDown, renderImageElement, renderIconElement, renderTextElement, renderShapeElement, renderBorderElement]);
+    const element = state.elements.find(el => el.id === state.selectedElementId) as ImageElement;
+    if (!element || element.isLocked || element.type !== 'image' || !element.maskRegion) return;
+    
+    const step = e.shiftKey ? 10 : 1; // Shift键加速移动
+    const currentTransform = element.imageTransform || { 
+      position: { x: 0, y: 0 }, 
+      scale: 1, 
+      rotation: 0, 
+      anchor: { x: 0.5, y: 0.5 } 
+    };
+    
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        updateElement(element.id, {
+          imageTransform: {
+            ...currentTransform,
+            position: {
+              ...currentTransform.position,
+              y: currentTransform.position.y - step
+            }
+          }
+        });
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        updateElement(element.id, {
+          imageTransform: {
+            ...currentTransform,
+            position: {
+              ...currentTransform.position,
+              y: currentTransform.position.y + step
+            }
+          }
+        });
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        updateElement(element.id, {
+          imageTransform: {
+            ...currentTransform,
+            position: {
+              ...currentTransform.position,
+              x: currentTransform.position.x - step
+            }
+          }
+        });
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        updateElement(element.id, {
+          imageTransform: {
+            ...currentTransform,
+            position: {
+              ...currentTransform.position,
+              x: currentTransform.position.x + step
+            }
+          }
+        });
+        break;
+      case 'Delete':
+      case 'Backspace':
+        e.preventDefault();
+        // TODO: 实现删除元素功能
+        break;
+    }
+  }, [state.selectedElementId, state.elements, updateElement]);
 
-  // 按z-index排序元素
-  const sortedElements = [...state.elements].sort((a, b) => a.zIndex - b.zIndex);
+  // 绑定事件监听器
+  useEffect(() => {
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleMouseMove, handleMouseUp, handleKeyDown]);
+
+  // 渲染遮罩模式下的图片元素 - 分层渲染方式
+  const renderMaskModeImageElement = useCallback((element: ImageElement) => {
+    if (!element.maskRegion) {
+      return null;
+    }
+
+    const imageTransform = element.imageTransform || {
+      position: { x: 0, y: 0 },
+      scale: 1,
+      rotation: 0,
+      anchor: { x: 0.5, y: 0.5 }
+    };
+
+    const isSelected = state.selectedElementId === element.id;
+
+    // 遮罩区域的位置和尺寸（固定不变）
+    const maskRegion = element.maskRegion;
+    const maskX = maskRegion.position.x;
+    const maskY = maskRegion.position.y;
+    const maskWidth = maskRegion.position.width;
+    const maskHeight = maskRegion.position.height;
+
+    // 图片的显示尺寸（要比遮罩大，这样才能拖动）
+    const imageSize = Math.max(state.canvas.width, state.canvas.height) * 1.5; // 1.5倍画布大小
+    
+    // 图片在遮罩区域内的实际位置
+    const imageX = maskX + imageTransform.position.x;
+    const imageY = maskY + imageTransform.position.y;
+
+    return (
+      <React.Fragment key={element.id}>
+        {/* 遮罩容器 - 位置固定，作为裁剪窗口 */}
+        <div
+          className={`absolute overflow-hidden ${isSelected ? 'z-10' : 'z-0'}`}
+          style={{
+            left: maskX,
+            top: maskY,
+            width: maskWidth,
+            height: maskHeight,
+            borderRadius: maskRegion.shape === 'circle' ? '50%' : '4px',
+            // 遮罩本身不可见，只是作为裁剪容器
+            pointerEvents: 'none',
+          }}
+        >
+          {/* 图片 - 在遮罩容器内可以移动 */}
+          <div
+            className="absolute"
+            style={{
+              // 图片相对于遮罩容器的位置
+              left: imageTransform.position.x - (imageSize - maskWidth) / 2,
+              top: imageTransform.position.y - (imageSize - maskHeight) / 2,
+              width: imageSize * imageTransform.scale,
+              height: imageSize * imageTransform.scale,
+              transform: `rotate(${imageTransform.rotation}deg)`,
+              transformOrigin: 'center',
+              opacity: element.style.opacity,
+              display: element.isVisible ? 'block' : 'none',
+            }}
+          >
+            <img
+              src={element.src}
+              alt={element.alt || ''}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                objectPosition: 'center',
+              }}
+              draggable={false}
+              onError={(e) => {
+                console.warn('图片加载失败:', element.src);
+                (e.target as HTMLImageElement).style.backgroundColor = '#f3f4f6';
+              }}
+            />
+          </div>
+        </div>
+
+        {/* 交互层 - 用于接收鼠标事件，覆盖整个遮罩区域 */}
+        <div
+          className={`absolute ${isSelected ? 'z-20' : 'z-10'}`}
+          style={{
+            left: maskX,
+            top: maskY,
+            width: maskWidth,
+            height: maskHeight,
+            cursor: isDragging && dragElement === element.id ? 'grabbing' : 'grab',
+            pointerEvents: element.isLocked ? 'none' : 'auto',
+            // 透明的交互层
+            backgroundColor: 'transparent',
+          }}
+          onMouseDown={(e) => !element.isLocked && handleMouseDown(e, element.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            selectElement(element.id);
+          }}
+          title={`拖动调整图片在遮罩内的位置`}
+        />
+
+        {/* 遮罩边界指示器（仅选中时显示） */}
+        {isSelected && (
+          <div
+            className="absolute pointer-events-none z-50"
+            style={{
+              left: maskX,
+              top: maskY,
+              width: maskWidth,
+              height: maskHeight,
+              border: '2px solid #3B82F6',
+              borderRadius: maskRegion.shape === 'circle' ? '50%' : '4px',
+            }}
+            title="遮罩区域边界（固定）"
+          />
+        )}
+
+        {/* 开发模式：显示完整图片的边界 */}
+        {isSelected && process.env.NODE_ENV === 'development' && (
+          <div
+            className="absolute pointer-events-none z-40"
+            style={{
+              left: imageX - (imageSize * imageTransform.scale - maskWidth) / 2,
+              top: imageY - (imageSize * imageTransform.scale - maskHeight) / 2,
+              width: imageSize * imageTransform.scale,
+              height: imageSize * imageTransform.scale,
+              border: '1px dashed #ff0000',
+              opacity: 0.5,
+            }}
+            title="完整图片边界（可拖动）"
+          />
+        )}
+      </React.Fragment>
+    );
+  }, [isDragging, dragElement, state.selectedElementId, state.canvas, handleMouseDown, selectElement]);
+
+  // 获取遮罩模式下的图片元素
+  const maskModeImageElements = state.elements.filter(el => 
+    el.type === 'image' && (el as ImageElement).maskRegion
+  ) as ImageElement[];
 
   return (
     <div
       ref={canvasRef}
-      className={`relative overflow-hidden ${className}`}
+      className={`relative overflow-hidden bg-white ${className}`}
       style={{
         width: state.canvas.width,
         height: state.canvas.height,
         backgroundColor: state.canvas.backgroundColor,
-        padding: state.canvas.padding,
-        borderRadius: state.canvas.borderRadius,
+        borderRadius: state.canvas.borderRadius || 0,
         border: state.canvas.border ? 
           `${state.canvas.border.width}px ${state.canvas.border.style} ${state.canvas.border.color}` : 
-          'none'
+          '2px solid #e5e7eb'
       }}
       onClick={handleCanvasClick}
+      onContextMenu={(e) => e.preventDefault()} // 禁用右键菜单
     >
-      {sortedElements.map(renderElement)}
+      {/* 渲染画布背景纹理 */}
+      {state.canvas.backgroundTexture && (
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: state.canvas.backgroundTexture.value,
+            opacity: 0.1
+          }}
+        />
+      )}
+
+      {/* 渲染遮罩图片元素 */}
+      {maskModeImageElements.map(renderMaskModeImageElement)}
       
-      {/* 网格辅助线（可选） */}
+      {/* 开发模式下的网格辅助线 */}
       {process.env.NODE_ENV === 'development' && (
         <div 
-          className="absolute inset-0 pointer-events-none opacity-10"
+          className="absolute inset-0 pointer-events-none opacity-5"
           style={{
-            backgroundImage: 'linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)',
+            backgroundImage: 'linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px)',
             backgroundSize: '20px 20px'
           }}
         />
+      )}
+      
+      {/* 画布中心辅助线 */}
+      {state.selectedElementId && (
+        <>
+          <div 
+            className="absolute bg-red-500 opacity-30 pointer-events-none"
+            style={{
+              left: state.canvas.width / 2 - 0.5,
+              top: 0,
+              width: 1,
+              height: state.canvas.height
+            }}
+          />
+          <div 
+            className="absolute bg-red-500 opacity-30 pointer-events-none"
+            style={{
+              left: 0,
+              top: state.canvas.height / 2 - 0.5,
+              width: state.canvas.width,
+              height: 1
+            }}
+          />
+        </>
+      )}
+
+      {/* 遮罩模式提示信息 */}
+      {maskModeImageElements.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-gray-400 text-sm text-center">
+            <p>遮罩拼图模式</p>
+            <p className="text-xs mt-1">图片将显示在遮罩区域内</p>
+            <p className="text-xs mt-1">🔍 拖动图片可调整露出的内容</p>
+          </div>
+        </div>
+      )}
+
+      {/* 遮罩模式使用提示 */}
+      {maskModeImageElements.length > 0 && !state.selectedElementId && (
+        <div className="absolute top-4 left-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 pointer-events-none">
+          <div className="flex items-center mb-1">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            <span className="font-medium">遮罩拼图模式</span>
+          </div>
+          <p>• 洞的位置固定不变</p>
+          <p>• 拖动移动洞后面的图片</p>
+          <p>• 可看到图片不同部分</p>
+        </div>
       )}
     </div>
   );

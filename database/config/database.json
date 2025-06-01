@@ -1,0 +1,35 @@
+{
+  "development": {
+    "host": "localhost",
+    "port": 5432,
+    "database": "aicollager",
+    "username": "postgres",
+    "password": "123123",
+    "ssl": false,
+    "max": 20,
+    "idleTimeoutMillis": 30000,
+    "connectionTimeoutMillis": 2000
+  },
+  "staging": {
+    "host": "${STAGING_DB_HOST}",
+    "port": 5432,
+    "database": "${STAGING_DB_NAME}",
+    "username": "${STAGING_DB_USER}",
+    "password": "${STAGING_DB_PASSWORD}",
+    "ssl": true,
+    "max": 10,
+    "idleTimeoutMillis": 30000,
+    "connectionTimeoutMillis": 2000
+  },
+  "production": {
+    "host": "${PROD_DB_HOST}",
+    "port": 5432,
+    "database": "${PROD_DB_NAME}",
+    "username": "${PROD_DB_USER}",
+    "password": "${PROD_DB_PASSWORD}",
+    "ssl": true,
+    "max": 30,
+    "idleTimeoutMillis": 30000,
+    "connectionTimeoutMillis": 2000
+  }
+} 

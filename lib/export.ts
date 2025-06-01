@@ -1,4 +1,4 @@
-import { CollageElement, CanvasConfig } from '@/types/collage';
+import { CollageElement, CanvasConfig, ImageElement } from '@/types/collage';
 
 // 导出配置类型
 export interface ExportConfig {
@@ -48,52 +48,164 @@ export async function exportCanvasToImage(
   // 按z-index排序元素
   const sortedElements = [...elements].sort((a, b) => a.zIndex - b.zIndex);
 
-  // 绘制每个元素
-  for (const element of sortedElements) {
-    if (!element.isVisible) continue;
-    
-    ctx.save();
-    
-    // 应用变换
-    const x = element.transform.x * exportConfig.scale;
-    const y = element.transform.y * exportConfig.scale;
-    const w = element.transform.width * exportConfig.scale;
-    const h = element.transform.height * exportConfig.scale;
-    
-    ctx.translate(x + w / 2, y + h / 2);
-    ctx.rotate((element.transform.rotation * Math.PI) / 180);
-    ctx.scale(element.transform.scaleX, element.transform.scaleY);
-    if (element.transform.flipX) ctx.scale(-1, 1);
-    if (element.transform.flipY) ctx.scale(1, -1);
-    
-    // 设置透明度
-    ctx.globalAlpha = element.style.opacity;
+  // 分别处理遮罩图片和其他元素
+  const maskImageElements = sortedElements.filter(el => 
+    el.type === 'image' && (el as ImageElement).maskRegion
+  ) as ImageElement[];
+  
+  const nonImageElements = sortedElements.filter(el => 
+    el.type !== 'image' || !(el as ImageElement).maskRegion
+  );
 
-    // 根据元素类型绘制
-    switch (element.type) {
-      case 'image':
-        await drawImageElement(ctx, element, w, h);
-        break;
-      case 'text':
-        drawTextElement(ctx, element, w, h);
-        break;
-      case 'shape':
-        drawShapeElement(ctx, element, w, h);
-        break;
-      case 'icon':
-        await drawIconElement(ctx, element, w, h);
-        break;
-      case 'border':
-        drawBorderElement(ctx, element, w, h);
-        break;
-    }
-    
-    ctx.restore();
+  // 先绘制非图片元素
+  for (const element of nonImageElements) {
+    if (!element.isVisible) continue;
+    await drawStandardElement(ctx, element, exportConfig);
+  }
+
+  // 然后绘制遮罩图片元素
+  for (const element of maskImageElements) {
+    if (!element.isVisible) continue;
+    await drawMaskImageElement(ctx, element, exportConfig);
   }
 
   // 转换为数据URL
   const mimeType = `image/${exportConfig.format}`;
   return canvasElement.toDataURL(mimeType, exportConfig.quality);
+}
+
+/**
+ * 绘制标准元素（传统图层模式）
+ */
+async function drawStandardElement(
+  ctx: CanvasRenderingContext2D,
+  element: CollageElement,
+  exportConfig: ExportConfig
+): Promise<void> {
+  ctx.save();
+  
+  // 应用变换
+  const x = element.transform.x * exportConfig.scale;
+  const y = element.transform.y * exportConfig.scale;
+  const w = element.transform.width * exportConfig.scale;
+  const h = element.transform.height * exportConfig.scale;
+  
+  ctx.translate(x + w / 2, y + h / 2);
+  ctx.rotate((element.transform.rotation * Math.PI) / 180);
+  ctx.scale(element.transform.scaleX, element.transform.scaleY);
+  if (element.transform.flipX) ctx.scale(-1, 1);
+  if (element.transform.flipY) ctx.scale(1, -1);
+  
+  // 设置透明度
+  ctx.globalAlpha = element.style.opacity;
+
+  // 根据元素类型绘制
+  switch (element.type) {
+    case 'image':
+      await drawImageElement(ctx, element, w, h);
+      break;
+    case 'text':
+      drawTextElement(ctx, element, w, h);
+      break;
+    case 'shape':
+      drawShapeElement(ctx, element, w, h);
+      break;
+    case 'icon':
+      await drawIconElement(ctx, element, w, h);
+      break;
+    case 'border':
+      drawBorderElement(ctx, element, w, h);
+      break;
+  }
+  
+  ctx.restore();
+}
+
+/**
+ * 绘制遮罩图片元素
+ */
+async function drawMaskImageElement(
+  ctx: CanvasRenderingContext2D,
+  element: ImageElement,
+  exportConfig: ExportConfig
+): Promise<void> {
+  if (!element.maskRegion) return;
+
+  ctx.save();
+
+  const maskRegion = element.maskRegion;
+  const imageTransform = element.imageTransform || {
+    position: { x: 0, y: 0 },
+    scale: 1,
+    rotation: 0,
+    anchor: { x: 0.5, y: 0.5 }
+  };
+
+  // 遮罩区域的位置和尺寸
+  const maskX = maskRegion.position.x * exportConfig.scale;
+  const maskY = maskRegion.position.y * exportConfig.scale;
+  const maskWidth = maskRegion.position.width * exportConfig.scale;
+  const maskHeight = maskRegion.position.height * exportConfig.scale;
+
+  // 创建遮罩裁剪路径
+  ctx.beginPath();
+  if (maskRegion.shape === 'circle') {
+    const centerX = maskX + maskWidth / 2;
+    const centerY = maskY + maskHeight / 2;
+    const radius = Math.min(maskWidth, maskHeight) / 2;
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  } else {
+    // 矩形遮罩
+    ctx.rect(maskX, maskY, maskWidth, maskHeight);
+  }
+  ctx.clip();
+
+  // 图片的显示尺寸（要比遮罩大，这样才能拖动）
+  const canvasWidth = maskRegion.position.x + maskRegion.position.width;
+  const canvasHeight = maskRegion.position.y + maskRegion.position.height;
+  const imageSize = Math.max(canvasWidth, canvasHeight) * 1.5 * exportConfig.scale;
+  
+  // 图片在遮罩区域内的实际位置
+  const imageX = maskX + imageTransform.position.x * exportConfig.scale;
+  const imageY = maskY + imageTransform.position.y * exportConfig.scale;
+
+  // 设置透明度
+  ctx.globalAlpha = element.style.opacity;
+
+  // 加载并绘制图片
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = () => {
+      try {
+        // 计算图片绘制位置（相对于遮罩容器）
+        const drawX = imageX + imageTransform.position.x * exportConfig.scale - (imageSize - maskWidth) / 2;
+        const drawY = imageY + imageTransform.position.y * exportConfig.scale - (imageSize - maskHeight) / 2;
+        const drawWidth = imageSize * imageTransform.scale;
+        const drawHeight = imageSize * imageTransform.scale;
+
+        // 如果有旋转，应用旋转变换
+        if (imageTransform.rotation !== 0) {
+          const centerX = drawX + drawWidth / 2;
+          const centerY = drawY + drawHeight / 2;
+          ctx.translate(centerX, centerY);
+          ctx.rotate((imageTransform.rotation * Math.PI) / 180);
+          ctx.translate(-centerX, -centerY);
+        }
+
+        ctx.drawImage(img, drawX, drawY, drawWidth, drawHeight);
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    img.onerror = () => reject(new Error('图片加载失败'));
+    img.src = element.src;
+  });
+
+  ctx.restore();
 }
 
 /**
@@ -123,6 +235,45 @@ async function drawImageElement(
     img.onerror = () => reject(new Error('图片加载失败'));
     img.src = element.src;
   });
+}
+
+/**
+ * 应用CSS clipPath到Canvas上下文
+ */
+function applyClipPath(ctx: CanvasRenderingContext2D, clipPath: string, width: number, height: number): void {
+  // 解析polygon clipPath，例如: "polygon(0% 0%, 100% 0%, 50% 100%)"
+  const polygonMatch = clipPath.match(/polygon\(([^)]+)\)/);
+  
+  if (polygonMatch) {
+    const coordinates = polygonMatch[1];
+    const points = coordinates.split(',').map(coord => coord.trim());
+    
+    if (points.length >= 3) {
+      ctx.beginPath();
+      
+      points.forEach((point, index) => {
+        const [xStr, yStr] = point.split(/\s+/);
+        
+        // 将百分比转换为像素坐标 (相对于元素中心)
+        const xPercent = parseFloat(xStr.replace('%', ''));
+        const yPercent = parseFloat(yStr.replace('%', ''));
+        
+        const x = (xPercent / 100) * width - width / 2;
+        const y = (yPercent / 100) * height - height / 2;
+        
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+      
+      ctx.closePath();
+      ctx.clip();
+    }
+  }
+  
+  // 可以在这里添加其他clipPath类型的支持，如circle等
 }
 
 /**

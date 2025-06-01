@@ -1,0 +1,33 @@
+{
+  "migrationTable": "ac_schema_migrations",
+  "migrationDir": "./database/migrations",
+  "seedDir": "./database/seeds",
+  "rollbackDir": "./database/rollbacks",
+  "schemaDir": "./database/schemas",
+  "backupDir": "./database/backups",
+  "migrationPattern": "^(\\d{3})_(.+)_(up|down)\\.sql$",
+  "backupBeforeMigration": false,
+  "validateAfterMigration": true,
+  "lockTimeout": 60000,
+  "retryAttempts": 3,
+  "logLevel": "info",
+  "environments": {
+    "development": {
+      "autoExecute": true,
+      "requireConfirmation": false,
+      "allowDestructive": true,
+      "requireBackup": false
+    },
+    "staging": {
+      "autoExecute": false,
+      "requireConfirmation": true,
+      "allowDestructive": true
+    },
+    "production": {
+      "autoExecute": false,
+      "requireConfirmation": true,
+      "allowDestructive": false,
+      "requireBackup": true
+    }
+  }
+} 

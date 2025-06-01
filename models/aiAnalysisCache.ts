@@ -20,11 +20,22 @@ export interface AIAnalysisCache {
 
 // 生成缓存键（基于输入数据的hash）
 export function generateCacheKey(inputData: any): string {
-  const dataString = JSON.stringify(inputData);
+  let dataString: string;
+  try {
+    dataString = JSON.stringify(inputData);
+    // 检查序列化结果是否有效
+    if (dataString === '[object Object]' || dataString === 'undefined' || dataString === 'null') {
+      console.warn('Invalid serialization result, using fallback');
+      dataString = JSON.stringify({ fallback: Date.now() });
+    }
+  } catch (error) {
+    console.warn('Failed to serialize input data for cache key, using fallback:', error);
+    dataString = JSON.stringify({ fallback: Date.now(), error: 'serialization_failed' });
+  }
   return crypto.createHash('sha256').update(dataString).digest('hex');
 }
 
-// 创建AI分析缓存
+// 创建AI分析缓存 - 使用upsert避免重复键错误
 export async function createAIAnalysisCache(params: {
   cache_key: string;
   cache_type: AIAnalysisCache['cache_type'];
@@ -40,11 +51,49 @@ export async function createAIAnalysisCache(params: {
   const now = new Date().toISOString();
   const expiresAt = new Date(Date.now() + (params.expires_days || 30) * 24 * 60 * 60 * 1000).toISOString();
 
+  // 安全序列化 input_data
+  let inputDataString: string;
+  try {
+    const inputData = params.input_data || {};
+    inputDataString = JSON.stringify(inputData);
+    // 验证序列化结果不是 "[object Object]"
+    if (inputDataString === '[object Object]') {
+      console.warn('Input data serialization resulted in "[object Object]", using empty object');
+      inputDataString = '{}';
+    }
+  } catch (error) {
+    console.warn('Failed to serialize input_data, using empty object:', error);
+    inputDataString = '{}';
+  }
+
+  // 安全序列化 analysis_result
+  let analysisResultString: string;
+  try {
+    analysisResultString = JSON.stringify(params.analysis_result);
+    // 验证序列化结果不是 "[object Object]"
+    if (analysisResultString === '[object Object]') {
+      throw new Error('Analysis result serialization failed');
+    }
+  } catch (error) {
+    console.error('Failed to serialize analysis_result:', error);
+    throw new Error('Invalid analysis_result data');
+  }
+
+  // 使用 upsert 操作，避免重复键约束错误
   const res = await db.query(
     `INSERT INTO ac_ai_analysis_cache 
       (uuid, cache_key, cache_type, ai_model, model_version, input_data, analysis_result, confidence_score, expires_at, created_at) 
       VALUES 
       ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (cache_key) 
+      DO UPDATE SET
+        analysis_result = EXCLUDED.analysis_result,
+        confidence_score = EXCLUDED.confidence_score,
+        ai_model = EXCLUDED.ai_model,
+        model_version = EXCLUDED.model_version,
+        use_count = ac_ai_analysis_cache.use_count + 1,
+        last_used_at = NOW(),
+        expires_at = EXCLUDED.expires_at
       RETURNING *`,
     [
       uuid,
@@ -52,8 +101,8 @@ export async function createAIAnalysisCache(params: {
       params.cache_type,
       params.ai_model,
       params.model_version,
-      JSON.stringify(params.input_data || {}),
-      JSON.stringify(params.analysis_result),
+      inputDataString,
+      analysisResultString,
       params.confidence_score,
       expiresAt,
       now
@@ -61,7 +110,7 @@ export async function createAIAnalysisCache(params: {
   );
 
   if (res.rowCount === 0) {
-    throw new Error('Failed to create AI analysis cache');
+    throw new Error('Failed to create or update AI analysis cache');
   }
 
   return formatAIAnalysisCache(res.rows[0]);
@@ -224,6 +273,35 @@ export async function cleanupLowUsageCache(minUsageCount: number = 1): Promise<n
 
 // 格式化缓存数据
 function formatAIAnalysisCache(row: any): AIAnalysisCache {
+  // 安全解析 input_data
+  let inputData: Record<string, any> | undefined = undefined;
+  if (row.input_data) {
+    try {
+      // 检查是否为 "[object Object]" 这样的无效 JSON
+      if (typeof row.input_data === 'string' && row.input_data !== '[object Object]') {
+        inputData = JSON.parse(row.input_data);
+      } else if (typeof row.input_data === 'object') {
+        inputData = row.input_data;
+      }
+    } catch (error) {
+      console.warn('Failed to parse input_data, using undefined:', error);
+      inputData = undefined;
+    }
+  }
+
+  // 安全解析 analysis_result
+  let analysisResult: Record<string, any>;
+  try {
+    if (typeof row.analysis_result === 'string') {
+      analysisResult = JSON.parse(row.analysis_result);
+    } else {
+      analysisResult = row.analysis_result;
+    }
+  } catch (error) {
+    console.error('Failed to parse analysis_result:', error);
+    throw new Error('Invalid analysis_result data in cache');
+  }
+
   return {
     id: row.id,
     uuid: row.uuid,
@@ -231,8 +309,8 @@ function formatAIAnalysisCache(row: any): AIAnalysisCache {
     cache_type: row.cache_type,
     ai_model: row.ai_model,
     model_version: row.model_version,
-    input_data: row.input_data ? JSON.parse(row.input_data) : undefined,
-    analysis_result: JSON.parse(row.analysis_result),
+    input_data: inputData,
+    analysis_result: analysisResult,
     confidence_score: row.confidence_score,
     use_count: row.use_count || 1,
     last_used_at: row.last_used_at,

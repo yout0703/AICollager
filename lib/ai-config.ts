@@ -2,8 +2,8 @@
 export const AI_CONFIG = {
   // 模型配置
   models: {
-    primary: process.env.GEMINI_MODEL || 'gemini-pro-vision',
-    fallback: process.env.GEMINI_FALLBACK_MODEL || 'gemini-pro',
+    primary: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
+    fallback: process.env.GEMINI_FALLBACK_MODEL || 'gemini-1.5-pro',
   },
   
   // 每日限制

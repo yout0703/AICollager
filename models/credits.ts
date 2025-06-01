@@ -364,6 +364,20 @@ export async function cleanupExpiredInvitations(): Promise<number> {
 
 // 格式化积分交易数据
 function formatCreditTransaction(row: any): CreditTransaction {
+  let metadata = undefined;
+  if (row.metadata) {
+    if (typeof row.metadata === 'string') {
+      try {
+        metadata = JSON.parse(row.metadata);
+      } catch (e) {
+        console.warn('Failed to parse metadata as JSON:', e);
+        metadata = undefined;
+      }
+    } else if (typeof row.metadata === 'object') {
+      metadata = row.metadata;
+    }
+  }
+
   return {
     id: row.id,
     uuid: row.uuid,
@@ -375,13 +389,27 @@ function formatCreditTransaction(row: any): CreditTransaction {
     description: row.description,
     related_entity_type: row.related_entity_type,
     related_entity_id: row.related_entity_id,
-    metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+    metadata: metadata,
     created_at: row.created_at
   };
 }
 
 // 格式化邀请数据
 function formatInvitation(row: any): Invitation {
+  let metadata = undefined;
+  if (row.metadata) {
+    if (typeof row.metadata === 'string') {
+      try {
+        metadata = JSON.parse(row.metadata);
+      } catch (e) {
+        console.warn('Failed to parse invitation metadata as JSON:', e);
+        metadata = undefined;
+      }
+    } else if (typeof row.metadata === 'object') {
+      metadata = row.metadata;
+    }
+  }
+
   return {
     id: row.id,
     uuid: row.uuid,
@@ -396,7 +424,7 @@ function formatInvitation(row: any): Invitation {
     clicked_at: row.clicked_at,
     registered_at: row.registered_at,
     reward_given_at: row.reward_given_at,
-    metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+    metadata: metadata,
     created_at: row.created_at,
     updated_at: row.updated_at,
     expires_at: row.expires_at

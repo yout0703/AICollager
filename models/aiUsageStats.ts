@@ -51,10 +51,24 @@ export async function createOrUpdateDailyAIStats(params: {
   const date = params.date || new Date().toISOString().split('T')[0];
   const now = new Date().toISOString();
   
+  // 数值安全化处理函数
+  const safeNumber = (value: any, defaultValue: number = 0): number => {
+    if (typeof value !== 'number' || isNaN(value) || !isFinite(value)) {
+      return defaultValue;
+    }
+    return value;
+  };
+
+  // 安全的小数格式化（保留4位小数，符合数据库DECIMAL(10,4)格式）
+  const safeDecimal = (value: any, defaultValue: number = 0, precision: number = 4): number => {
+    const num = safeNumber(value, defaultValue);
+    return Math.round(num * Math.pow(10, precision)) / Math.pow(10, precision);
+  };
+
   // 先尝试查找当日记录
   const existingRes = await db.query(
     `SELECT * FROM ac_ai_usage_stats 
-     WHERE date = $1 AND stat_type = 'daily' 
+     WHERE date = $1 
      LIMIT 1`,
     [date]
   );
@@ -62,16 +76,16 @@ export async function createOrUpdateDailyAIStats(params: {
   if (existingRes.rowCount && existingRes.rowCount > 0) {
     // 更新现有记录
     const existing = existingRes.rows[0];
-    const newTotalRequests = existing.total_requests + (params.increment_requests || 0);
-    const newSuccessful = existing.successful_requests + (params.increment_successful || 0);
-    const newFailed = existing.failed_requests + (params.increment_failed || 0);
-    const newCached = existing.cached_requests + (params.increment_cached || 0);
-    const newImageAnalysis = existing.image_analysis_count + (params.increment_image_analysis || 0);
-    const newLayoutSuggestion = existing.layout_suggestion_count + (params.increment_layout_suggestion || 0);
-    const newIconRecommendation = existing.icon_recommendation_count + (params.increment_icon_recommendation || 0);
-    const newCost = existing.estimated_cost + (params.add_cost || 0);
-    const newTotalTime = existing.total_processing_time + (params.add_response_time || 0);
-    const newAvgTime = newTotalRequests > 0 ? newTotalTime / newTotalRequests : 0;
+    const newTotalRequests = safeNumber(existing.total_requests) + safeNumber(params.increment_requests);
+    const newSuccessful = safeNumber(existing.successful_requests) + safeNumber(params.increment_successful);
+    const newFailed = safeNumber(existing.failed_requests) + safeNumber(params.increment_failed);
+    const newCached = safeNumber(existing.cached_requests) + safeNumber(params.increment_cached);
+    const newImageAnalysis = safeNumber(existing.image_analysis_count) + safeNumber(params.increment_image_analysis);
+    const newLayoutSuggestion = safeNumber(existing.layout_suggestion_count) + safeNumber(params.increment_layout_suggestion);
+    const newIconRecommendation = safeNumber(existing.icon_recommendation_count) + safeNumber(params.increment_icon_recommendation);
+    const newCost = safeDecimal(existing.estimated_cost) + safeDecimal(params.add_cost);
+    const newTotalTime = safeDecimal(existing.total_processing_time, 0, 2) + safeDecimal(params.add_response_time, 0, 2);
+    const newAvgTime = newTotalRequests > 0 ? safeDecimal(newTotalTime / newTotalRequests, 0, 2) : 0;
     
     const updateRes = await db.query(
       `UPDATE ac_ai_usage_stats 
@@ -111,30 +125,31 @@ export async function createOrUpdateDailyAIStats(params: {
     
   } else {
     // 创建新记录
-    const uuid = uuidv4();
-    const totalRequests = params.increment_requests || 0;
-    const responseTime = params.add_response_time || 0;
-    const avgResponseTime = totalRequests > 0 ? responseTime / totalRequests : 0;
+    const totalRequests = safeNumber(params.increment_requests);
+    const responseTime = safeDecimal(params.add_response_time, 0, 2);
+    const avgResponseTime = totalRequests > 0 ? safeDecimal(responseTime / totalRequests, 0, 2) : 0;
+    const cost = safeDecimal(params.add_cost);
     
     const createRes = await db.query(
       `INSERT INTO ac_ai_usage_stats 
-        (uuid, date, stat_type, total_requests, successful_requests, failed_requests, cached_requests, 
+        (uuid, date, total_requests, successful_requests, failed_requests, cached_requests,
          image_analysis_count, layout_suggestion_count, icon_recommendation_count, 
          estimated_cost, cost_currency, avg_response_time, total_processing_time, metadata, created_at, updated_at) 
         VALUES 
-        ($1, $2, 'daily', $3, $4, $5, $6, $7, $8, $9, $10, 'USD', $11, $12, $13, $14, $15)
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING *`,
       [
-        uuid,
+        uuidv4(),
         date,
         totalRequests,
-        params.increment_successful || 0,
-        params.increment_failed || 0,
-        params.increment_cached || 0,
-        params.increment_image_analysis || 0,
-        params.increment_layout_suggestion || 0,
-        params.increment_icon_recommendation || 0,
-        params.add_cost || 0,
+        safeNumber(params.increment_successful),
+        safeNumber(params.increment_failed),
+        safeNumber(params.increment_cached),
+        safeNumber(params.increment_image_analysis),
+        safeNumber(params.increment_layout_suggestion),
+        safeNumber(params.increment_icon_recommendation),
+        cost,
+        'USD',
         avgResponseTime,
         responseTime,
         JSON.stringify(params.metadata || {}),
@@ -202,16 +217,15 @@ export async function recordAIRequest(params: {
 // 获取指定日期范围的统计
 export async function getAIStatsInRange(
   startDate: string,
-  endDate: string,
-  statType: 'daily' | 'weekly' | 'monthly' = 'daily'
+  endDate: string
 ): Promise<AIUsageStats[]> {
   const db = getDb();
   
   const res = await db.query(
     `SELECT * FROM ac_ai_usage_stats 
-     WHERE date >= $1 AND date <= $2 AND stat_type = $3 
+     WHERE date >= $1 AND date <= $2 
      ORDER BY date ASC`,
-    [startDate, endDate, statType]
+    [startDate, endDate]
   );
   
   return res.rows.map(formatAIUsageStats);
@@ -220,7 +234,7 @@ export async function getAIStatsInRange(
 // 获取今日统计
 export async function getTodayAIStats(): Promise<AIUsageStats | null> {
   const today = new Date().toISOString().split('T')[0];
-  const stats = await getAIStatsInRange(today, today, 'daily');
+  const stats = await getAIStatsInRange(today, today);
   return stats.length > 0 ? stats[0] : null;
 }
 
@@ -253,10 +267,10 @@ export async function getGlobalAIStatsSummary(days: number = 30): Promise<{
       COUNT(*) as active_days,
       MAX(total_requests) as peak_count,
       (SELECT date FROM ac_ai_usage_stats 
-       WHERE date >= $1 AND date <= $2 AND stat_type = 'daily' 
+       WHERE date >= $1 AND date <= $2 
        ORDER BY total_requests DESC LIMIT 1) as peak_date
     FROM ac_ai_usage_stats 
-    WHERE date >= $1 AND date <= $2 AND stat_type = 'daily'
+    WHERE date >= $1 AND date <= $2
   `, [startDate, endDate]);
   
   const row = res.rows[0];
@@ -297,9 +311,9 @@ export async function cleanupOldAIStats(keepDays: number = 90): Promise<number> 
 function formatAIUsageStats(row: any): AIUsageStats {
   return {
     id: row.id,
-    uuid: row.uuid,
+    uuid: row.uuid || '',
     date: row.date,
-    stat_type: row.stat_type,
+    stat_type: 'daily', // 固定为daily，因为表中没有这个字段
     total_requests: row.total_requests || 0,
     successful_requests: row.successful_requests || 0,
     failed_requests: row.failed_requests || 0,
@@ -311,8 +325,8 @@ function formatAIUsageStats(row: any): AIUsageStats {
     cost_currency: row.cost_currency || 'USD',
     avg_response_time: parseFloat(row.avg_response_time || '0'),
     total_processing_time: parseFloat(row.total_processing_time || '0'),
-    metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
+    metadata: row.metadata || undefined,
     created_at: row.created_at,
-    updated_at: row.updated_at
+    updated_at: row.updated_at || row.created_at
   };
 } 

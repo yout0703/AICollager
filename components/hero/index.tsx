@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { Dictionary, getTranslation } from "@/lib/i18n";
 import { Sparkles, Users, Zap, ArrowRight, Play, Star, Check } from "lucide-react";
 import { InviteModal } from "@/components/invite/InviteModal";
@@ -13,10 +14,28 @@ interface HeroProps {
 
 const Hero = ({ dict, locale }: HeroProps) => {
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const { isSignedIn } = useUser();
   
   // 在组件内部创建 t 函数
   const t = (key: string): string => {
     return getTranslation(dict, key);
+  };
+
+  // 构建正确的链接
+  const getCreateLink = () => {
+    if (isSignedIn) {
+      return `/${locale}/create`;
+    } else {
+      // 如果未登录，重定向到登录页面，并设置回调URL
+      const returnUrl = encodeURIComponent(`/${locale}/create`);
+      return `/${locale}/sign-in?returnUrl=${returnUrl}`;
+    }
+  };
+
+  // 构建注册链接
+  const getSignUpLink = () => {
+    const returnUrl = encodeURIComponent(`/${locale}/create`);
+    return `/${locale}/sign-up?returnUrl=${returnUrl}`;
   };
 
   return (
@@ -81,7 +100,7 @@ const Hero = ({ dict, locale }: HeroProps) => {
             {/* 主要行动按钮 */}
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
               <Link
-                href={`/${locale}/create`}
+                href={getCreateLink()}
                 className="group inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 text-lg"
               >
                 <Sparkles className="w-5 h-5 mr-2" />

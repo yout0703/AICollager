@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import { Toaster } from "react-hot-toast";
+import UserProvider from "@/components/providers/UserProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -30,38 +31,40 @@ export default function RootLayout({
     >
       <html lang="en" suppressHydrationWarning>
         <body className={inter.className}>
-          {children}
-          <Toaster
-            position="top-center"
-            reverseOrder={false}
-            gutter={8}
-            containerClassName=""
-            containerStyle={{}}
-            toastOptions={{
-              // 默认配置
-              className: '',
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-              // 成功消息样式
-              success: {
-                duration: 3000,
+          <UserProvider>
+            {children}
+            <Toaster
+              position="top-center"
+              reverseOrder={false}
+              gutter={8}
+              containerClassName=""
+              containerStyle={{}}
+              toastOptions={{
+                // 默认配置
+                className: '',
+                duration: 4000,
                 style: {
-                  background: '#10b981',
+                  background: '#363636',
+                  color: '#fff',
                 },
-              },
-              // 错误消息样式
-              error: {
-                duration: 5000,
-                style: {
-                  background: '#ef4444',
+                // 成功消息样式
+                success: {
+                  duration: 3000,
+                  style: {
+                    background: '#10b981',
+                  },
                 },
-              },
-            }}
-          />
-          <Analytics />
+                // 错误消息样式
+                error: {
+                  duration: 5000,
+                  style: {
+                    background: '#ef4444',
+                  },
+                },
+              }}
+            />
+            <Analytics />
+          </UserProvider>
         </body>
       </html>
     </ClerkProvider>

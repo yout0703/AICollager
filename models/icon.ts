@@ -281,13 +281,14 @@ async function generateSearchSuggestions(query?: string): Promise<string[]> {
   
   // 查找相似的标签和关键词
   const res = await db.query(`
-    SELECT DISTINCT unnest(tags || ai_keywords) as suggestion 
-    FROM ac_icons 
-    WHERE is_active = true 
-    AND (
-      unnest(tags || ai_keywords) ILIKE $1 OR 
-      unnest(tags || ai_keywords) ILIKE $2
-    )
+    SELECT DISTINCT suggestion 
+    FROM (
+      SELECT unnest(tags || ai_keywords) as suggestion 
+      FROM ac_icons 
+      WHERE is_active = true
+    ) as suggestions
+    WHERE suggestion ILIKE $1 OR suggestion ILIKE $2
+    ORDER BY suggestion
     LIMIT 10
   `, [`%${query}%`, `${query}%`]);
   

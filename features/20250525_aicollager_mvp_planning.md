@@ -15,7 +15,7 @@
 - **样式**: Tailwind CSS + shadcn/ui 组件
 - **用户认证**: Clerk
 - **国际化**: 基于Next.js国际化路由
-- **存储**: AWS S3 (图片存储)
+- **存储**: Cloudflare R2 (图片存储)
 - **数据库**: PostgreSQL
 - **AI服务**: Google Gemini API
 - **部署**: Vercel
@@ -1153,7 +1153,7 @@ interface DailyLimitManager {
 #### 8.1 图片处理优化
 - **客户端压缩**: 上传前进行图片压缩
 - **渐进式加载**: 使用WebP格式和多尺寸图片
-- **CDN加速**: AWS CloudFront分发
+- **CDN加速**: Cloudflare CDN分发
 - **缓存策略**: Redis缓存常用模板和AI分析结果
 
 #### 8.2 AI服务优化
@@ -1281,12 +1281,15 @@ MAX_USER_DAILY_AI_USAGE=20
 MAX_GLOBAL_DAILY_AI_USAGE=5000
 AI_COST_ALERT_THRESHOLD=100 # USD
 
+# Cloudflare R2存储配置
+R2_ACCOUNT_ID=""
+R2_ACCESS_KEY_ID=""
+R2_SECRET_ACCESS_KEY=""
+R2_BUCKET_NAME=""
+R2_PUBLIC_URL=""  # 自定义域名或R2.dev域名
+
 # 现有配置保持不变
 POSTGRES_URL=""
-AWS_AK=""
-AWS_SK=""
-AWS_REGION=""
-AWS_BUCKET=""
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
 # ... 其他现有配置
 ```

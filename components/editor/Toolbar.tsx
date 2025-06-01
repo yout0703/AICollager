@@ -162,17 +162,18 @@ export default function Toolbar({
   }, [undo, redo, onSave, pasteElement, handleDeleteSelected]);
 
   return (
-    <div className={`flex items-center space-x-2 p-3 bg-white border-b border-gray-200 ${className}`}>
+    <div className={`flex items-center space-x-1.5 px-3 py-1.5 bg-white border-b border-gray-200 ${className}`}>
       {/* 撤销重做 */}
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center space-x-0.5">
         <Button
           variant="outline"
           size="sm"
           onClick={undo}
           disabled={!canUndo}
           title="撤销 (Ctrl+Z)"
+          className="h-7 w-7 p-0"
         >
-          <Undo2 size={16} />
+          <Undo2 size={14} />
         </Button>
         <Button
           variant="outline"
@@ -180,22 +181,24 @@ export default function Toolbar({
           onClick={redo}
           disabled={!canRedo}
           title="重做 (Ctrl+Y)"
+          className="h-7 w-7 p-0"
         >
-          <Redo2 size={16} />
+          <Redo2 size={14} />
         </Button>
       </div>
 
-      <div className="w-px h-6 bg-gray-300" />
+      <div className="w-px h-5 bg-gray-300" />
 
       {/* 添加元素 */}
-      <div className="flex items-center space-x-1">
+      <div className="flex items-center space-x-0.5">
         <Button
           variant="outline"
           size="sm"
           onClick={onAddImage}
           title="添加图片"
+          className="h-7 px-2 text-xs"
         >
-          <Image size={16} className="mr-1" />
+          <Image size={12} className="mr-1" />
           图片
         </Button>
         <Button
@@ -203,53 +206,57 @@ export default function Toolbar({
           size="sm"
           onClick={addTextElement}
           title="添加文字"
+          className="h-7 px-2 text-xs"
         >
-          <Type size={16} className="mr-1" />
+          <Type size={12} className="mr-1" />
           文字
         </Button>
         
         {/* 形状按钮组 */}
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-0.5">
           <Button
             variant="outline"
             size="sm"
             onClick={() => addShapeElement('rectangle')}
             title="添加矩形"
+            className="h-7 w-7 p-0"
           >
-            <Square size={16} />
+            <Square size={12} />
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => addShapeElement('circle')}
             title="添加圆形"
+            className="h-7 w-7 p-0"
           >
-            <Circle size={16} />
+            <Circle size={12} />
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => addShapeElement('star')}
             title="添加星形"
+            className="h-7 w-7 p-0"
           >
-            <Star size={16} />
+            <Star size={12} />
           </Button>
         </div>
       </div>
 
-      <div className="w-px h-6 bg-gray-300" />
+      <div className="w-px h-5 bg-gray-300" />
 
       {/* 选中元素操作 */}
       {selectedElement && (
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-0.5">
           <Button
             variant="outline"
             size="sm"
             onClick={handleDeleteSelected}
             title="删除选中元素 (Delete)"
+            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:border-red-300"
           >
-            <Trash2 size={16} className="mr-1" />
-            删除
+            <Trash2 size={12} />
           </Button>
         </div>
       )}
@@ -259,12 +266,12 @@ export default function Toolbar({
       
       <div className="flex items-center space-x-1">
         {/* 图层信息 */}
-        <div className="flex items-center text-sm text-gray-600">
-          <Layers size={16} className="mr-1" />
-          {state.elements.length} 个元素
+        <div className="flex items-center text-xs text-gray-500">
+          <Layers size={12} className="mr-1" />
+          {state.elements.length}
         </div>
 
-        <div className="w-px h-6 bg-gray-300" />
+        <div className="w-px h-5 bg-gray-300" />
 
         {/* 保存和导出 */}
         <Button
@@ -273,8 +280,9 @@ export default function Toolbar({
           onClick={onSave}
           title="保存 (Ctrl+S)"
           disabled={!state.isDirty}
+          className="h-7 px-2 text-xs"
         >
-          <Save size={16} className="mr-1" />
+          <Save size={12} className="mr-1" />
           保存
         </Button>
         <Button
@@ -282,8 +290,9 @@ export default function Toolbar({
           size="sm"
           onClick={onExport}
           title="导出图片"
+          className="h-7 px-2 text-xs"
         >
-          <Download size={16} className="mr-1" />
+          <Download size={12} className="mr-1" />
           导出
         </Button>
       </div>

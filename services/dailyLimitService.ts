@@ -23,8 +23,24 @@ export async function checkUserAILimit(userId: string): Promise<LimitCheckResult
   try {
     const config = getAIConfig();
     
-    // 检查用户每日限制
-    const userCheck = await checkUserDailyAILimit(userId);
+    // userId 可能是 Clerk ID，需要先获取用户的数据库 UUID
+    const { getUserInfo } = await import('@/services/userService');
+    const user = await getUserInfo(userId, 'clerk_id');
+    
+    if (!user) {
+      return {
+        allowed: false,
+        reason: '用户不存在',
+        user_limit: {
+          current: 0,
+          max: config.limits.userDailyLimit,
+          remaining: 0
+        }
+      };
+    }
+    
+    // 检查用户每日限制（使用数据库 UUID）
+    const userCheck = await checkUserDailyAILimit(user.uuid);
     
     if (!userCheck.canUse) {
       return {
@@ -154,8 +170,19 @@ export async function consumeAIUsage(userId: string): Promise<{
       };
     }
     
-    // 增加用户AI使用次数
-    const incrementSuccess = await incrementUserDailyAIUsage(userId);
+    // 获取用户的数据库 UUID
+    const { getUserInfo, incrementUserDailyAIUsage } = await import('@/services/userService');
+    const user = await getUserInfo(userId, 'clerk_id');
+    
+    if (!user) {
+      return {
+        success: false,
+        message: '用户不存在'
+      };
+    }
+    
+    // 增加用户AI使用次数（使用数据库 UUID）
+    const incrementSuccess = await incrementUserDailyAIUsage(user.uuid);
     
     if (!incrementSuccess) {
       return {

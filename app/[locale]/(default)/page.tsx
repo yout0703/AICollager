@@ -27,7 +27,7 @@ export default async function HomePage({
       <HowItWorks dict={dict} />
 
       {/* Testimonials - 社会证明 */}
-      <Testimonials dict={dict} />
+      {/* <Testimonials dict={dict} /> */}
 
       {/* Pricing Preview - 定价预览 */}
       <Pricing locale={locale} dict={dict} />

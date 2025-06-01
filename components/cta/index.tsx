@@ -15,10 +15,10 @@ export default function CTA({ dict, locale }: CTAProps) {
   return (
     <section className="text-center bg-gradient-to-r from-primary/90 to-primary rounded-2xl p-12 text-white shadow-lg">
       <h2 className="text-3xl font-bold mb-4">
-        立即开始创建精美照片拼图
+        {t('cta.title')}
       </h2>
       <p className="text-xl mb-8 max-w-2xl mx-auto">
-        无需设计经验，简单几步即可创建专业水准的照片拼图
+        {t('cta.description')}
       </p>
       <Link
         href={`/${locale}/collage`}
