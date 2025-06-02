@@ -15,6 +15,7 @@
     "db:validate": "node database/scripts/validate.js",
     "db:seed": "node database/scripts/seed.js",
     "db:reset": "node database/scripts/reset.js",
+    "supabase:setup": "node scripts/setup-supabase.js",
     "supabase:types": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > types/supabase.ts",
     "supabase:link": "supabase link",
     "supabase:push": "supabase db push",
