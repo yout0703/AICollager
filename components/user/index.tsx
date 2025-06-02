@@ -15,6 +15,7 @@ import {
 import { SignOutButton } from "@clerk/nextjs";
 import { User } from "@/types/user";
 import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 
 interface Props {
   user: User;
@@ -48,8 +49,11 @@ export default function ({ user }: Props) {
         <DropdownMenuSeparator className="md:hidden" />
 
         <DropdownMenuCheckboxItem>
-          <SignOutButton redirectUrl={window.location.href}>
-            退出登录
+          <SignOutButton>
+            <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+              <LogOut className="w-4 h-4" />
+              退出登录
+            </button>
           </SignOutButton>
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>

@@ -2,23 +2,21 @@
 import { SignUp } from "@clerk/nextjs";
 import { useParams, useSearchParams } from "next/navigation";
 
-export default function Page() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const locale = params.locale as string;
-  
-  // 获取 returnUrl 参数，如果存在则用作注册后的重定向
-  const returnUrl = searchParams.get('returnUrl');
-  const afterSignUpUrl = returnUrl || `/${locale}`;
-  
+export default function SignUpPage({
+  params,
+  searchParams,
+}: {
+  params: { locale: string };
+  searchParams: { return_url?: string };
+}) {
+  const { locale } = params;
+  const returnUrl = searchParams.return_url;
+  const fallbackRedirectUrl = returnUrl || `/${locale}`;
+
   return (
-    <div className="flex justify-center items-center min-h-screen py-12">
+    <div className="flex items-center justify-center min-h-screen">
       <SignUp 
-        routing="path"
-        path={`/${locale}/sign-up`}
-        signInUrl={`/${locale}/sign-in`}
-        redirectUrl={afterSignUpUrl}
-        afterSignUpUrl={afterSignUpUrl}
+        fallbackRedirectUrl={fallbackRedirectUrl}
       />
     </div>
   );

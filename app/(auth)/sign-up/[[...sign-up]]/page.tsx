@@ -1,13 +1,17 @@
-import { SignUp } from "@clerk/nextjs";
+import { SignUp } from '@clerk/nextjs';
 
-export default function Page() {
+export default function SignUpPage({
+  searchParams,
+}: {
+  searchParams: { return_url?: string };
+}) {
+  const returnUrl = searchParams.return_url;
+  const fallbackRedirectUrl = returnUrl || "/";
+
   return (
-    <div className="w-screen h-screen flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-screen">
       <SignUp 
-        routing="path" 
-        path="/sign-up" 
-        signInUrl="/sign-in"
-        redirectUrl="/"
+        fallbackRedirectUrl={fallbackRedirectUrl}
       />
     </div>
   );

@@ -2,21 +2,18 @@
 import { SignIn } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 
-export default function Page() {
-  const searchParams = useSearchParams();
-  
-  // 获取 returnUrl 参数，如果存在则用作登录后的重定向
-  const returnUrl = searchParams.get('returnUrl');
-  const afterSignInUrl = returnUrl || "/";
-  
+export default function SignInPage({
+  searchParams,
+}: {
+  searchParams: { return_url?: string };
+}) {
+  const returnUrl = searchParams.return_url;
+  const fallbackRedirectUrl = returnUrl || "/";
+
   return (
-    <div className="w-screen h-screen flex items-center justify-center">
+    <div className="flex items-center justify-center min-h-screen">
       <SignIn 
-        routing="path" 
-        path="/sign-in" 
-        signUpUrl="/sign-up"
-        redirectUrl={afterSignInUrl}
-        afterSignInUrl={afterSignInUrl}
+        fallbackRedirectUrl={fallbackRedirectUrl}
       />
     </div>
   );

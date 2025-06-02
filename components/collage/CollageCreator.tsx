@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { useUser, SignIn } from "@clerk/nextjs";
+import { useUser, SignIn, SignInButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Dictionary, Locale, getTranslation } from "@/lib/i18n";
 import { toastMessage } from "@/lib/toast";
@@ -623,12 +623,11 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
               </svg>
             </button>
             <div className="py-4">
-              <SignIn
-                routing="path"
-                path={`/${locale}/sign-in`}
-                signUpUrl={`/${locale}/sign-up`}
-                afterSignInUrl={`/${locale}/collage`}
-              />
+              <SignInButton 
+                mode="modal"
+                fallbackRedirectUrl={`/${locale}/collage`}
+              >
+              </SignInButton>
             </div>
           </div>
         </div>
