@@ -29,6 +29,34 @@ export default function DebugPage() {
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
+
+  // 检查访问权限
+  useEffect(() => {
+    // 在开发环境允许所有人访问
+    if (process.env.NODE_ENV === 'development') {
+      return;
+    }
+
+    // 在生产环境只允许特定邮箱访问（你可以修改这个列表）
+    const allowedEmails = [
+      'kissmykeke2020@gmail.com', // 你的邮箱
+      // 可以添加其他管理员邮箱
+    ];
+
+    if (!isLoaded) return;
+
+    if (!isSignedIn || !user?.emailAddresses?.[0]?.emailAddress) {
+      setAccessDenied(true);
+      return;
+    }
+
+    const userEmail = user.emailAddresses[0].emailAddress;
+    if (!allowedEmails.includes(userEmail)) {
+      setAccessDenied(true);
+      return;
+    }
+  }, [isLoaded, isSignedIn, user]);
 
   const fetchDebugInfo = async () => {
     setLoading(true);
@@ -51,8 +79,10 @@ export default function DebugPage() {
   };
 
   useEffect(() => {
-    fetchDebugInfo();
-  }, []);
+    if (!accessDenied) {
+      fetchDebugInfo();
+    }
+  }, [accessDenied]);
 
   const testUserSetup = async () => {
     if (!isSignedIn) {
@@ -96,9 +126,31 @@ export default function DebugPage() {
     }
   };
 
+  // 访问被拒绝的页面
+  if (accessDenied) {
+    return (
+      <div className="container mx-auto p-6 max-w-2xl">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center">
+          <h1 className="text-2xl font-bold text-red-800 mb-4">访问被拒绝</h1>
+          <p className="text-red-600 mb-4">
+            此页面仅限管理员访问。
+          </p>
+          <p className="text-sm text-red-500">
+            如果您是管理员，请确保您已登录正确的账户。
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">系统调试信息</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">系统调试信息</h1>
+        <div className="text-sm text-gray-500">
+          环境: {process.env.NODE_ENV}
+        </div>
+      </div>
       
       {/* 用户信息 */}
       <div className="bg-white rounded-lg shadow p-6 mb-6">

@@ -1,89 +1,148 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDatabaseType, getSupabaseClient, getServerSupabaseClient } from '@/models/db';
+import { createClient } from '@supabase/supabase-js';
+import { auth } from '@clerk/nextjs/server';
 
-export async function GET(req: NextRequest) {
-  console.log('🔄 [DB_STATUS] 开始数据库状态检查');
-  
+// 检查是否允许访问调试 API
+function isDebugAccessAllowed(userId?: string | null): boolean {
+  // 在开发环境允许所有人访问
+  if (process.env.NODE_ENV === 'development') {
+    return true;
+  }
+
+  // 在生产环境需要特定的环境变量或用户权限
+  const debugEnabled = process.env.ENABLE_DEBUG_API === 'true';
+  if (!debugEnabled) {
+    return false;
+  }
+
+  // 可以添加更多的权限检查逻辑
+  return true;
+}
+
+export async function GET(request: NextRequest) {
   try {
-    // 检查环境变量
-    const envCheck = {
-      NODE_ENV: process.env.NODE_ENV,
-      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      hasDatabaseUrl: !!process.env.DATABASE_URL,
-      hasClerkSecretKey: !!process.env.CLERK_SECRET_KEY,
-      hasClerkPublishableKey: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 
-        process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30) + '...' : 'Not set'
+    // 获取用户认证信息
+    const { userId } = await auth();
+    
+    // 检查访问权限
+    if (!isDebugAccessAllowed(userId)) {
+      return NextResponse.json(
+        { error: '调试 API 在生产环境中被禁用' },
+        { status: 403 }
+      );
+    }
+
+    console.log('🔄 [DB_STATUS] 开始数据库状态检查');
+    
+    const debugInfo = {
+      timestamp: new Date().toISOString(),
+      environment: {
+        NODE_ENV: process.env.NODE_ENV || 'unknown',
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+        hasDatabaseUrl: !!process.env.DATABASE_URL,
+        hasClerkSecretKey: !!process.env.CLERK_SECRET_KEY,
+        hasClerkPublishableKey: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL 
+          ? `${process.env.NEXT_PUBLIC_SUPABASE_URL.substring(0, 30)}...` 
+          : 'N/A',
+      },
+      database: {
+        type: 'Supabase',
+        clientConnection: false,
+        serverConnection: false,
+        error: null as string | null,
+      },
+      status: 'unknown' as 'healthy' | 'unhealthy' | 'unknown'
     };
-    
-    console.log('🔍 [DB_STATUS] 环境变量检查:', envCheck);
-    
-    // 检查数据库类型
-    const dbType = getDatabaseType();
-    console.log('🔍 [DB_STATUS] 数据库类型:', dbType);
-    
-    const dbStatus = {
-      type: dbType,
-      clientConnection: false,
-      serverConnection: false,
-      error: null as string | null
-    };
-    
-    if (dbType === 'supabase') {
+
+    // 测试客户端连接（使用 anon key）
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       try {
-        // 测试客户端连接
-        const clientSupabase = getSupabaseClient();
-        if (clientSupabase) {
-          console.log('✅ [DB_STATUS] Supabase 客户端创建成功');
-          dbStatus.clientConnection = true;
-        }
+        console.log('🔍 [DEBUG API] 测试客户端连接');
+        const supabaseClient = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        );
         
-        // 测试服务端连接
-        const serverSupabase = getServerSupabaseClient();
-        if (serverSupabase) {
-          console.log('✅ [DB_STATUS] Supabase 服务端客户端创建成功');
-          
-          // 尝试简单查询 - 使用正确的表名 ac_users
-          const { data, error } = await serverSupabase
-            .from('ac_users')
-            .select('count')
-            .limit(1);
-            
-          if (error) {
-            console.log('⚠️ [DB_STATUS] Supabase 查询测试失败:', error);
-            dbStatus.error = error.message;
-          } else {
-            console.log('✅ [DB_STATUS] Supabase 查询测试成功');
-            dbStatus.serverConnection = true;
-          }
+        const { data, error } = await supabaseClient
+          .from('ac_users')
+          .select('count')
+          .limit(1);
+        
+        if (error) {
+          console.log('⚠️ [DEBUG API] 客户端连接错误:', error.message);
+          debugInfo.database.error = `客户端连接错误: ${error.message}`;
+        } else {
+          console.log('✅ [DEBUG API] 客户端连接成功');
+          debugInfo.database.clientConnection = true;
         }
-      } catch (error) {
-        console.error('❌ [DB_STATUS] Supabase 连接测试失败:', error);
-        dbStatus.error = error instanceof Error ? error.message : String(error);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.log('❌ [DEBUG API] 客户端连接异常:', errorMsg);
+        debugInfo.database.error = `客户端连接异常: ${errorMsg}`;
       }
     }
+
+    // 测试服务端连接（使用 service role key）
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        console.log('🔍 [DEBUG API] 测试服务端连接');
+        const supabaseAdmin = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY,
+          {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false
+            }
+          }
+        );
+        
+        const { data, error } = await supabaseAdmin
+          .from('ac_users')
+          .select('count')
+          .limit(1);
+        
+        if (error) {
+          console.log('⚠️ [DEBUG API] 服务端连接错误:', error.message);
+          if (!debugInfo.database.error) {
+            debugInfo.database.error = `服务端连接错误: ${error.message}`;
+          }
+        } else {
+          console.log('✅ [DEBUG API] 服务端连接成功');
+          debugInfo.database.serverConnection = true;
+        }
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        console.log('❌ [DEBUG API] 服务端连接异常:', errorMsg);
+        if (!debugInfo.database.error) {
+          debugInfo.database.error = `服务端连接异常: ${errorMsg}`;
+        }
+      }
+    }
+
+    // 确定整体状态
+    if (debugInfo.database.clientConnection && debugInfo.database.serverConnection) {
+      debugInfo.status = 'healthy';
+    } else if (debugInfo.database.clientConnection || debugInfo.database.serverConnection) {
+      debugInfo.status = 'unhealthy';
+    } else {
+      debugInfo.status = 'unhealthy';
+    }
+
+    console.log('🔍 [DEBUG API] 数据库状态检查完成:', debugInfo.status);
     
-    const result = {
-      timestamp: new Date().toISOString(),
-      environment: envCheck,
-      database: dbStatus,
-      status: dbStatus.clientConnection && dbStatus.serverConnection ? 'healthy' : 'error'
-    };
-    
-    console.log('📊 [DB_STATUS] 最终状态:', result);
-    
-    return NextResponse.json(result);
-    
+    return NextResponse.json(debugInfo);
   } catch (error) {
-    console.error('❌ [DB_STATUS] 状态检查失败:', error);
-    
-    return NextResponse.json({
-      timestamp: new Date().toISOString(),
-      status: 'error',
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    }, { status: 500 });
+    console.error('❌ [DEBUG API] 检查数据库状态时发生错误:', error);
+    return NextResponse.json(
+      { 
+        error: '检查数据库状态时发生错误',
+        details: error instanceof Error ? error.message : String(error)
+      },
+      { status: 500 }
+    );
   }
 } 

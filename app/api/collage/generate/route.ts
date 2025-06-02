@@ -3,8 +3,14 @@ import { auth } from '@clerk/nextjs/server';
 import { CollageService, CollageGenerationRequest } from '@/services/collageService';
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  let requestId = `req_${startTime}_${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
+    console.log(`[${requestId}] 🚀 开始处理拼图生成请求`);
+    
     const { userId } = await auth();
+    console.log(`[${requestId}] 👤 用户认证: ${userId ? '已登录' : '未登录'}`);
     
     // 解析请求数据
     const formData = await request.formData();
@@ -14,8 +20,11 @@ export async function POST(request: NextRequest) {
     const preferences = formData.get('preferences') ? 
       JSON.parse(formData.get('preferences') as string) : undefined;
     
+    console.log(`[${requestId}] 📊 请求数据: 图片数量=${files.length}, 标题=${title || '无'}`);
+    
     // 验证输入
     if (!files || files.length === 0) {
+      console.warn(`[${requestId}] ⚠️ 验证失败: 没有上传图片`);
       return NextResponse.json(
         { 
           success: false,
@@ -26,6 +35,7 @@ export async function POST(request: NextRequest) {
     }
     
     if (files.length > 10) {
+      console.warn(`[${requestId}] ⚠️ 验证失败: 图片数量超限 (${files.length})`);
       return NextResponse.json(
         { 
           success: false,
@@ -38,6 +48,7 @@ export async function POST(request: NextRequest) {
     // 验证文件类型和大小
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
+        console.warn(`[${requestId}] ⚠️ 验证失败: 非图片文件 ${file.type}`);
         return NextResponse.json(
           { 
             success: false,
@@ -49,6 +60,7 @@ export async function POST(request: NextRequest) {
       
       // 限制文件大小为10MB
       if (file.size > 10 * 1024 * 1024) {
+        console.warn(`[${requestId}] ⚠️ 验证失败: 文件过大 ${(file.size / 1024 / 1024).toFixed(2)}MB`);
         return NextResponse.json(
           { 
             success: false,
@@ -69,21 +81,14 @@ export async function POST(request: NextRequest) {
       preferences: preferences
     };
 
-    console.log('🚀 开始真正的拼图生成流程...');
-    console.log('📊 请求参数:', {
-      userId: collageRequest.user_id,
-      sessionId: collageRequest.session_id,
-      imageCount: files.length,
-      title: collageRequest.title,
-      preferences: collageRequest.preferences
-    });
+    console.log(`[${requestId}] 🎨 开始拼图生成...`);
 
     // 调用拼图服务
     const collageService = new CollageService();
     const result = await collageService.generateCollage(collageRequest);
 
     if (!result.success) {
-      console.error('❌ 拼图生成失败:', result.error);
+      console.error(`[${requestId}] ❌ 拼图生成失败:`, result.error);
       return NextResponse.json(
         { 
           success: false,
@@ -93,7 +98,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('✅ 拼图生成成功:', result.collage?.uuid);
+    const duration = Date.now() - startTime;
+    console.log(`[${requestId}] ✅ 拼图生成成功: ${result.collage?.uuid} (耗时: ${duration}ms)`);
 
     return NextResponse.json({
       success: true,
@@ -103,12 +109,18 @@ export async function POST(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('拼图生成API错误:', error);
+    const duration = Date.now() - startTime;
+    console.error(`[${requestId}] 💥 拼图生成API错误 (耗时: ${duration}ms):`, {
+      error: error instanceof Error ? error.message : '未知错误',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
     
     return NextResponse.json(
       { 
         success: false,
         error: '服务器内部错误',
+        requestId: requestId,
         details: process.env.NODE_ENV === 'development' ? 
           (error instanceof Error ? error.message : '未知错误') : undefined
       },
@@ -143,7 +155,10 @@ export async function GET(request: NextRequest) {
     });
     
   } catch (error) {
-    console.error('获取精选拼图错误:', error);
+    console.error('获取精选拼图错误:', {
+      error: error instanceof Error ? error.message : '未知错误',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     return NextResponse.json(
       { 
