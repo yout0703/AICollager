@@ -256,9 +256,9 @@ export default function DebugPage() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
         <h3 className="text-lg font-medium mb-3 text-blue-800">调试说明</h3>
         <ul className="list-disc list-inside space-y-2 text-blue-700">
-          <li>如果环境变量显示"未配置"，请检查 Vercel 项目的环境变量设置</li>
+          <li>如果环境变量显示&ldquo;未配置&rdquo;，请检查 Vercel 项目的环境变量设置</li>
           <li>如果数据库连接失败，请检查 Supabase 项目状态和 API 密钥</li>
-          <li>登录后点击"测试用户设置流程"可以测试完整的用户初始化过程</li>
+          <li>登录后点击&ldquo;测试用户设置流程&rdquo;可以测试完整的用户初始化过程</li>
           <li>所有详细日志都会输出到浏览器控制台，请打开开发者工具查看</li>
           <li>在 Vercel 后台的 Functions 标签页可以查看服务端日志</li>
         </ul>
