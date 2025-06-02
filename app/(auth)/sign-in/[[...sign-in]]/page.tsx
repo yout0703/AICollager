@@ -1,13 +1,13 @@
 "use client";
 import { SignIn } from "@clerk/nextjs";
-import { useSearchParams } from "next/navigation";
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: { return_url?: string };
+  searchParams: Promise<{ return_url?: string }>;
 }) {
-  const returnUrl = searchParams.return_url;
+  const resolvedSearchParams = await searchParams;
+  const returnUrl = resolvedSearchParams.return_url;
   const fallbackRedirectUrl = returnUrl || "/";
 
   return (

@@ -1,11 +1,12 @@
 import { SignUp } from '@clerk/nextjs';
 
-export default function SignUpPage({
+export default async function SignUpPage({
   searchParams,
 }: {
-  searchParams: { return_url?: string };
+  searchParams: Promise<{ return_url?: string }>;
 }) {
-  const returnUrl = searchParams.return_url;
+  const resolvedSearchParams = await searchParams;
+  const returnUrl = resolvedSearchParams.return_url;
   const fallbackRedirectUrl = returnUrl || "/";
 
   return (

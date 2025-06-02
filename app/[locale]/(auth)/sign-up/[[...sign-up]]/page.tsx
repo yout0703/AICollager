@@ -1,16 +1,17 @@
 "use client";
 import { SignUp } from "@clerk/nextjs";
-import { useParams, useSearchParams } from "next/navigation";
 
-export default function SignUpPage({
+export default async function SignUpPage({
   params,
   searchParams,
 }: {
-  params: { locale: string };
-  searchParams: { return_url?: string };
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ return_url?: string }>;
 }) {
-  const { locale } = params;
-  const returnUrl = searchParams.return_url;
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const { locale } = resolvedParams;
+  const returnUrl = resolvedSearchParams.return_url;
   const fallbackRedirectUrl = returnUrl || `/${locale}`;
 
   return (
