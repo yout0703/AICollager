@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     const dbType = getDatabaseType();
     console.log('🔍 [DB_STATUS] 数据库类型:', dbType);
     
-    let dbStatus = {
+    const dbStatus = {
       type: dbType,
       clientConnection: false,
       serverConnection: false,
@@ -45,9 +45,9 @@ export async function GET(req: NextRequest) {
         if (serverSupabase) {
           console.log('✅ [DB_STATUS] Supabase 服务端客户端创建成功');
           
-          // 尝试简单查询
+          // 尝试简单查询 - 使用正确的表名 ac_users
           const { data, error } = await serverSupabase
-            .from('users')
+            .from('ac_users')
             .select('count')
             .limit(1);
             
