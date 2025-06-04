@@ -1,11 +1,12 @@
+import { AiUsageStats } from '@/db/schema';
 import {
   recordAIRequest,
   getTodayAIStats,
-  getAIStatsInRange,
-  getGlobalAIStatsSummary,
-  cleanupOldAIStats,
-  AIUsageStats
-} from '@/models/aiUsageStats';
+  getAIUsageByUser,
+  getAIUsageStats,
+  cleanupOldAIStats
+} from '@/lib/repositories/aiUsageStats';
+import { AiUsageStatsModel as AIUsageStats } from '@/lib/repositories/aiUsageStats';
 
 // AI统计服务
 export class AIStatsService {
@@ -21,11 +22,11 @@ export class AIStatsService {
   }): Promise<boolean> {
     try {
       await recordAIRequest({
-        type: params.type,
+        operationType: params.type,
+        aiModel: 'gemini-2.5-flash-preview-05-20',
         success: params.success,
-        cached: params.cached,
-        response_time: params.responseTime,
-        estimated_cost: params.estimatedCost,
+        processingTimeMs: params.responseTime,
+        estimatedCost: params.estimatedCost,
         metadata: params.metadata
       });
       return true;
@@ -38,7 +39,7 @@ export class AIStatsService {
   // 获取今日统计
   static async getTodayStatistics(): Promise<{
     success: boolean;
-    stats?: AIUsageStats;
+    stats?: AiUsageStats;
     summary?: {
       total_requests: number;
       success_rate: number;
@@ -63,23 +64,23 @@ export class AIStatsService {
         };
       }
       
-      const successRate = todayStats.total_requests > 0 
-        ? (todayStats.successful_requests / todayStats.total_requests) * 100 
+      const successRate = (todayStats.totalRequests || 0) > 0 
+        ? ((todayStats.successfulRequests || 0) / (todayStats.totalRequests || 1)) * 100 
         : 0;
       
-      const cacheHitRate = todayStats.total_requests > 0 
-        ? (todayStats.cached_requests / todayStats.total_requests) * 100 
+      const cacheHitRate = (todayStats.totalRequests || 0) > 0 
+        ? ((todayStats.cachedRequests || 0) / (todayStats.totalRequests || 1)) * 100 
         : 0;
       
       return {
         success: true,
         stats: todayStats,
         summary: {
-          total_requests: todayStats.total_requests,
+          total_requests: todayStats.totalRequests || 0,
           success_rate: Math.round(successRate * 100) / 100,
           cache_hit_rate: Math.round(cacheHitRate * 100) / 100,
-          avg_response_time: Math.round(todayStats.avg_response_time),
-          estimated_cost: todayStats.estimated_cost
+          avg_response_time: Number(todayStats.avgResponseTime || 0),
+          estimated_cost: Number(todayStats.estimatedCost || 0)
         }
       };
       
@@ -98,7 +99,7 @@ export class AIStatsService {
     statType?: 'daily' | 'weekly' | 'monthly';
   }): Promise<{
     success: boolean;
-    stats?: AIUsageStats[];
+    stats?: AiUsageStats[];
     aggregated?: {
       total_requests: number;
       total_successful: number;
@@ -113,10 +114,7 @@ export class AIStatsService {
     };
   }> {
     try {
-      const stats = await getAIStatsInRange(
-        params.startDate,
-        params.endDate
-      );
+      const stats = await getAIUsageByUser(params.startDate, params.endDate);
       
       if (stats.length === 0) {
         return {
@@ -138,16 +136,16 @@ export class AIStatsService {
       }
       
       // 聚合统计
-      const totalRequests = stats.reduce((sum, s) => sum + s.total_requests, 0);
-      const totalSuccessful = stats.reduce((sum, s) => sum + s.successful_requests, 0);
-      const totalFailed = stats.reduce((sum, s) => sum + s.failed_requests, 0);
-      const totalCached = stats.reduce((sum, s) => sum + s.cached_requests, 0);
-      const totalCost = stats.reduce((sum, s) => sum + s.estimated_cost, 0);
-      const avgResponseTime = stats.reduce((sum, s) => sum + s.avg_response_time, 0) / stats.length;
+      const totalRequests = stats.reduce((sum, s) => sum + s.totalRequests, 0);
+      const totalSuccessful = stats.reduce((sum, s) => sum + s.successfulRequests, 0);
+      const totalFailed = stats.reduce((sum, s) => sum + s.failedRequests, 0);
+      const totalCached = stats.reduce((sum, s) => sum + s.cachedRequests, 0);
+      const totalCost = stats.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
+      const avgResponseTime = stats.reduce((sum, s) => sum + Number(s.avgResponseTime), 0) / stats.length;
       
       // 找到峰值日期
       const peakDay = stats.reduce((peak, current) => 
-        current.total_requests > peak.total_requests ? current : peak
+        current.totalRequests > peak.totalRequests ? current : peak
       );
       
       const successRate = totalRequests > 0 ? (totalSuccessful / totalRequests) * 100 : 0;
@@ -166,7 +164,7 @@ export class AIStatsService {
           success_rate: Math.round(successRate * 100) / 100,
           cache_hit_rate: Math.round(cacheHitRate * 100) / 100,
           peak_day: peakDay.date,
-          peak_requests: peakDay.total_requests
+          peak_requests: peakDay.totalRequests
         }
       };
       
@@ -182,34 +180,76 @@ export class AIStatsService {
   static async getGlobalSummary(days: number = 30): Promise<{
     success: boolean;
     summary?: {
-      total_requests: number;
-      successful_requests: number;
-      failed_requests: number;
-      cached_requests: number;
+      totalRequests: number;
+      successfulRequests: number;
+      failedRequests: number;
+      cachedRequests: number;
       success_rate: number;
       cache_hit_rate: number;
-      total_cost: number;
-      avg_daily_requests: number;
-      avg_response_time: number;
-      peak_usage_date: string;
-      peak_usage_count: number;
-      cost_per_request: number;
-      efficiency_score: number;
+      totalCost: number;
+      avgDailyRequests: number;
+      avgResponseTime: number;
+      peakUsageDate: string;
+      peakUsageCount: number;
+      costPerRequest: number;
+      efficiencyScore: number;
     };
   }> {
     try {
-      const summary = await getGlobalAIStatsSummary(days);
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+        .toISOString().split('T')[0];
+      
+      const stats = await getAIUsageByUser(startDate, endDate);
+      
+      if (stats.length === 0) {
+        return {
+          success: true,
+          summary: {
+            totalRequests: 0,
+            successfulRequests: 0,
+            failedRequests: 0,
+            cachedRequests: 0,
+            success_rate: 0,
+            cache_hit_rate: 0,
+            totalCost: 0,
+            avgDailyRequests: 0,
+            avgResponseTime: 0,
+            peakUsageDate: '',
+            peakUsageCount: 0,
+            costPerRequest: 0,
+            efficiencyScore: 0
+          }
+        };
+      }
+      
+      // 计算聚合数据
+      const totalRequests = stats.reduce((sum, s) => sum + s.totalRequests, 0);
+      const successfulRequests = stats.reduce((sum, s) => sum + s.successfulRequests, 0);
+      const failedRequests = stats.reduce((sum, s) => sum + s.failedRequests, 0);
+      const cachedRequests = stats.reduce((sum, s) => sum + s.cachedRequests, 0);
+      const totalCost = stats.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
+      const avgResponseTime = stats.reduce((sum, s) => sum + Number(s.avgResponseTime), 0) / stats.length;
+      
+      // 找到峰值日期
+      const peakDay = stats.reduce((peak, current) => 
+        current.totalRequests > peak.totalRequests ? current : peak
+      );
+      
+      const success_rate = totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0;
+      const cache_hit_rate = totalRequests > 0 ? (cachedRequests / totalRequests) * 100 : 0;
+      const avgDailyRequests = totalRequests / Math.max(days, 1);
       
       // 计算额外指标
-      const costPerRequest = summary.total_requests > 0 
-        ? summary.total_cost / summary.total_requests 
+      const costPerRequest = totalRequests > 0 
+        ? totalCost / totalRequests 
         : 0;
       
       // 效率分数（基于成功率、缓存命中率和响应时间）
-      const successWeight = summary.success_rate * 0.4;
-      const cacheWeight = summary.cache_hit_rate * 0.3;
-      const speedWeight = summary.avg_response_time > 0 
-        ? Math.max(0, (10000 - summary.avg_response_time) / 100) * 0.3 
+      const successWeight = success_rate * 0.4;
+      const cacheWeight = cache_hit_rate * 0.3;
+      const speedWeight = avgResponseTime > 0 
+        ? Math.max(0, (10000 - avgResponseTime) / 100) * 0.3 
         : 0;
       
       const efficiencyScore = Math.min(100, successWeight + cacheWeight + speedWeight);
@@ -217,9 +257,19 @@ export class AIStatsService {
       return {
         success: true,
         summary: {
-          ...summary,
-          cost_per_request: Math.round(costPerRequest * 10000) / 10000, // 保留4位小数
-          efficiency_score: Math.round(efficiencyScore * 100) / 100
+          totalRequests,
+          successfulRequests,
+          failedRequests,
+          cachedRequests,
+          success_rate: Math.round(success_rate * 100) / 100,
+          cache_hit_rate: Math.round(cache_hit_rate * 100) / 100,
+          totalCost: Math.round(totalCost * 100) / 100,
+          avgDailyRequests: Math.round(avgDailyRequests * 100) / 100,
+          avgResponseTime: Math.round(avgResponseTime),
+          peakUsageDate: peakDay.date,
+          peakUsageCount: peakDay.totalRequests,
+          costPerRequest: Math.round(costPerRequest * 100) / 100,
+          efficiencyScore: Math.round(efficiencyScore * 100) / 100
         }
       };
       
@@ -259,18 +309,18 @@ export class AIStatsService {
       }
       
       const stats = historyResult.stats;
-      const totalCost = stats.reduce((sum, s) => sum + s.estimated_cost, 0);
+      const totalCost = stats.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
       
       // 按类型分组成本
       const costByType: Record<string, number> = {};
       stats.forEach(stat => {
         // 假设成本按类型平均分配（实际应该有更精确的统计）
-        const typeCount = stat.image_analysis_count + stat.layout_suggestion_count + stat.icon_recommendation_count;
+        const typeCount = stat.imageAnalysisCount + stat.layoutSuggestionCount + stat.iconRecommendationCount;
         if (typeCount > 0) {
-          const costPerType = stat.estimated_cost / typeCount;
-          costByType['image_analysis'] = (costByType['image_analysis'] || 0) + (costPerType * stat.image_analysis_count);
-          costByType['layout_suggestion'] = (costByType['layout_suggestion'] || 0) + (costPerType * stat.layout_suggestion_count);
-          costByType['icon_recommendation'] = (costByType['icon_recommendation'] || 0) + (costPerType * stat.icon_recommendation_count);
+          const costPerType = Number(stat.estimatedCost) / typeCount;
+          costByType['image_analysis'] = (costByType['image_analysis'] || 0) + (costPerType * stat.imageAnalysisCount);
+          costByType['layout_suggestion'] = (costByType['layout_suggestion'] || 0) + (costPerType * stat.layoutSuggestionCount);
+          costByType['icon_recommendation'] = (costByType['icon_recommendation'] || 0) + (costPerType * stat.iconRecommendationCount);
         }
       });
       
@@ -279,8 +329,8 @@ export class AIStatsService {
       
       // 趋势分析（比较前半期和后半期）
       const midPoint = Math.floor(stats.length / 2);
-      const firstHalfCost = stats.slice(0, midPoint).reduce((sum, s) => sum + s.estimated_cost, 0);
-      const secondHalfCost = stats.slice(midPoint).reduce((sum, s) => sum + s.estimated_cost, 0);
+      const firstHalfCost = stats.slice(0, midPoint).reduce((sum, s) => sum + Number(s.estimatedCost), 0);
+      const secondHalfCost = stats.slice(midPoint).reduce((sum, s) => sum + Number(s.estimatedCost), 0);
       
       let trend: 'increasing' | 'stable' | 'decreasing' = 'stable';
       const firstHalfAvg = firstHalfCost / Math.max(midPoint, 1);
@@ -337,21 +387,21 @@ export class AIStatsService {
   // 清理旧统计数据
   static async cleanupOldStatistics(keepDays: number = 90): Promise<{
     success: boolean;
-    cleaned_count: number;
+    cleanedCount: number;
     message?: string;
   }> {
     try {
       const cleanedCount = await cleanupOldAIStats(keepDays);
       return {
         success: true,
-        cleaned_count: cleanedCount,
+        cleanedCount: cleanedCount,
         message: `清理了 ${cleanedCount} 条旧统计记录`
       };
     } catch (error) {
       console.error('Cleanup old statistics failed:', error);
       return {
         success: false,
-        cleaned_count: 0,
+        cleanedCount: 0,
         message: '清理旧统计记录失败'
       };
     }
@@ -368,9 +418,9 @@ export class AIStatsService {
       period: string;
       overview: any;
       performance: any;
-      cost_analysis: any;
+      costAnalysis: any;
       recommendations: string[];
-      generated_at: string;
+      generatedAt: string;
     };
   }> {
     try {
@@ -421,9 +471,9 @@ export class AIStatsService {
           period: `${params.startDate} 至 ${params.endDate}`,
           overview: historyResult.aggregated,
           performance: globalResult.summary,
-          cost_analysis: costResult.analysis,
+          costAnalysis: costResult.analysis,
           recommendations: [...new Set(recommendations)], // 去重
-          generated_at: new Date().toISOString()
+          generatedAt: new Date().toISOString()
         }
       };
       

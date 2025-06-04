@@ -1,3 +1,4 @@
+import { AiAnalysisCache } from '@/db/schema/ai';
 import {
   generateCacheKey,
   findAIAnalysisCache,
@@ -5,9 +6,8 @@ import {
   createAIAnalysisCache,
   cleanupExpiredAICache,
   cleanupLowUsageCache,
-  getAICacheStats,
-  AIAnalysisCache
-} from '@/models/aiAnalysisCache';
+  getAICacheStats
+} from '@/lib/repositories/aiAnalysisCache';
 
 // 缓存管理服务
 export class AICacheService {
@@ -15,8 +15,8 @@ export class AICacheService {
   // 查找单个缓存
   static async findCache(
     inputData: any,
-    cacheType: AIAnalysisCache['cache_type']
-  ): Promise<AIAnalysisCache | null> {
+    cacheType: string
+  ): Promise<AiAnalysisCache | null> {
     try {
       const cacheKey = generateCacheKey(inputData);
       const cache = await findAIAnalysisCache(cacheKey, cacheType);
@@ -30,8 +30,8 @@ export class AICacheService {
   // 批量查找缓存
   static async findMultipleCaches(
     inputDataList: any[],
-    cacheType: AIAnalysisCache['cache_type']
-  ): Promise<Record<string, AIAnalysisCache>> {
+    cacheType: string
+  ): Promise<Record<string, AiAnalysisCache>> {
     try {
       const cacheKeys = inputDataList.map(data => generateCacheKey(data));
       return await findMultipleAIAnalysisCache(cacheKeys, cacheType);
@@ -44,25 +44,25 @@ export class AICacheService {
   // 创建缓存
   static async createCache(params: {
     inputData: any;
-    cacheType: AIAnalysisCache['cache_type'];
+    cacheType: 'image_analysis' | 'layout_suggestion' | 'icon_recommendation';
     analysisResult: Record<string, any>;
     aiModel: string;
     confidenceScore?: number;
     modelVersion?: string;
     expiresDays?: number;
-  }): Promise<AIAnalysisCache | null> {
+  }): Promise<AiAnalysisCache | null> {
     try {
       const cacheKey = generateCacheKey(params.inputData);
       
       const cache = await createAIAnalysisCache({
-        cache_key: cacheKey,
-        cache_type: params.cacheType,
-        ai_model: params.aiModel,
-        model_version: params.modelVersion,
-        input_data: params.inputData,
-        analysis_result: params.analysisResult,
-        confidence_score: params.confidenceScore,
-        expires_days: params.expiresDays || 30
+        cacheKey: cacheKey,
+        cacheType: params.cacheType,
+        aiModel: params.aiModel,
+        modelVersion: params.modelVersion,
+        inputData: params.inputData,
+        analysisResult: params.analysisResult,
+        confidenceScore: params.confidenceScore,
+        expiresInDays: params.expiresDays || 30
       });
       
       return cache;
@@ -86,12 +86,16 @@ export class AICacheService {
       
       // 计算缓存效率等级
       let efficiency = 'Low';
-      if (stats.hit_rate >= 80) efficiency = 'Excellent';
-      else if (stats.hit_rate >= 60) efficiency = 'Good';
-      else if (stats.hit_rate >= 40) efficiency = 'Fair';
+      if (stats.hitRate >= 80) efficiency = 'Excellent';
+      else if (stats.hitRate >= 60) efficiency = 'Good';
+      else if (stats.hitRate >= 40) efficiency = 'Fair';
       
       return {
-        ...stats,
+        total: stats.total,
+        by_type: stats.byType,
+        by_model: {}, // 暂时不支持按模型统计
+        hit_rate: stats.hitRate,
+        total_saves: stats.totalSaves,
         cache_efficiency: efficiency
       };
     } catch (error) {
@@ -275,7 +279,7 @@ export class AICacheService {
   // 预热缓存（为常用操作创建缓存）
   static async warmupCache(commonInputs: Array<{
     inputData: any;
-    cacheType: AIAnalysisCache['cache_type'];
+    cacheType: string;
   }>): Promise<{
     success: boolean;
     warmed_count: number;

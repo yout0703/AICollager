@@ -16,7 +16,7 @@
 - **用户认证**: Clerk
 - **国际化**: 基于Next.js国际化路由
 - **存储**: Cloudflare R2 (图片存储)
-- **数据库**: PostgreSQL
+- **数据库**: PostgreSQL + Drizzle ORM
 - **AI服务**: Google Gemini API
 - **部署**: Vercel
 - **包管理**: pnpm
@@ -39,6 +39,799 @@
 
 **注意：以下为全新的数据库表结构，建议删除所有现有表后重新创建**
 
+### 6. 数据库结构完善
+
+#### 6.1 Drizzle ORM 集成方案
+
+##### 6.1.1 依赖安装和配置
+
+**安装依赖**:
+```bash
+pnpm add drizzle-orm @neondatabase/serverless
+pnpm add -D drizzle-kit @types/pg
+```
+
+**项目结构**:
+```
+db/
+├── schema/                 # 数据库表结构定义
+│   ├── users.ts           # 用户相关表
+│   ├── credits.ts         # 积分系统表
+│   ├── icons.ts           # Icon库表
+│   ├── collages.ts        # 拼图相关表
+│   ├── ai.ts              # AI服务表
+│   ├── orders.ts          # 订单表
+│   ├── system.ts          # 系统配置表
+│   └── index.ts           # 统一导出
+├── migrations/             # 数据库迁移文件
+├── seed.ts                # 初始数据填充
+└── index.ts               # 数据库连接和配置
+```
+
+**Drizzle 配置文件** (`drizzle.config.ts`):
+```typescript
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  schema: './db/schema/*',
+  out: './db/migrations',
+  dialect: 'postgresql',
+  dbCredentials: {
+    url: process.env.POSTGRES_URL!,
+  },
+  verbose: true,
+  strict: true,
+});
+```
+
+##### 6.1.2 Schema 定义
+
+**用户和认证相关表** (`db/schema/users.ts`):
+```typescript
+import { pgTable, serial, uuid, varchar, integer, boolean, timestamptz, text, inet } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { z } from 'zod';
+
+// 用户主表
+export const acUsers = pgTable('ac_users', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  clerkUserId: varchar('clerk_user_id', { length: 255 }).unique().notNull(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+  username: varchar('username', { length: 100 }),
+  displayName: varchar('display_name', { length: 255 }),
+  avatarUrl: varchar('avatar_url', { length: 500 }),
+  
+  // 积分相关
+  credits: integer('credits').default(50),
+  totalEarnedCredits: integer('total_earned_credits').default(50),
+  totalUsedCredits: integer('total_used_credits').default(0),
+  
+  // 邀请相关
+  inviteCode: varchar('invite_code', { length: 50 }).unique().notNull(),
+  invitedByCode: varchar('invited_by_code', { length: 50 }),
+  invitedByUserId: uuid('invited_by_user_id'),
+  
+  // AI使用限制
+  dailyAiUsage: integer('daily_ai_usage').default(0),
+  lastAiUsageDate: varchar('last_ai_usage_date', { length: 10 }), // YYYY-MM-DD
+  totalAiUsage: integer('total_ai_usage').default(0),
+  
+  // 用户设置
+  language: varchar('language', { length: 10 }).default('zh-CN'),
+  timezone: varchar('timezone', { length: 50 }).default('Asia/Shanghai'),
+  emailNotifications: boolean('email_notifications').default(true),
+  
+  // 状态和时间
+  status: varchar('status', { length: 20 }).default('active'),
+  lastLoginAt: timestamptz('last_login_at'),
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// 用户会话表
+export const acUserSessions = pgTable('ac_user_sessions', {
+  id: serial('id').primaryKey(),
+  sessionId: varchar('session_id', { length: 100 }).unique().notNull(),
+  userId: uuid('user_id'),
+  trialUsageCount: integer('trial_usage_count').default(0),
+  ipAddress: varchar('ip_address', { length: 45 }), // 支持IPv6
+  userAgent: text('user_agent'),
+  lastActivityAt: timestamptz('last_activity_at').defaultNow(),
+  createdAt: timestamptz('created_at').defaultNow(),
+  expiresAt: timestamptz('expires_at'),
+});
+
+// Zod 验证 Schema
+export const insertUserSchema = createInsertSchema(acUsers, {
+  email: z.string().email('邮箱格式不正确'),
+  credits: z.number().min(0, '积分不能为负数'),
+  language: z.enum(['zh-CN', 'en-US', 'ja-JP', 'ko-KR']),
+});
+
+export const selectUserSchema = createSelectSchema(acUsers);
+
+export type User = typeof acUsers.$inferSelect;
+export type NewUser = typeof acUsers.$inferInsert;
+```
+
+**积分系统表** (`db/schema/credits.ts`):
+```typescript
+import { pgTable, serial, uuid, integer, varchar, text, jsonb, timestamptz } from 'drizzle-orm/pg-core';
+import { acUsers } from './users';
+
+// 积分流水表
+export const acCreditTransactions = pgTable('ac_credit_transactions', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  userId: uuid('user_id').notNull().references(() => acUsers.uuid, { onDelete: 'cascade' }),
+  
+  // 交易信息
+  amount: integer('amount').notNull(), // 正数为获得，负数为消耗
+  balanceAfter: integer('balance_after').notNull(),
+  transactionType: varchar('transaction_type', { length: 50 }).notNull(),
+  
+  // 描述和关联
+  title: varchar('title', { length: 255 }),
+  description: text('description'),
+  relatedEntityType: varchar('related_entity_type', { length: 50 }),
+  relatedEntityId: uuid('related_entity_id'),
+  
+  // 元数据
+  metadata: jsonb('metadata'),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+});
+
+// 邀请记录表
+export const acInvitations = pgTable('ac_invitations', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  // 邀请关系
+  inviterId: uuid('inviter_id').notNull().references(() => acUsers.uuid, { onDelete: 'cascade' }),
+  inviteeId: uuid('invitee_id').references(() => acUsers.uuid, { onDelete: 'set null' }),
+  inviteCode: varchar('invite_code', { length: 50 }).notNull(),
+  
+  // 邀请信息
+  email: varchar('email', { length: 255 }),
+  invitationMethod: varchar('invitation_method', { length: 20 }).default('link'),
+  
+  // 奖励信息
+  inviterReward: integer('inviter_reward').default(20),
+  inviteeReward: integer('invitee_reward').default(20),
+  
+  // 状态追踪
+  status: varchar('status', { length: 20 }).default('pending'),
+  clickedAt: timestamptz('clicked_at'),
+  registeredAt: timestamptz('registered_at'),
+  rewardGivenAt: timestamptz('reward_given_at'),
+  
+  // 元数据
+  metadata: jsonb('metadata'),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+  expiresAt: timestamptz('expires_at'),
+});
+
+export type CreditTransaction = typeof acCreditTransactions.$inferSelect;
+export type NewCreditTransaction = typeof acCreditTransactions.$inferInsert;
+export type Invitation = typeof acInvitations.$inferSelect;
+export type NewInvitation = typeof acInvitations.$inferInsert;
+```
+
+**Icon库表** (`db/schema/icons.ts`):
+```typescript
+import { pgTable, serial, uuid, varchar, text, integer, boolean, timestamptz, jsonb } from 'drizzle-orm/pg-core';
+
+// Icon分类表
+export const acIconCategories = pgTable('ac_icon_categories', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  categoryId: varchar('category_id', { length: 100 }).unique().notNull(),
+  categoryName: varchar('category_name', { length: 255 }).notNull(),
+  parentCategoryId: varchar('parent_category_id', { length: 100 }),
+  
+  description: text('description'),
+  aiDescription: text('ai_description'),
+  aiKeywords: jsonb('ai_keywords').$type<string[]>(),
+  
+  displayOrder: integer('display_order').default(0),
+  iconColor: varchar('icon_color', { length: 20 }).default('#666666'),
+  isActive: boolean('is_active').default(true),
+  
+  iconCount: integer('icon_count').default(0),
+  usageCount: integer('usage_count').default(0),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// Icon库表
+export const acIcons = pgTable('ac_icons', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  iconId: varchar('icon_id', { length: 100 }).unique().notNull(),
+  iconName: varchar('icon_name', { length: 255 }).notNull(),
+  categoryId: varchar('category_id', { length: 100 }).notNull(),
+  
+  svgContent: text('svg_content').notNull(),
+  style: varchar('style', { length: 50 }).default('outline'),
+  
+  sizeVariants: jsonb('size_variants').$type<string[]>().default(['16', '24', '32', '48', '64']),
+  colorVariants: jsonb('color_variants').$type<string[]>().default(['currentColor']),
+  
+  tags: jsonb('tags').$type<string[]>().default([]),
+  aiKeywords: jsonb('ai_keywords').$type<string[]>().default([]),
+  semanticMeaning: text('semantic_meaning'),
+  aiDescription: text('ai_description'),
+  
+  popularityScore: integer('popularity_score').default(0),
+  usageCount: integer('usage_count').default(0),
+  lastUsedAt: timestamptz('last_used_at'),
+  
+  isActive: boolean('is_active').default(true),
+  isPremium: boolean('is_premium').default(false),
+  
+  source: varchar('source', { length: 100 }),
+  version: varchar('version', { length: 20 }).default('1.0.0'),
+  license: varchar('license', { length: 100 }).default('MIT'),
+  metadata: jsonb('metadata'),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+export type IconCategory = typeof acIconCategories.$inferSelect;
+export type NewIconCategory = typeof acIconCategories.$inferInsert;
+export type Icon = typeof acIcons.$inferSelect;
+export type NewIcon = typeof acIcons.$inferInsert;
+```
+
+**拼图相关表** (`db/schema/collages.ts`):
+```typescript
+import { pgTable, serial, uuid, varchar, text, integer, boolean, timestamptz, jsonb, decimal } from 'drizzle-orm/pg-core';
+import { acUsers } from './users';
+
+// 拼图模板表
+export const acTemplates = pgTable('ac_templates', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  templateId: varchar('template_id', { length: 100 }).unique().notNull(),
+  templateName: varchar('template_name', { length: 255 }).notNull(),
+  description: text('description'),
+  
+  minImages: integer('min_images').notNull().default(2),
+  maxImages: integer('max_images').notNull().default(9),
+  aspectRatios: jsonb('aspect_ratios').$type<string[]>().default(['1:1', '4:3', '16:9']),
+  
+  canvasConfig: jsonb('canvas_config').notNull(),
+  layoutStructure: jsonb('layout_structure').notNull(),
+  
+  category: varchar('category', { length: 100 }).notNull(),
+  style: varchar('style', { length: 100 }),
+  tags: jsonb('tags').$type<string[]>().default([]),
+  
+  aiKeywords: jsonb('ai_keywords').$type<string[]>().default([]),
+  aiDescription: text('ai_description'),
+  aiSuitableThemes: jsonb('ai_suitable_themes').$type<string[]>().default([]),
+  
+  isPremium: boolean('is_premium').default(false),
+  creditsCost: integer('credits_cost').default(0),
+  
+  usageCount: integer('usage_count').default(0),
+  rating: decimal('rating', { precision: 3, scale: 2 }).default('0.00'),
+  ratingCount: integer('rating_count').default(0),
+  
+  isActive: boolean('is_active').default(true),
+  isFeatured: boolean('is_featured').default(false),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// 拼图主表
+export const acCollages = pgTable('ac_collages', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  userId: uuid('user_id').references(() => acUsers.uuid, { onDelete: 'set null' }),
+  sessionId: varchar('session_id', { length: 100 }),
+  title: varchar('title', { length: 255 }),
+  description: text('description'),
+  
+  canvasConfig: jsonb('canvas_config').notNull(),
+  elements: jsonb('elements').notNull(),
+  metadata: jsonb('metadata').notNull(),
+  
+  templateId: varchar('template_id', { length: 100 }),
+  generatedStyle: varchar('generated_style', { length: 100 }),
+  userPreferences: jsonb('user_preferences'),
+  
+  thumbnailUrl: varchar('thumbnail_url', { length: 500 }),
+  previewUrl: varchar('preview_url', { length: 500 }),
+  fullImageUrl: varchar('full_image_url', { length: 500 }),
+  
+  aiModel: varchar('ai_model', { length: 100 }),
+  aiProcessingTime: integer('ai_processing_time'),
+  creditsUsed: integer('credits_used').default(5),
+  
+  status: varchar('status', { length: 20 }).default('draft'),
+  generationStatus: varchar('generation_status', { length: 20 }).default('pending'),
+  
+  visibility: varchar('visibility', { length: 20 }).default('private'),
+  isFeatured: boolean('is_featured').default(false),
+  downloadCount: integer('download_count').default(0),
+  viewCount: integer('view_count').default(0),
+  
+  version: integer('version').default(1),
+  parentCollageId: uuid('parent_collage_id'),
+  
+  startedAt: timestamptz('started_at').defaultNow(),
+  completedAt: timestamptz('completed_at'),
+  lastEditedAt: timestamptz('last_edited_at').defaultNow(),
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// 拼图图片表
+export const acCollageImages = pgTable('ac_collage_images', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  collageId: uuid('collage_id').notNull().references(() => acCollages.uuid, { onDelete: 'cascade' }),
+  imageIndex: integer('image_index').notNull(),
+  elementId: varchar('element_id', { length: 100 }),
+  
+  originalUrl: varchar('original_url', { length: 500 }).notNull(),
+  processedUrl: varchar('processed_url', { length: 500 }),
+  fileName: varchar('file_name', { length: 255 }),
+  fileSize: integer('file_size'),
+  mimeType: varchar('mime_type', { length: 100 }),
+  
+  originalDimensions: jsonb('original_dimensions'),
+  processedDimensions: jsonb('processed_dimensions'),
+  
+  aiAnalysis: jsonb('ai_analysis'),
+  dominantColors: jsonb('dominant_colors'),
+  contentTags: jsonb('content_tags').$type<string[]>(),
+  
+  processingStatus: varchar('processing_status', { length: 20 }).default('uploaded'),
+  
+  uploadedAt: timestamptz('uploaded_at').defaultNow(),
+  createdAt: timestamptz('created_at').defaultNow(),
+});
+
+export type Template = typeof acTemplates.$inferSelect;
+export type NewTemplate = typeof acTemplates.$inferInsert;
+export type Collage = typeof acCollages.$inferSelect;
+export type NewCollage = typeof acCollages.$inferInsert;
+export type CollageImage = typeof acCollageImages.$inferSelect;
+export type NewCollageImage = typeof acCollageImages.$inferInsert;
+```
+
+##### 6.1.3 数据库连接和查询服务
+
+**数据库连接** (`db/index.ts`):
+```typescript
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import * as schema from './schema';
+
+const sql = neon(process.env.POSTGRES_URL!);
+export const db = drizzle(sql, { schema });
+
+export type Database = typeof db;
+export { schema };
+```
+
+**用户服务** (`lib/services/userService.ts`):
+```typescript
+import { db } from '@/db';
+import { acUsers, acCreditTransactions, type User, type NewUser } from '@/db/schema/users';
+import { eq, and, sql } from 'drizzle-orm';
+import { generateInviteCode } from '@/lib/utils/inviteCode';
+
+export class UserService {
+  async createUser(clerkUserId: string, email: string, userData: Partial<NewUser> = {}): Promise<User> {
+    const inviteCode = generateInviteCode();
+    
+    const [user] = await db.insert(acUsers).values({
+      clerkUserId,
+      email,
+      inviteCode,
+      ...userData,
+    }).returning();
+    
+    return user;
+  }
+  
+  async getUserByClerkId(clerkUserId: string): Promise<User | null> {
+    const [user] = await db
+      .select()
+      .from(acUsers)
+      .where(eq(acUsers.clerkUserId, clerkUserId))
+      .limit(1);
+    
+    return user || null;
+  }
+  
+  async getUserByInviteCode(inviteCode: string): Promise<User | null> {
+    const [user] = await db
+      .select()
+      .from(acUsers)
+      .where(eq(acUsers.inviteCode, inviteCode))
+      .limit(1);
+    
+    return user || null;
+  }
+  
+  async updateUserCredits(userId: string, amount: number, transactionType: string, metadata?: any): Promise<void> {
+    await db.transaction(async (tx) => {
+      // 更新用户积分
+      const [user] = await tx
+        .update(acUsers)
+        .set({
+          credits: sql`${acUsers.credits} + ${amount}`,
+          totalEarnedCredits: amount > 0 ? sql`${acUsers.totalEarnedCredits} + ${amount}` : acUsers.totalEarnedCredits,
+          totalUsedCredits: amount < 0 ? sql`${acUsers.totalUsedCredits} + ${Math.abs(amount)}` : acUsers.totalUsedCredits,
+          updatedAt: new Date(),
+        })
+        .where(eq(acUsers.uuid, userId))
+        .returning({ credits: acUsers.credits });
+      
+      // 记录积分流水
+      await tx.insert(acCreditTransactions).values({
+        userId,
+        amount,
+        balanceAfter: user.credits,
+        transactionType,
+        metadata,
+      });
+    });
+  }
+  
+  async checkDailyAiUsage(userId: string): Promise<{ canUse: boolean; remaining: number }> {
+    const today = new Date().toISOString().split('T')[0];
+    const [user] = await db
+      .select({
+        dailyAiUsage: acUsers.dailyAiUsage,
+        lastAiUsageDate: acUsers.lastAiUsageDate,
+      })
+      .from(acUsers)
+      .where(eq(acUsers.uuid, userId))
+      .limit(1);
+    
+    if (!user) {
+      return { canUse: false, remaining: 0 };
+    }
+    
+    const currentUsage = user.lastAiUsageDate === today ? user.dailyAiUsage : 0;
+    const remaining = Math.max(0, 20 - currentUsage);
+    
+    return {
+      canUse: remaining > 0,
+      remaining,
+    };
+  }
+  
+  async incrementAiUsage(userId: string): Promise<void> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    await db
+      .update(acUsers)
+      .set({
+        dailyAiUsage: sql`CASE 
+          WHEN ${acUsers.lastAiUsageDate} = ${today} 
+          THEN ${acUsers.dailyAiUsage} + 1 
+          ELSE 1 
+        END`,
+        lastAiUsageDate: today,
+        totalAiUsage: sql`${acUsers.totalAiUsage} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(acUsers.uuid, userId));
+  }
+}
+
+export const userService = new UserService();
+```
+
+**拼图服务** (`lib/services/collageService.ts`):
+```typescript
+import { db } from '@/db';
+import { acCollages, acCollageImages, type Collage, type NewCollage } from '@/db/schema/collages';
+import { eq, and, desc } from 'drizzle-orm';
+
+export class CollageService {
+  async createCollage(data: NewCollage): Promise<Collage> {
+    const [collage] = await db.insert(acCollages).values(data).returning();
+    return collage;
+  }
+  
+  async getCollageById(id: string): Promise<Collage | null> {
+    const [collage] = await db
+      .select()
+      .from(acCollages)
+      .where(eq(acCollages.uuid, id))
+      .limit(1);
+    
+    return collage || null;
+  }
+  
+  async getUserCollages(userId: string, limit = 20): Promise<Collage[]> {
+    return await db
+      .select()
+      .from(acCollages)
+      .where(eq(acCollages.userId, userId))
+      .orderBy(desc(acCollages.createdAt))
+      .limit(limit);
+  }
+  
+  async updateCollageStatus(id: string, status: string, metadata?: any): Promise<void> {
+    await db
+      .update(acCollages)
+      .set({
+        status,
+        metadata,
+        updatedAt: new Date(),
+      })
+      .where(eq(acCollages.uuid, id));
+  }
+  
+  async addCollageImages(collageId: string, images: Array<{
+    originalUrl: string;
+    fileName: string;
+    fileSize?: number;
+    imageIndex: number;
+  }>): Promise<void> {
+    const imageData = images.map(img => ({
+      collageId,
+      ...img,
+    }));
+    
+    await db.insert(acCollageImages).values(imageData);
+  }
+}
+
+export const collageService = new CollageService();
+```
+
+##### 6.1.4 迁移和部署脚本
+
+**生成迁移文件**:
+```bash
+# package.json scripts
+{
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx db/seed.ts",
+    "db:reset": "tsx scripts/reset-db.ts"
+  }
+}
+```
+
+**数据填充** (`db/seed.ts`):
+```typescript
+import { db } from './index';
+import { acIconCategories, acIcons, acTemplates, acSystemConfigs } from './schema';
+
+async function seed() {
+  console.log('开始数据填充...');
+  
+  // 插入Icon分类
+  await db.insert(acIconCategories).values([
+    {
+      categoryId: 'general',
+      categoryName: '通用',
+      description: '通用图标分类',
+      aiDescription: 'General purpose icons for common UI elements',
+      aiKeywords: ['general', 'common', 'basic'],
+      displayOrder: 1,
+    },
+    {
+      categoryId: 'travel',
+      categoryName: '旅行',
+      description: '旅行相关图标',
+      aiDescription: 'Travel and transportation related icons',
+      aiKeywords: ['travel', 'trip', 'vacation', 'transport'],
+      displayOrder: 2,
+    },
+    // ... 更多分类
+  ]);
+  
+  // 插入系统配置
+  await db.insert(acSystemConfigs).values([
+    {
+      configKey: 'ai_daily_limits',
+      configValue: { user_limit: 20, global_limit: 5000 },
+      configType: 'ai_limits',
+      description: 'AI使用每日限制配置',
+    },
+    {
+      configKey: 'credit_pricing',
+      configValue: { collage: 5, download: 10, premium_template: 15 },
+      configType: 'pricing',
+      description: '积分消耗定价',
+    },
+  ]);
+  
+  console.log('数据填充完成！');
+}
+
+seed().catch(console.error);
+```
+
+##### 6.1.5 类型安全的API路由
+
+**积分查询API** (`app/api/credits/balance/route.ts`):
+```typescript
+import { NextRequest } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { userService } from '@/lib/services/userService';
+import { respData, respErr } from '@/lib/utils/response';
+
+export async function GET() {
+  try {
+    const { userId: clerkUserId } = auth();
+    if (!clerkUserId) {
+      return respErr('未登录', 401);
+    }
+    
+    const user = await userService.getUserByClerkId(clerkUserId);
+    if (!user) {
+      return respErr('用户不存在', 404);
+    }
+    
+    return respData({
+      credits: user.credits,
+      totalEarned: user.totalEarnedCredits,
+      totalUsed: user.totalUsedCredits,
+    });
+  } catch (error) {
+    console.error('查询积分余额失败:', error);
+    return respErr('查询失败');
+  }
+}
+```
+
+**一键拼图API** (`app/api/collage/generate/route.ts`):
+```typescript
+import { NextRequest } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { userService } from '@/lib/services/userService';
+import { collageService } from '@/lib/services/collageService';
+import { geminiService } from '@/lib/services/geminiService';
+import { respData, respErr } from '@/lib/utils/response';
+
+export async function POST(req: NextRequest) {
+  try {
+    const { userId: clerkUserId } = auth();
+    if (!clerkUserId) {
+      return respErr('未登录', 401);
+    }
+    
+    const user = await userService.getUserByClerkId(clerkUserId);
+    if (!user) {
+      return respErr('用户不存在', 404);
+    }
+    
+    // 检查积分余额
+    if (user.credits < 5) {
+      return respErr('积分不足，请邀请朋友获取积分', 402);
+    }
+    
+    // 检查每日AI使用限制
+    const { canUse } = await userService.checkDailyAiUsage(user.uuid);
+    if (!canUse) {
+      return respErr('今日AI使用次数已达上限', 429);
+    }
+    
+    const formData = await req.formData();
+    const images = formData.getAll('images') as File[];
+    
+    if (images.length < 2 || images.length > 20) {
+      return respErr('请上传2-20张图片', 400);
+    }
+    
+    // 创建拼图记录
+    const collage = await collageService.createCollage({
+      userId: user.uuid,
+      title: `拼图_${Date.now()}`,
+      status: 'processing',
+      canvasConfig: {},
+      elements: [],
+      metadata: {},
+    });
+    
+    // 异步处理AI生成
+    generateCollageAsync(collage.uuid, images, user.uuid).catch(console.error);
+    
+    return respData({
+      collageId: collage.uuid,
+      status: 'processing',
+      message: 'AI正在分析您的图片，请稍候...',
+    });
+    
+  } catch (error) {
+    console.error('生成拼图失败:', error);
+    return respErr('生成失败，请稍后重试');
+  }
+}
+
+async function generateCollageAsync(collageId: string, images: File[], userId: string) {
+  try {
+    // AI分析和生成
+    const result = await geminiService.generateCollage({
+      images,
+      collageId,
+    });
+    
+    // 更新拼图数据
+    await collageService.updateCollageStatus(collageId, 'completed', result);
+    
+    // 扣除积分
+    await userService.updateUserCredits(userId, -5, 'collage', { collageId });
+    
+    // 增加AI使用计数
+    await userService.incrementAiUsage(userId);
+    
+  } catch (error) {
+    console.error('AI生成失败:', error);
+    await collageService.updateCollageStatus(collageId, 'failed', { error: error.message });
+  }
+}
+```
+
+##### 6.1.6 开发工具和工作流
+
+**开发命令**:
+```bash
+# 开发环境启动
+pnpm dev
+
+# 生成新的迁移文件
+pnpm db:generate
+
+# 应用迁移到数据库
+pnpm db:migrate
+
+# 启动 Drizzle Studio (数据库管理界面)
+pnpm db:studio
+
+# 重置数据库并填充初始数据
+pnpm db:reset && pnpm db:seed
+```
+
+**环境变量更新** (`.env.local`):
+```env
+# 数据库连接
+POSTGRES_URL="postgresql://username:password@host:port/database"
+
+# Drizzle Studio
+DB_VIEWER_PORT=3001
+
+# 现有配置...
+```
+
+这样的 Drizzle ORM 集成方案具有以下优势：
+
+1. **类型安全**: 完整的 TypeScript 支持，编译时捕获数据库错误
+2. **性能优化**: 只查询需要的字段，自动生成高效SQL
+3. **开发体验**: 优秀的IDE支持和自动补全
+4. **迁移管理**: 版本化的数据库迁移，支持团队协作
+5. **查询构建**: 直观的查询API，避免SQL注入
+6. **关系处理**: 自动处理表关系和外键约束
+
+#### 6.2 完整数据库表结构
+
+**注意：以下为全新的数据库表结构，建议删除所有现有表后重新创建**
 ```sql
 -- ================================
 -- 用户和认证相关表
@@ -1049,182 +1842,793 @@ interface EditorCommand {
 
 ### 6. 数据库结构完善
 
-#### 6.1 拼图记录表
-```sql
-CREATE TABLE collages (
-    id SERIAL PRIMARY KEY,
-    uuid UUID UNIQUE NOT NULL,
-    user_id UUID NOT NULL,
-    title VARCHAR(255),
-    template_type VARCHAR(100),
-    layout_data JSONB NOT NULL, -- 存储结构化布局数据
-    thumbnail_url VARCHAR(500),
-    full_image_url VARCHAR(500),
-    credits_used INT DEFAULT 5,
-    ai_model VARCHAR(100),
-    processing_metadata JSONB,
-    status VARCHAR(20) DEFAULT 'completed',
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+#### 6.1 Drizzle ORM 集成方案
 
-CREATE TABLE collage_images (
-    id SERIAL PRIMARY KEY,
-    collage_id UUID NOT NULL,
-    original_url VARCHAR(500) NOT NULL,
-    processed_url VARCHAR(500),
-    position_data JSONB NOT NULL,
-    uploaded_at TIMESTAMPTZ DEFAULT NOW()
-);
+##### 6.1.1 依赖安装和配置
+
+**安装依赖**:
+```bash
+pnpm add drizzle-orm @neondatabase/serverless
+pnpm add -D drizzle-kit @types/pg
 ```
 
-### 7. AI服务集成
+**项目结构**:
+```
+db/
+├── schema/                 # 数据库表结构定义
+│   ├── users.ts           # 用户相关表
+│   ├── credits.ts         # 积分系统表
+│   ├── icons.ts           # Icon库表
+│   ├── collages.ts        # 拼图相关表
+│   ├── ai.ts              # AI服务表
+│   ├── orders.ts          # 订单表
+│   ├── system.ts          # 系统配置表
+│   └── index.ts           # 统一导出
+├── migrations/             # 数据库迁移文件
+├── seed.ts                # 初始数据填充
+└── index.ts               # 数据库连接和配置
+```
 
-#### 7.1 图片分析服务
+**Drizzle 配置文件** (`drizzle.config.ts`):
 ```typescript
-interface ImageAnalysis {
-  dimensions: { width: number; height: number };
-  dominantColors: string[];
-  contentTags: string[];
-  faces: number;
-  confidence: number;
-}
+import { defineConfig } from 'drizzle-kit';
 
-class GeminiAnalysisService {
-  async analyzeImages(images: File[]): Promise<ImageAnalysisResult[]>;
-  async suggestLayout(analyses: ImageAnalysisResult[], preferences?: CollagePreferences): Promise<CollageResult>;
-  async recommendIcons(imageAnalysis: ImageAnalysisResult[], theme: string): Promise<IconSuggestion[]>;
-  async generateColorScheme(dominantColors: string[][]): Promise<ColorScheme>;
-  async checkDailyLimit(userId: string): Promise<boolean>;
-  async incrementUsage(userId: string): Promise<void>;
+export default defineConfig({
+  schema: './db/schema/*',
+  out: './db/migrations',
+  dialect: 'postgresql',
+  dbCredentials: {
+    url: process.env.POSTGRES_URL!,
+  },
+  verbose: true,
+  strict: true,
+});
+```
+
+##### 6.1.2 Schema 定义
+
+**用户和认证相关表** (`db/schema/users.ts`):
+```typescript
+import { pgTable, serial, uuid, varchar, integer, boolean, timestamptz, text, inet } from 'drizzle-orm/pg-core';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
+import { z } from 'zod';
+
+// 用户主表
+export const acUsers = pgTable('ac_users', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  clerkUserId: varchar('clerk_user_id', { length: 255 }).unique().notNull(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+  username: varchar('username', { length: 100 }),
+  displayName: varchar('display_name', { length: 255 }),
+  avatarUrl: varchar('avatar_url', { length: 500 }),
   
-  // 核心方法：一键生成完整拼图
-  async generateCollage(request: CollageRequest): Promise<CollageResult> {
-    // 1. 检查每日限制
-    const canUse = await this.checkDailyLimit(request.userId);
-    if (!canUse) throw new Error('Daily limit exceeded');
+  // 积分相关
+  credits: integer('credits').default(50),
+  totalEarnedCredits: integer('total_earned_credits').default(50),
+  totalUsedCredits: integer('total_used_credits').default(0),
+  
+  // 邀请相关
+  inviteCode: varchar('invite_code', { length: 50 }).unique().notNull(),
+  invitedByCode: varchar('invited_by_code', { length: 50 }),
+  invitedByUserId: uuid('invited_by_user_id'),
+  
+  // AI使用限制
+  dailyAiUsage: integer('daily_ai_usage').default(0),
+  lastAiUsageDate: varchar('last_ai_usage_date', { length: 10 }), // YYYY-MM-DD
+  totalAiUsage: integer('total_ai_usage').default(0),
+  
+  // 用户设置
+  language: varchar('language', { length: 10 }).default('zh-CN'),
+  timezone: varchar('timezone', { length: 50 }).default('Asia/Shanghai'),
+  emailNotifications: boolean('email_notifications').default(true),
+  
+  // 状态和时间
+  status: varchar('status', { length: 20 }).default('active'),
+  lastLoginAt: timestamptz('last_login_at'),
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// 用户会话表
+export const acUserSessions = pgTable('ac_user_sessions', {
+  id: serial('id').primaryKey(),
+  sessionId: varchar('session_id', { length: 100 }).unique().notNull(),
+  userId: uuid('user_id'),
+  trialUsageCount: integer('trial_usage_count').default(0),
+  ipAddress: varchar('ip_address', { length: 45 }), // 支持IPv6
+  userAgent: text('user_agent'),
+  lastActivityAt: timestamptz('last_activity_at').defaultNow(),
+  createdAt: timestamptz('created_at').defaultNow(),
+  expiresAt: timestamptz('expires_at'),
+});
+
+// Zod 验证 Schema
+export const insertUserSchema = createInsertSchema(acUsers, {
+  email: z.string().email('邮箱格式不正确'),
+  credits: z.number().min(0, '积分不能为负数'),
+  language: z.enum(['zh-CN', 'en-US', 'ja-JP', 'ko-KR']),
+});
+
+export const selectUserSchema = createSelectSchema(acUsers);
+
+export type User = typeof acUsers.$inferSelect;
+export type NewUser = typeof acUsers.$inferInsert;
+```
+
+**积分系统表** (`db/schema/credits.ts`):
+```typescript
+import { pgTable, serial, uuid, integer, varchar, text, jsonb, timestamptz } from 'drizzle-orm/pg-core';
+import { acUsers } from './users';
+
+// 积分流水表
+export const acCreditTransactions = pgTable('ac_credit_transactions', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  userId: uuid('user_id').notNull().references(() => acUsers.uuid, { onDelete: 'cascade' }),
+  
+  // 交易信息
+  amount: integer('amount').notNull(), // 正数为获得，负数为消耗
+  balanceAfter: integer('balance_after').notNull(),
+  transactionType: varchar('transaction_type', { length: 50 }).notNull(),
+  
+  // 描述和关联
+  title: varchar('title', { length: 255 }),
+  description: text('description'),
+  relatedEntityType: varchar('related_entity_type', { length: 50 }),
+  relatedEntityId: uuid('related_entity_id'),
+  
+  // 元数据
+  metadata: jsonb('metadata'),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+});
+
+// 邀请记录表
+export const acInvitations = pgTable('ac_invitations', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  // 邀请关系
+  inviterId: uuid('inviter_id').notNull().references(() => acUsers.uuid, { onDelete: 'cascade' }),
+  inviteeId: uuid('invitee_id').references(() => acUsers.uuid, { onDelete: 'set null' }),
+  inviteCode: varchar('invite_code', { length: 50 }).notNull(),
+  
+  // 邀请信息
+  email: varchar('email', { length: 255 }),
+  invitationMethod: varchar('invitation_method', { length: 20 }).default('link'),
+  
+  // 奖励信息
+  inviterReward: integer('inviter_reward').default(20),
+  inviteeReward: integer('invitee_reward').default(20),
+  
+  // 状态追踪
+  status: varchar('status', { length: 20 }).default('pending'),
+  clickedAt: timestamptz('clicked_at'),
+  registeredAt: timestamptz('registered_at'),
+  rewardGivenAt: timestamptz('reward_given_at'),
+  
+  // 元数据
+  metadata: jsonb('metadata'),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+  expiresAt: timestamptz('expires_at'),
+});
+
+export type CreditTransaction = typeof acCreditTransactions.$inferSelect;
+export type NewCreditTransaction = typeof acCreditTransactions.$inferInsert;
+export type Invitation = typeof acInvitations.$inferSelect;
+export type NewInvitation = typeof acInvitations.$inferInsert;
+```
+
+**Icon库表** (`db/schema/icons.ts`):
+```typescript
+import { pgTable, serial, uuid, varchar, text, integer, boolean, timestamptz, jsonb } from 'drizzle-orm/pg-core';
+
+// Icon分类表
+export const acIconCategories = pgTable('ac_icon_categories', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  categoryId: varchar('category_id', { length: 100 }).unique().notNull(),
+  categoryName: varchar('category_name', { length: 255 }).notNull(),
+  parentCategoryId: varchar('parent_category_id', { length: 100 }),
+  
+  description: text('description'),
+  aiDescription: text('ai_description'),
+  aiKeywords: jsonb('ai_keywords').$type<string[]>(),
+  
+  displayOrder: integer('display_order').default(0),
+  iconColor: varchar('icon_color', { length: 20 }).default('#666666'),
+  isActive: boolean('is_active').default(true),
+  
+  iconCount: integer('icon_count').default(0),
+  usageCount: integer('usage_count').default(0),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// Icon库表
+export const acIcons = pgTable('ac_icons', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  iconId: varchar('icon_id', { length: 100 }).unique().notNull(),
+  iconName: varchar('icon_name', { length: 255 }).notNull(),
+  categoryId: varchar('category_id', { length: 100 }).notNull(),
+  
+  svgContent: text('svg_content').notNull(),
+  style: varchar('style', { length: 50 }).default('outline'),
+  
+  sizeVariants: jsonb('size_variants').$type<string[]>().default(['16', '24', '32', '48', '64']),
+  colorVariants: jsonb('color_variants').$type<string[]>().default(['currentColor']),
+  
+  tags: jsonb('tags').$type<string[]>().default([]),
+  aiKeywords: jsonb('ai_keywords').$type<string[]>().default([]),
+  semanticMeaning: text('semantic_meaning'),
+  aiDescription: text('ai_description'),
+  
+  popularityScore: integer('popularity_score').default(0),
+  usageCount: integer('usage_count').default(0),
+  lastUsedAt: timestamptz('last_used_at'),
+  
+  isActive: boolean('is_active').default(true),
+  isPremium: boolean('is_premium').default(false),
+  
+  source: varchar('source', { length: 100 }),
+  version: varchar('version', { length: 20 }).default('1.0.0'),
+  license: varchar('license', { length: 100 }).default('MIT'),
+  metadata: jsonb('metadata'),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+export type IconCategory = typeof acIconCategories.$inferSelect;
+export type NewIconCategory = typeof acIconCategories.$inferInsert;
+export type Icon = typeof acIcons.$inferSelect;
+export type NewIcon = typeof acIcons.$inferInsert;
+```
+
+**拼图相关表** (`db/schema/collages.ts`):
+```typescript
+import { pgTable, serial, uuid, varchar, text, integer, boolean, timestamptz, jsonb, decimal } from 'drizzle-orm/pg-core';
+import { acUsers } from './users';
+
+// 拼图模板表
+export const acTemplates = pgTable('ac_templates', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  templateId: varchar('template_id', { length: 100 }).unique().notNull(),
+  templateName: varchar('template_name', { length: 255 }).notNull(),
+  description: text('description'),
+  
+  minImages: integer('min_images').notNull().default(2),
+  maxImages: integer('max_images').notNull().default(9),
+  aspectRatios: jsonb('aspect_ratios').$type<string[]>().default(['1:1', '4:3', '16:9']),
+  
+  canvasConfig: jsonb('canvas_config').notNull(),
+  layoutStructure: jsonb('layout_structure').notNull(),
+  
+  category: varchar('category', { length: 100 }).notNull(),
+  style: varchar('style', { length: 100 }),
+  tags: jsonb('tags').$type<string[]>().default([]),
+  
+  aiKeywords: jsonb('ai_keywords').$type<string[]>().default([]),
+  aiDescription: text('ai_description'),
+  aiSuitableThemes: jsonb('ai_suitable_themes').$type<string[]>().default([]),
+  
+  isPremium: boolean('is_premium').default(false),
+  creditsCost: integer('credits_cost').default(0),
+  
+  usageCount: integer('usage_count').default(0),
+  rating: decimal('rating', { precision: 3, scale: 2 }).default('0.00'),
+  ratingCount: integer('rating_count').default(0),
+  
+  isActive: boolean('is_active').default(true),
+  isFeatured: boolean('is_featured').default(false),
+  
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// 拼图主表
+export const acCollages = pgTable('ac_collages', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  userId: uuid('user_id').references(() => acUsers.uuid, { onDelete: 'set null' }),
+  sessionId: varchar('session_id', { length: 100 }),
+  title: varchar('title', { length: 255 }),
+  description: text('description'),
+  
+  canvasConfig: jsonb('canvas_config').notNull(),
+  elements: jsonb('elements').notNull(),
+  metadata: jsonb('metadata').notNull(),
+  
+  templateId: varchar('template_id', { length: 100 }),
+  generatedStyle: varchar('generated_style', { length: 100 }),
+  userPreferences: jsonb('user_preferences'),
+  
+  thumbnailUrl: varchar('thumbnail_url', { length: 500 }),
+  previewUrl: varchar('preview_url', { length: 500 }),
+  fullImageUrl: varchar('full_image_url', { length: 500 }),
+  
+  aiModel: varchar('ai_model', { length: 100 }),
+  aiProcessingTime: integer('ai_processing_time'),
+  creditsUsed: integer('credits_used').default(5),
+  
+  status: varchar('status', { length: 20 }).default('draft'),
+  generationStatus: varchar('generation_status', { length: 20 }).default('pending'),
+  
+  visibility: varchar('visibility', { length: 20 }).default('private'),
+  isFeatured: boolean('is_featured').default(false),
+  downloadCount: integer('download_count').default(0),
+  viewCount: integer('view_count').default(0),
+  
+  version: integer('version').default(1),
+  parentCollageId: uuid('parent_collage_id'),
+  
+  startedAt: timestamptz('started_at').defaultNow(),
+  completedAt: timestamptz('completed_at'),
+  lastEditedAt: timestamptz('last_edited_at').defaultNow(),
+  createdAt: timestamptz('created_at').defaultNow(),
+  updatedAt: timestamptz('updated_at').defaultNow(),
+});
+
+// 拼图图片表
+export const acCollageImages = pgTable('ac_collage_images', {
+  id: serial('id').primaryKey(),
+  uuid: uuid('uuid').defaultRandom().unique().notNull(),
+  
+  collageId: uuid('collage_id').notNull().references(() => acCollages.uuid, { onDelete: 'cascade' }),
+  imageIndex: integer('image_index').notNull(),
+  elementId: varchar('element_id', { length: 100 }),
+  
+  originalUrl: varchar('original_url', { length: 500 }).notNull(),
+  processedUrl: varchar('processed_url', { length: 500 }),
+  fileName: varchar('file_name', { length: 255 }),
+  fileSize: integer('file_size'),
+  mimeType: varchar('mime_type', { length: 100 }),
+  
+  originalDimensions: jsonb('original_dimensions'),
+  processedDimensions: jsonb('processed_dimensions'),
+  
+  aiAnalysis: jsonb('ai_analysis'),
+  dominantColors: jsonb('dominant_colors'),
+  contentTags: jsonb('content_tags').$type<string[]>(),
+  
+  processingStatus: varchar('processing_status', { length: 20 }).default('uploaded'),
+  
+  uploadedAt: timestamptz('uploaded_at').defaultNow(),
+  createdAt: timestamptz('created_at').defaultNow(),
+});
+
+export type Template = typeof acTemplates.$inferSelect;
+export type NewTemplate = typeof acTemplates.$inferInsert;
+export type Collage = typeof acCollages.$inferSelect;
+export type NewCollage = typeof acCollages.$inferInsert;
+export type CollageImage = typeof acCollageImages.$inferSelect;
+export type NewCollageImage = typeof acCollageImages.$inferInsert;
+```
+
+##### 6.1.3 数据库连接和查询服务
+
+**数据库连接** (`db/index.ts`):
+```typescript
+import { drizzle } from 'drizzle-orm/neon-http';
+import { neon } from '@neondatabase/serverless';
+import * as schema from './schema';
+
+const sql = neon(process.env.POSTGRES_URL!);
+export const db = drizzle(sql, { schema });
+
+export type Database = typeof db;
+export { schema };
+```
+
+**用户服务** (`lib/services/userService.ts`):
+```typescript
+import { db } from '@/db';
+import { acUsers, acCreditTransactions, type User, type NewUser } from '@/db/schema/users';
+import { eq, and, sql } from 'drizzle-orm';
+import { generateInviteCode } from '@/lib/utils/inviteCode';
+
+export class UserService {
+  async createUser(clerkUserId: string, email: string, userData: Partial<NewUser> = {}): Promise<User> {
+    const inviteCode = generateInviteCode();
     
-    // 2. 分析每张图片
-    const imageAnalyses = await this.analyzeImages(request.images);
+    const [user] = await db.insert(acUsers).values({
+      clerkUserId,
+      email,
+      inviteCode,
+      ...userData,
+    }).returning();
     
-    // 3. 生成配色方案
-    const colorScheme = await this.generateColorScheme(
-      imageAnalyses.map(a => a.dominantColors)
-    );
+    return user;
+  }
+  
+  async getUserByClerkId(clerkUserId: string): Promise<User | null> {
+    const [user] = await db
+      .select()
+      .from(acUsers)
+      .where(eq(acUsers.clerkUserId, clerkUserId))
+      .limit(1);
     
-    // 4. 推荐Icon
-    const iconSuggestions = await this.recommendIcons(
-      imageAnalyses, 
-      request.preferences?.theme || 'auto'
-    );
+    return user || null;
+  }
+  
+  async getUserByInviteCode(inviteCode: string): Promise<User | null> {
+    const [user] = await db
+      .select()
+      .from(acUsers)
+      .where(eq(acUsers.inviteCode, inviteCode))
+      .limit(1);
     
-    // 5. 生成最终布局
-    const collageResult = await this.suggestLayout(imageAnalyses, {
-      ...request.preferences,
-      colorScheme,
-      iconSuggestions
+    return user || null;
+  }
+  
+  async updateUserCredits(userId: string, amount: number, transactionType: string, metadata?: any): Promise<void> {
+    await db.transaction(async (tx) => {
+      // 更新用户积分
+      const [user] = await tx
+        .update(acUsers)
+        .set({
+          credits: sql`${acUsers.credits} + ${amount}`,
+          totalEarnedCredits: amount > 0 ? sql`${acUsers.totalEarnedCredits} + ${amount}` : acUsers.totalEarnedCredits,
+          totalUsedCredits: amount < 0 ? sql`${acUsers.totalUsedCredits} + ${Math.abs(amount)}` : acUsers.totalUsedCredits,
+          updatedAt: new Date(),
+        })
+        .where(eq(acUsers.uuid, userId))
+        .returning({ credits: acUsers.credits });
+      
+      // 记录积分流水
+      await tx.insert(acCreditTransactions).values({
+        userId,
+        amount,
+        balanceAfter: user.credits,
+        transactionType,
+        metadata,
+      });
     });
+  }
+  
+  async checkDailyAiUsage(userId: string): Promise<{ canUse: boolean; remaining: number }> {
+    const today = new Date().toISOString().split('T')[0];
+    const [user] = await db
+      .select({
+        dailyAiUsage: acUsers.dailyAiUsage,
+        lastAiUsageDate: acUsers.lastAiUsageDate,
+      })
+      .from(acUsers)
+      .where(eq(acUsers.uuid, userId))
+      .limit(1);
     
-    // 6. 增加使用计数
-    await this.incrementUsage(request.userId);
+    if (!user) {
+      return { canUse: false, remaining: 0 };
+    }
     
-    return collageResult;
+    const currentUsage = user.lastAiUsageDate === today ? user.dailyAiUsage : 0;
+    const remaining = Math.max(0, 20 - currentUsage);
+    
+    return {
+      canUse: remaining > 0,
+      remaining,
+    };
+  }
+  
+  async incrementAiUsage(userId: string): Promise<void> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    await db
+      .update(acUsers)
+      .set({
+        dailyAiUsage: sql`CASE 
+          WHEN ${acUsers.lastAiUsageDate} = ${today} 
+          THEN ${acUsers.dailyAiUsage} + 1 
+          ELSE 1 
+        END`,
+        lastAiUsageDate: today,
+        totalAiUsage: sql`${acUsers.totalAiUsage} + 1`,
+        updatedAt: new Date(),
+      })
+      .where(eq(acUsers.uuid, userId));
   }
 }
 
-// 每日限制管理
-interface DailyLimitManager {
-  checkUserLimit(userId: string): Promise<{ canUse: boolean; remainingUses: number }>;
-  checkGlobalLimit(): Promise<{ canUse: boolean; remainingRequests: number }>;
-  incrementUserUsage(userId: string): Promise<void>;
-  incrementGlobalUsage(): Promise<void>;
-  resetDailyCounters(): Promise<void>; // 每日凌晨执行
+export const userService = new UserService();
+```
+
+**拼图服务** (`lib/services/collageService.ts`):
+```typescript
+import { db } from '@/db';
+import { acCollages, acCollageImages, type Collage, type NewCollage } from '@/db/schema/collages';
+import { eq, and, desc } from 'drizzle-orm';
+
+export class CollageService {
+  async createCollage(data: NewCollage): Promise<Collage> {
+    const [collage] = await db.insert(acCollages).values(data).returning();
+    return collage;
+  }
+  
+  async getCollageById(id: string): Promise<Collage | null> {
+    const [collage] = await db
+      .select()
+      .from(acCollages)
+      .where(eq(acCollages.uuid, id))
+      .limit(1);
+    
+    return collage || null;
+  }
+  
+  async getUserCollages(userId: string, limit = 20): Promise<Collage[]> {
+    return await db
+      .select()
+      .from(acCollages)
+      .where(eq(acCollages.userId, userId))
+      .orderBy(desc(acCollages.createdAt))
+      .limit(limit);
+  }
+  
+  async updateCollageStatus(id: string, status: string, metadata?: any): Promise<void> {
+    await db
+      .update(acCollages)
+      .set({
+        status,
+        metadata,
+        updatedAt: new Date(),
+      })
+      .where(eq(acCollages.uuid, id));
+  }
+  
+  async addCollageImages(collageId: string, images: Array<{
+    originalUrl: string;
+    fileName: string;
+    fileSize?: number;
+    imageIndex: number;
+  }>): Promise<void> {
+    const imageData = images.map(img => ({
+      collageId,
+      ...img,
+    }));
+    
+    await db.insert(acCollageImages).values(imageData);
+  }
+}
+
+export const collageService = new CollageService();
+```
+
+##### 6.1.4 迁移和部署脚本
+
+**生成迁移文件**:
+```bash
+# package.json scripts
+{
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:studio": "drizzle-kit studio",
+    "db:seed": "tsx db/seed.ts",
+    "db:reset": "tsx scripts/reset-db.ts"
+  }
 }
 ```
 
-#### 7.2 Gemini集成策略
-- **图片分析**: 使用Gemini Vision进行内容识别和分析
-- **布局建议**: 基于分析结果生成智能布局建议
-- **元素推荐**: 生成匹配的装饰元素和文案
-- **成本控制**: 相比OpenAI，Gemini成本更低，适合MVP阶段
+**数据填充** (`db/seed.ts`):
+```typescript
+import { db } from './index';
+import { acIconCategories, acIcons, acTemplates, acSystemConfigs } from './schema';
 
-### 8. 性能优化策略
+async function seed() {
+  console.log('开始数据填充...');
+  
+  // 插入Icon分类
+  await db.insert(acIconCategories).values([
+    {
+      categoryId: 'general',
+      categoryName: '通用',
+      description: '通用图标分类',
+      aiDescription: 'General purpose icons for common UI elements',
+      aiKeywords: ['general', 'common', 'basic'],
+      displayOrder: 1,
+    },
+    {
+      categoryId: 'travel',
+      categoryName: '旅行',
+      description: '旅行相关图标',
+      aiDescription: 'Travel and transportation related icons',
+      aiKeywords: ['travel', 'trip', 'vacation', 'transport'],
+      displayOrder: 2,
+    },
+    // ... 更多分类
+  ]);
+  
+  // 插入系统配置
+  await db.insert(acSystemConfigs).values([
+    {
+      configKey: 'ai_daily_limits',
+      configValue: { user_limit: 20, global_limit: 5000 },
+      configType: 'ai_limits',
+      description: 'AI使用每日限制配置',
+    },
+    {
+      configKey: 'credit_pricing',
+      configValue: { collage: 5, download: 10, premium_template: 15 },
+      configType: 'pricing',
+      description: '积分消耗定价',
+    },
+  ]);
+  
+  console.log('数据填充完成！');
+}
 
-#### 8.1 图片处理优化
-- **客户端压缩**: 上传前进行图片压缩
-- **渐进式加载**: 使用WebP格式和多尺寸图片
-- **CDN加速**: Cloudflare CDN分发
-- **缓存策略**: Redis缓存常用模板和AI分析结果
+seed().catch(console.error);
+```
 
-#### 8.2 AI服务优化
-- **批量处理**: 合并多个AI请求
-- **结果缓存**: 缓存相似图片的分析结果
-- **降级策略**: AI服务不可用时的备选方案
+##### 6.1.5 类型安全的API路由
 
-### 9. 开发阶段规划
+**积分查询API** (`app/api/credits/balance/route.ts`):
+```typescript
+import { NextRequest } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { userService } from '@/lib/services/userService';
+import { respData, respErr } from '@/lib/utils/response';
 
-#### Phase 1: 核心功能开发 (4-6周)
-1. **Week 1-2**: 积分系统和用户管理
-2. **Week 3-4**: 基础拼图功能和模板系统
-3. **Week 5-6**: AI集成和一键生成功能
+export async function GET() {
+  try {
+    const { userId: clerkUserId } = auth();
+    if (!clerkUserId) {
+      return respErr('未登录', 401);
+    }
+    
+    const user = await userService.getUserByClerkId(clerkUserId);
+    if (!user) {
+      return respErr('用户不存在', 404);
+    }
+    
+    return respData({
+      credits: user.credits,
+      totalEarned: user.totalEarnedCredits,
+      totalUsed: user.totalUsedCredits,
+    });
+  } catch (error) {
+    console.error('查询积分余额失败:', error);
+    return respErr('查询失败');
+  }
+}
+```
 
-#### Phase 2: 用户体验优化 (2-3周)
-1. **Week 7-8**: 编辑功能和交互优化
-2. **Week 9**: 多语言支持和国际化
+**一键拼图API** (`app/api/collage/generate/route.ts`):
+```typescript
+import { NextRequest } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { userService } from '@/lib/services/userService';
+import { collageService } from '@/lib/services/collageService';
+import { geminiService } from '@/lib/services/geminiService';
+import { respData, respErr } from '@/lib/utils/response';
 
-#### Phase 3: 测试和发布 (1-2周)
-1. **Week 10**: 性能测试和BUG修复
-2. **Week 11**: 部署和发布准备
+export async function POST(req: NextRequest) {
+  try {
+    const { userId: clerkUserId } = auth();
+    if (!clerkUserId) {
+      return respErr('未登录', 401);
+    }
+    
+    const user = await userService.getUserByClerkId(clerkUserId);
+    if (!user) {
+      return respErr('用户不存在', 404);
+    }
+    
+    // 检查积分余额
+    if (user.credits < 5) {
+      return respErr('积分不足，请邀请朋友获取积分', 402);
+    }
+    
+    // 检查每日AI使用限制
+    const { canUse } = await userService.checkDailyAiUsage(user.uuid);
+    if (!canUse) {
+      return respErr('今日AI使用次数已达上限', 429);
+    }
+    
+    const formData = await req.formData();
+    const images = formData.getAll('images') as File[];
+    
+    if (images.length < 2 || images.length > 20) {
+      return respErr('请上传2-20张图片', 400);
+    }
+    
+    // 创建拼图记录
+    const collage = await collageService.createCollage({
+      userId: user.uuid,
+      title: `拼图_${Date.now()}`,
+      status: 'processing',
+      canvasConfig: {},
+      elements: [],
+      metadata: {},
+    });
+    
+    // 异步处理AI生成
+    generateCollageAsync(collage.uuid, images, user.uuid).catch(console.error);
+    
+    return respData({
+      collageId: collage.uuid,
+      status: 'processing',
+      message: 'AI正在分析您的图片，请稍候...',
+    });
+    
+  } catch (error) {
+    console.error('生成拼图失败:', error);
+    return respErr('生成失败，请稍后重试');
+  }
+}
 
-### 10. 需要确认的技术决策
+async function generateCollageAsync(collageId: string, images: File[], userId: string) {
+  try {
+    // AI分析和生成
+    const result = await geminiService.generateCollage({
+      images,
+      collageId,
+    });
+    
+    // 更新拼图数据
+    await collageService.updateCollageStatus(collageId, 'completed', result);
+    
+    // 扣除积分
+    await userService.updateUserCredits(userId, -5, 'collage', { collageId });
+    
+    // 增加AI使用计数
+    await userService.incrementAiUsage(userId);
+    
+  } catch (error) {
+    console.error('AI生成失败:', error);
+    await collageService.updateCollageStatus(collageId, 'failed', { error: error.message });
+  }
+}
+```
 
-#### 10.1 AI服务选择
-- **Google Gemini**: 成本较低，效果良好，适合MVP阶段
-- **每日限制策略**: 
-  - 每用户每日最多使用AI功能20次
-  - 全站每日API调用限制5000次
-  - 超限后提供基础模板选择功能
-- **后续扩展**: 可根据用户反馈考虑集成其他AI服务
+##### 6.1.6 开发工具和工作流
 
-#### 10.2 图片处理方案
-- **客户端**: Canvas API + html2canvas
-- **服务端**: Sharp.js + Node.js处理
-- **建议**: 轻量级处理用客户端，复杂处理用服务端
+**开发命令**:
+```bash
+# 开发环境启动
+pnpm dev
 
-#### 10.3 实时编辑技术
-- **Canvas**: 性能好但开发复杂
-- **SVG**: 易于编辑但性能稍差
-- **HTML/CSS**: 最简单但功能有限
-- **建议**: 使用Canvas实现核心编辑，HTML/CSS做界面层
+# 生成新的迁移文件
+pnpm db:generate
 
-### 11. 竞品分析与差异化
+# 应用迁移到数据库
+pnpm db:migrate
 
-#### 11.1 现有竞品痛点
-- 手动操作繁琐，需要用户自己选择模板和调整
-- 模板选择有限，缺乏个性化
-- 没有智能推荐，用户选择困难
+# 启动 Drizzle Studio (数据库管理界面)
+pnpm db:studio
 
-#### 11.2 我们的差异化优势
-- **AI驱动**: 自动分析图片内容和特征
-- **一键生成**: 减少用户操作步骤
-- **智能推荐**: 基于内容推荐最佳布局
-- **结构化输出**: 生成结果可进一步编辑
+# 重置数据库并填充初始数据
+pnpm db:reset && pnpm db:seed
+```
 
-### 12. 风险评估与应对
+**环境变量更新** (`.env.local`):
+```env
+# 数据库连接
+POSTGRES_URL="postgresql://username:password@host:port/database"
 
-#### 12.1 技术风险
-- **AI成本控制**: 
-  - 每用户每日20次AI使用限制
-  - 全站每日5000次API调用限制  
-  - 实时监控API成本和使用量
-  - 超限时自动切换到基础模板
-- **图片处理性能**: 合理的图片尺寸限制和压缩策略
-- **服务稳定性**: 多重备份和降级机制
+# Drizzle Studio
+DB_VIEWER_PORT=3001
 
-#### 12.2 业务风险
-- **用户获取成本**: 依赖口碑传播和积分激励
-- **用户留存**: 持续优化AI效果和用户体验
-- **商业化路径**: 从积分系统逐步过渡到付费功能
+# 现有配置...
+```
+
+这样的 Drizzle ORM 集成方案具有以下优势：
+
+1. **类型安全**: 完整的 TypeScript 支持，编译时捕获数据库错误
+2. **性能优化**: 只查询需要的字段，自动生成高效SQL
+3. **开发体验**: 优秀的IDE支持和自动补全
+4. **迁移管理**: 版本化的数据库迁移，支持团队协作
+5. **查询构建**: 直观的查询API，避免SQL注入
+6. **关系处理**: 自动处理表关系和外键约束
 
 ## 关键设计决策总结
 

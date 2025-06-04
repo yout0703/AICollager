@@ -7,8 +7,10 @@ import {
   updateMultipleIconUsage,
   getPopularIcons,
   getIconStats,
-  createIcon
-} from '@/models/icon';
+  createIcon,
+  IconModel,
+  IconCategoryModel
+} from '@/lib/repositories/icons';
 
 import {
   getAllIconCategories,
@@ -18,16 +20,66 @@ import {
   updateCategoryUsage,
   updateCategoryIconCount,
   getCategoryStats
-} from '@/models/iconCategory';
+} from '@/lib/repositories/icons';
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getAIConfig } from '@/lib/ai-config';
-import { generateCacheKey, findAIAnalysisCache, createAIAnalysisCache } from '@/models/aiAnalysisCache';
-import { recordAIRequest } from '@/models/aiUsageStats';
+import { generateCacheKey, findAIAnalysisCache, createAIAnalysisCache } from '@/lib/repositories/aiAnalysisCache';
+import { recordAIRequest } from '@/lib/repositories/aiUsageStats';
 import { Icon, IconCategory, IconSearchRequest, IconRecommendationRequest } from '@/types/icons';
 
 // 初始化Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+// 类型转换工具函数
+function convertIconModelToIcon(iconModel: IconModel): Icon {
+  return {
+    id: iconModel.id,
+    uuid: iconModel.uuid,
+    icon_id: iconModel.iconId,
+    icon_name: iconModel.iconName,
+    category_id: iconModel.categoryId,
+    svg_content: iconModel.svgContent,
+    style: iconModel.style,
+    size_variants: [iconModel.size],
+    color_variants: ['currentColor'],
+    tags: iconModel.tags,
+    ai_keywords: iconModel.keywords || iconModel.aiTags,
+    semantic_meaning: '',
+    ai_description: '',
+    popularity_score: iconModel.popularityScore,
+    usage_count: iconModel.usageCount,
+    last_used_at: iconModel.updatedAt,
+    is_active: true,
+    is_premium: false,
+    source: '',
+    version: '1.0.0',
+    license: 'MIT',
+    metadata: iconModel.metadata,
+    created_at: iconModel.createdAt,
+    updated_at: iconModel.updatedAt
+  };
+}
+
+function convertIconCategoryModelToIconCategory(categoryModel: IconCategoryModel): IconCategory {
+  return {
+    id: categoryModel.id,
+    uuid: categoryModel.uuid,
+    category_id: categoryModel.categoryId,
+    category_name: categoryModel.categoryName,
+    parent_category_id: categoryModel.parentCategoryId,
+    description: categoryModel.description,
+    ai_description: categoryModel.aiDescription,
+    ai_keywords: categoryModel.aiKeywords,
+    display_order: categoryModel.displayOrder,
+    icon_color: categoryModel.iconColor,
+    is_active: categoryModel.isActive,
+    icon_count: categoryModel.iconCount,
+    usage_count: categoryModel.usageCount,
+    created_at: categoryModel.createdAt,
+    updated_at: categoryModel.updatedAt
+  };
+}
 
 export class IconService {
   
@@ -38,9 +90,14 @@ export class IconService {
   } = {}): Promise<IconCategory[] | (IconCategory & { children: IconCategory[] })[]> {
     try {
       if (options.tree_structure) {
-        return await getCategoryTree();
+        const tree = await getCategoryTree();
+        return tree.map((item: any) => ({
+          ...convertIconCategoryModelToIconCategory(item),
+          children: item.children?.map((child: IconCategoryModel) => convertIconCategoryModelToIconCategory(child)) || []
+        }));
       } else {
-        return await getTopLevelCategories({ include_count: options.include_count });
+        const categories = await getTopLevelCategories({ include_count: options.include_count });
+        return categories.map(convertIconCategoryModelToIconCategory);
       }
     } catch (error) {
       console.error('Get categories failed:', error);
@@ -71,16 +128,17 @@ export class IconService {
       // 获取相关分类信息
       let categories: IconCategory[] = [];
       if (request.query || request.tags) {
-        categories = await searchIconCategories({
+        const categoryModels = await searchIconCategories({
           query: request.query,
           ai_keywords: request.tags,
           limit: 10
         });
+        categories = categoryModels.map(convertIconCategoryModelToIconCategory);
       }
       
       return {
         success: true,
-        icons: searchResult.icons,
+        icons: searchResult.icons.map(convertIconModelToIcon),
         total: searchResult.total,
         suggestions: searchResult.suggestions,
         categories
@@ -115,12 +173,13 @@ export class IconService {
       await updateCategoryUsage(categoryId);
       
       // 获取分类信息
-      const { findIconCategoryById } = await import('@/models/iconCategory');
-      const category = await findIconCategoryById(categoryId);
+      const { findIconCategoryById } = await import('@/lib/repositories/icons');
+      const categoryModel = await findIconCategoryById(categoryId);
+      const category = categoryModel ? convertIconCategoryModelToIconCategory(categoryModel) : undefined;
       
       return {
         success: true,
-        icons: result.icons,
+        icons: result.icons.map(convertIconModelToIcon),
         total: result.total,
         category
       };
@@ -145,11 +204,11 @@ export class IconService {
     error?: string;
   }> {
     try {
-      const icons = await getPopularIcons(params);
+      const iconModels = await getPopularIcons(params);
       
       return {
         success: true,
-        icons
+        icons: iconModels.map(convertIconModelToIcon)
       };
       
     } catch (error) {
@@ -197,15 +256,16 @@ export class IconService {
         const responseTime = Date.now() - startTime;
         
         await recordAIRequest({
-          type: 'icon_recommendation',
+          operationType: 'icon_recommendation',
+          aiModel: config.models.primary,
+          processingTimeMs: responseTime,
           success: true,
-          cached: true,
-          response_time: responseTime
+          estimatedCost: 0
         });
         
         return {
           success: true,
-          recommendations: cachedResult.analysis_result.recommendations,
+          recommendations: (cachedResult.analysisResult as any).recommendations,
           performance: {
             response_time: responseTime,
             cached: true
@@ -223,16 +283,16 @@ export class IconService {
           limit: 100
         });
         
-        availableIcons = searchResult.icons.filter(
-          icon => !request.existing_icons!.includes(icon.icon_id)
-        );
+        availableIcons = searchResult.icons
+          .map(convertIconModelToIcon)
+          .filter(icon => !request.existing_icons!.includes(icon.icon_id));
       } else {
         // 基于上下文搜索相关Icons
         const searchResult = await searchIcons({
           query: request.context,
           limit: 50
         });
-        availableIcons = searchResult.icons;
+        availableIcons = searchResult.icons.map(convertIconModelToIcon);
       }
       
       if (availableIcons.length === 0) {
@@ -261,21 +321,27 @@ export class IconService {
       
       // 缓存结果
       await createAIAnalysisCache({
-        cache_key: cacheKey,
-        cache_type: 'icon_recommendation',
-        ai_model: config.models.primary,
-        analysis_result: { recommendations: aiRecommendations.recommendations },
-        confidence_score: aiRecommendations.confidence_score,
-        expires_days: config.api.cacheDurationDays
+        cacheKey: cacheKey,
+        cacheType: 'icon_recommendation',
+        aiModel: config.models.primary,
+        inputData: {
+          context: request.context,
+          theme: request.theme,
+          mood: request.mood,
+          color_palette: request.color_palette
+        },
+        analysisResult: { recommendations: aiRecommendations.recommendations },
+        confidenceScore: aiRecommendations.confidence_score,
+        expiresInDays: config.api.cacheDurationDays
       });
       
       // 记录使用统计
       await recordAIRequest({
-        type: 'icon_recommendation',
+        operationType: 'icon_recommendation',
+        aiModel: config.models.primary,
+        processingTimeMs: responseTime,
         success: true,
-        cached: false,
-        response_time: responseTime,
-        estimated_cost: parseFloat((0.002).toFixed(4)) // 确保是有效数值，保留4位小数
+        estimatedCost: parseFloat((0.002).toFixed(4)) // 确保是有效数值，保留4位小数
       });
       
       return {
@@ -292,10 +358,11 @@ export class IconService {
       console.error('Icon recommendation failed:', error);
       
       await recordAIRequest({
-        type: 'icon_recommendation',
+        operationType: 'icon_recommendation',
+        aiModel: 'gemini-2.5-flash-preview-05-20',
+        processingTimeMs: responseTime,
         success: false,
-        cached,
-        response_time: responseTime
+        estimatedCost: 0
       });
       
       return {
@@ -513,24 +580,29 @@ ${JSON.stringify(iconsSummary, null, 2)}
     error?: string;
   }> {
     try {
-      const icon = await findIconById(iconId);
+      const iconModel = await findIconById(iconId);
       
-      if (!icon) {
+      if (!iconModel) {
         return {
           success: false,
           error: '图标不存在'
         };
       }
       
+      const icon = convertIconModelToIcon(iconModel);
+      
       // 获取分类信息
-      const { findIconCategoryById } = await import('@/models/iconCategory');
-      const category = await findIconCategoryById(icon.category_id);
+      const { findIconCategoryById } = await import('@/lib/repositories/icons');
+      const categoryModel = await findIconCategoryById(icon.category_id);
+      const category = categoryModel ? convertIconCategoryModelToIconCategory(categoryModel) : undefined;
       
       // 获取相关图标（同分类的热门图标）
       const relatedResult = await findIconsByCategory(icon.category_id, {
         limit: 8
       });
-      const relatedIcons = relatedResult.icons.filter(i => i.icon_id !== iconId);
+      const relatedIcons = relatedResult.icons
+        .map(convertIconModelToIcon)
+        .filter(i => i.icon_id !== iconId);
       
       // 更新使用统计
       await updateIconUsage(iconId);

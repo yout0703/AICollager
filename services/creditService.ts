@@ -1,11 +1,11 @@
-import { CreditTransaction, CreditOperationRequest } from "@/types/credits";
+import { CreditTransaction } from "@/db/schema/credits";
 import {
   createCreditTransaction,
   getUserCreditTransactions,
   getUserCreditsBalance,
   deductUserCredits,
   addUserCredits
-} from "@/models/credits";
+} from "@/lib/repositories/credits";
 
 // 查询用户积分余额
 export async function getUserBalance(userId: string): Promise<{
@@ -51,16 +51,7 @@ export async function consumeCredits(params: {
       premium_template: '使用高级拼图模板'
     };
     
-    const result = await deductUserCredits(
-      userId,
-      amount,
-      purpose,
-      titleMap[purpose],
-      descriptionMap[purpose],
-      purpose === 'collage' ? 'collage' : purpose === 'download' ? 'collage' : 'template',
-      relatedEntityId,
-      metadata
-    );
+    const result = await deductUserCredits(userId, amount, purpose);
     
     if (!result.success) {
       return {
@@ -70,10 +61,22 @@ export async function consumeCredits(params: {
       };
     }
     
+    // 创建积分交易记录
+    const transaction = await createCreditTransaction({
+      userId,
+      amount: -amount,
+      transactionType: 'spent',
+      title: titleMap[purpose],
+      description: descriptionMap[purpose],
+      relatedEntityType: purpose === 'collage' ? 'collage' : purpose === 'download' ? 'collage' : 'template',
+      relatedEntityId: relatedEntityId,
+      metadata: metadata || {}
+    });
+    
     return {
       success: true,
       newBalance: result.newBalance,
-      transaction: result.transaction
+      transaction
     };
     
   } catch (error) {
@@ -124,14 +127,25 @@ export async function earnCredits(params: {
       titleMap[reason],
       descriptionMap[reason],
       reason === 'invite' ? 'invitation' : reason,
-      relatedEntityId,
-      metadata
+      relatedEntityId
     );
+    
+    // 创建积分交易记录
+    const transaction = await createCreditTransaction({
+      userId,
+      amount,
+      transactionType: 'earned',
+      title: titleMap[reason],
+      description: descriptionMap[reason],
+      relatedEntityType: reason === 'invite' ? 'invitation' : reason,
+      relatedEntityId: relatedEntityId,
+      metadata: metadata || {}
+    });
     
     return {
       success: result.success,
       newBalance: result.newBalance,
-      transaction: result.transaction
+      transaction
     };
     
   } catch (error) {
@@ -175,7 +189,7 @@ export async function getUserTransactionHistory(
   options: {
     limit?: number;
     offset?: number;
-    type?: CreditTransaction['transaction_type'];
+    type?: 'earned' | 'spent';
   } = {}
 ): Promise<{
   transactions: CreditTransaction[];
@@ -185,15 +199,31 @@ export async function getUserTransactionHistory(
   try {
     const { limit = 20, offset = 0 } = options;
     
-    const transactions = await getUserCreditTransactions(userId, limit, offset);
+    const transactions = await getUserCreditTransactions(userId);
     
     // 如果需要过滤类型
     const filteredTransactions = options.type 
-      ? transactions.filter(t => t.transaction_type === options.type)
+      ? transactions.filter(t => t.transactionType === options.type)
       : transactions;
     
+    // 转换类型格式
+    const formattedTransactions: CreditTransaction[] = filteredTransactions.map(t => ({
+      id: t.id,
+      uuid: t.uuid,
+      userId: t.userId,
+      amount: t.amount,
+      balanceAfter: 0, // 临时值，实际应该从数据库获取
+      transactionType: t.transactionType as any,
+      title: t.title,
+      description: t.description,
+      relatedEntityType: t.relatedEntityType as any,
+      relatedEntityId: t.relatedEntityId,
+      metadata: t.metadata as any,
+      createdAt: new Date(t.createdAt)
+    }));
+    
     return {
-      transactions: filteredTransactions,
+      transactions: formattedTransactions,
       total: filteredTransactions.length,
       success: true
     };
@@ -219,15 +249,15 @@ export async function getUserCreditStats(userId: string): Promise<{
   try {
     const [balance, transactions] = await Promise.all([
       getUserCreditsBalance(userId),
-      getUserCreditTransactions(userId, 1000) // 获取较多记录用于统计
+      getUserCreditTransactions(userId) // 获取较多记录用于统计
     ]);
     
     const totalEarned = transactions
-      .filter(t => t.amount > 0)
+      .filter(t => t.transactionType === 'earned')
       .reduce((sum, t) => sum + t.amount, 0);
     
     const totalSpent = Math.abs(transactions
-      .filter(t => t.amount < 0)
+      .filter(t => t.transactionType === 'spent')
       .reduce((sum, t) => sum + t.amount, 0));
     
     return {

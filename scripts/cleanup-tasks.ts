@@ -1,5 +1,5 @@
-import { cleanupExpiredSessions } from '@/models/session';
-import { cleanupExpiredInvitations } from '@/models/invitation';
+import { cleanupExpiredSessions } from '@/lib/repositories/session';
+import { cleanupExpiredInvitations } from '@/lib/repositories/invitation';
 import { AICacheService } from '@/services/aiCacheService';
 import { AIStatsService } from '@/services/aiStatsService';
 
@@ -36,7 +36,7 @@ export async function runCleanupTasks(): Promise<{
     
     // 清理旧AI统计数据（保留90天）
     const aiStatsCleanup = await AIStatsService.cleanupOldStatistics(90);
-    const oldAIStats = aiStatsCleanup.cleaned_count;
+    const oldAIStats = aiStatsCleanup.cleanedCount;
     console.log(`清理了 ${oldAIStats} 条旧AI统计记录`);
     
     console.log('清理任务完成');

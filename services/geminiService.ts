@@ -1,13 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getAIConfig } from '@/lib/ai-config';
-import { 
+import { getAIConfig } from '../lib/ai-config';
+import {
   generateCacheKey,
   findAIAnalysisCache,
-  createAIAnalysisCache,
-  AIAnalysisCache
-} from '@/models/aiAnalysisCache';
-import { recordAIRequest } from '@/models/aiUsageStats';
-import { AIImageAnalysis, AILayoutSuggestion, CollageElement, CanvasConfig } from '@/types/collage';
+  createAIAnalysisCache
+} from '../lib/repositories/aiAnalysisCache';
+import { recordAIRequest } from '../lib/repositories/aiUsageStats';
+import { AIImageAnalysis, AILayoutSuggestion, CollageElement, CanvasConfig } from '../types/collage';
 
 // 初始化Gemini AI客户端
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -117,15 +116,16 @@ export async function analyzeImages(images: Array<{
       
       // 记录使用统计
       await recordAIRequest({
-        type: 'image_analysis',
+        operationType: 'image_analysis',
+        aiModel: config.models.primary,
+        processingTimeMs: responseTime,
         success: true,
-        cached: true,
-        response_time: responseTime
+        metadata: { cached: true }
       });
       
       return {
         success: true,
-        results: cachedResult.analysis_result.results,
+        results: (cachedResult.analysisResult as any).results,
         cached: true,
         response_time: responseTime
       };
@@ -202,12 +202,13 @@ export async function analyzeImages(images: Array<{
     // 缓存结果 - 添加错误处理
     try {
       await createAIAnalysisCache({
-        cache_key: cacheKey,
-        cache_type: 'image_analysis',
-        ai_model: config.models.primary,
-        analysis_result: { results },
-        confidence_score: results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length,
-        expires_days: config.api.cacheDurationDays
+        cacheKey: cacheKey,
+        aiModel: config.models.primary,
+        inputData: images,
+        cacheType: 'image_analysis',
+        analysisResult: { results },
+        confidenceScore: results.reduce((sum, r) => sum + r.confidence_score, 0) / results.length,
+        expiresInDays: config.api.cacheDurationDays
       });
       console.log('✅ 图片分析缓存创建成功');
     } catch (cacheError) {
@@ -217,11 +218,12 @@ export async function analyzeImages(images: Array<{
     
     // 记录使用统计
     await recordAIRequest({
-      type: 'image_analysis',
+      operationType: 'image_analysis',
+      aiModel: config.models.primary,
+      processingTimeMs: responseTime,
       success: true,
-      cached: false,
-      response_time: responseTime,
-      estimated_cost: parseFloat((images.length * 0.01).toFixed(4)) // 确保是有效数值，保留4位小数
+      estimatedCost: parseFloat((images.length * 0.01).toFixed(4)), // 确保是有效数值，保留4位小数
+      metadata: { cached: false }
     });
     
     return {
@@ -234,12 +236,15 @@ export async function analyzeImages(images: Array<{
   } catch (error) {
     const responseTime = Date.now() - startTime;
     
+    const config = getAIConfig();
+    
     // 记录失败统计
     await recordAIRequest({
-      type: 'image_analysis',
+      operationType: 'image_analysis',
+      aiModel: config.models.primary,
+      processingTimeMs: responseTime,
       success: false,
-      cached,
-      response_time: responseTime
+      metadata: { cached: true, error: error instanceof Error ? error.message : '未知错误' }
     });
     
     return {
@@ -305,15 +310,16 @@ export async function suggestLayout(params: {
       const responseTime = Date.now() - startTime;
       
       await recordAIRequest({
-        type: 'layout_suggestion',
+        operationType: 'layout_suggestion',
+        aiModel: config.models.primary,
+        processingTimeMs: responseTime,
         success: true,
-        cached: true,
-        response_time: responseTime
+        metadata: { cached: true }
       });
       
       return {
         success: true,
-        suggestion: cachedResult.analysis_result.suggestion,
+        suggestion: (cachedResult.analysisResult as any).suggestion,
         cached: true,
         response_time: responseTime
       };
@@ -531,12 +537,13 @@ ${JSON.stringify(params.preferences, null, 2)}
     // 缓存结果 - 添加错误处理，避免缓存失败影响主功能
     try {
       await createAIAnalysisCache({
-        cache_key: cacheKey,
-        cache_type: 'layout_suggestion',
-        ai_model: config.models.primary,
-        analysis_result: { suggestion },
-        confidence_score: suggestion.confidence_score,
-        expires_days: config.api.cacheDurationDays
+        cacheKey: cacheKey,
+        aiModel: config.models.primary,
+        inputData: params.images,
+        cacheType: 'layout_suggestion',
+        analysisResult: { suggestion },
+        confidenceScore: suggestion.confidence_score,
+        expiresInDays: config.api.cacheDurationDays
       });
       console.log('✅ 布局建议缓存创建成功');
     } catch (cacheError) {
@@ -546,11 +553,12 @@ ${JSON.stringify(params.preferences, null, 2)}
     
     // 记录使用统计
     await recordAIRequest({
-      type: 'layout_suggestion',
+      operationType: 'layout_suggestion',
+      aiModel: config.models.primary,
+      processingTimeMs: responseTime,
       success: true,
-      cached: false,
-      response_time: responseTime,
-      estimated_cost: parseFloat((0.005).toFixed(4))
+      estimatedCost: parseFloat((0.005).toFixed(4)),
+      metadata: { cached: false }
     });
     
     return {
@@ -563,11 +571,14 @@ ${JSON.stringify(params.preferences, null, 2)}
   } catch (error) {
     const responseTime = Date.now() - startTime;
     
+    const config = getAIConfig();
+    
     await recordAIRequest({
-      type: 'layout_suggestion',
+      operationType: 'layout_suggestion',
+      aiModel: config.models.primary,
+      processingTimeMs: responseTime,
       success: false,
-      cached,
-      response_time: responseTime
+      metadata: { cached, error: error instanceof Error ? error.message : '未知错误' }
     });
 
     return {
@@ -617,15 +628,16 @@ export async function generateColorScheme(params: {
       const responseTime = Date.now() - startTime;
       
       await recordAIRequest({
-        type: 'icon_recommendation',
+        operationType: 'icon_recommendation',
+        aiModel: config.models.primary,
+        processingTimeMs: responseTime,
         success: true,
-        cached: true,
-        response_time: responseTime
+        metadata: { cached: true }
       });
       
       return {
         success: true,
-        colorScheme: cachedResult.analysis_result.colorScheme,
+        colorScheme: (cachedResult.analysisResult as any).colorScheme,
         cached: true,
         response_time: responseTime
       };
@@ -687,12 +699,13 @@ ${JSON.stringify(dominantColors, null, 2)}
     // 缓存结果 - 添加错误处理
     try {
       await createAIAnalysisCache({
-        cache_key: cacheKey,
-        cache_type: 'icon_recommendation',
-        ai_model: config.models.primary,
-        analysis_result: { colorScheme },
-        confidence_score: colorScheme.confidence_score,
-        expires_days: config.api.cacheDurationDays
+        cacheKey: cacheKey,
+        aiModel: config.models.primary,
+        inputData: params.images,
+        cacheType: 'icon_recommendation',
+        analysisResult: { colorScheme },
+        confidenceScore: colorScheme.confidence_score,
+        expiresInDays: config.api.cacheDurationDays
       });
       console.log('✅ 配色方案缓存创建成功');
     } catch (cacheError) {
@@ -702,11 +715,12 @@ ${JSON.stringify(dominantColors, null, 2)}
     
     // 记录使用统计
     await recordAIRequest({
-      type: 'icon_recommendation',
+      operationType: 'icon_recommendation',
+      aiModel: config.models.primary,
+      processingTimeMs: responseTime,
       success: true,
-      cached: false,
-      response_time: responseTime,
-      estimated_cost: parseFloat((0.003).toFixed(4)) // 确保是有效数值，保留4位小数
+      estimatedCost: parseFloat((0.003).toFixed(4)), // 确保是有效数值，保留4位小数
+      metadata: { cached: false }
     });
     
     return {
@@ -719,11 +733,14 @@ ${JSON.stringify(dominantColors, null, 2)}
   } catch (error) {
     const responseTime = Date.now() - startTime;
     
+    const config = getAIConfig();
+    
     await recordAIRequest({
-      type: 'icon_recommendation',
+      operationType: 'icon_recommendation',
+      aiModel: config.models.primary,
+      processingTimeMs: responseTime,
       success: false,
-      cached,
-      response_time: responseTime
+      metadata: { cached, error: error instanceof Error ? error.message : '未知错误' }
     });
     
     return {

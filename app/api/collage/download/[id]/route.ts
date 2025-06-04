@@ -18,12 +18,12 @@ export async function POST(
     }
     
     const collageService = new CollageService();
-    const result = await collageService.downloadCollage(collageId, userId || undefined);
+    const result = await collageService.downloadCollage(collageId);
     
     return NextResponse.json({
       success: true,
-      downloadUrl: result.downloadUrl,
-      remainingCredits: result.remainingCredits
+      downloadUrl: result.url,
+      filename: result.filename
     });
     
   } catch (error) {

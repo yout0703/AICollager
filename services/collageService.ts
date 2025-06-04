@@ -9,8 +9,8 @@ import {
   AILayoutSuggestion,
   AIImageAnalysis
 } from '@/types/collage';
-import { collageModel } from '@/models/collage';
-import { collageImageModel } from '@/models/collageImage';
+import { collageModel } from '@/lib/repositories/collage';
+import { collageImageModel } from '@/lib/repositories/collageImage';
 import { 
   analyzeImages, 
   suggestLayout, 
@@ -25,6 +25,7 @@ import { consumeCredits, checkCreditsAvailable } from './creditService';
 import { getUserInfo, incrementSessionTrialUsageCount, checkSessionTrialLimit as checkSessionLimit, getOrCreateUserSession } from './userService';
 import { IconService } from '@/services/iconService';
 import { AI_CONFIG } from '@/lib/ai-config';
+import type { Collage as DbCollage } from "@/lib/repositories/collage";
 
 export interface CollageGenerationRequest {
   user_id?: string;
@@ -201,49 +202,42 @@ export class CollageService {
    * 获取拼图详情
    */
   async getCollageById(id: string, userId?: string): Promise<Collage | null> {
-    const collage = await collageModel.findById(id);
+    const dbCollage = await collageModel.findById(id);
     
-    if (!collage) {
+    if (!dbCollage) {
       return null;
     }
 
-    // 如果拼图是私有的，需要检查访问权限
-    if (collage.visibility === 'private') {
-      if (!userId) {
-        throw new Error('无权访问此拼图');
-      }
-      
-      // 将 Clerk 用户ID 转换为数据库 UUID 进行比较
-      const user = await getUserInfo(userId, 'clerk_id');
-      if (!user || collage.user_id !== user.uuid) {
-        throw new Error('无权访问此拼图');
-      }
+    // 检查访问权限
+    if (dbCollage.visibility === 'private' && userId && dbCollage.userId !== userId) {
+      return null;
     }
 
     // 增加查看次数
     await collageModel.incrementViewCount(id);
 
-    return collage;
+    return transformDbCollageToCollage(dbCollage);
   }
 
   /**
-   * 获取用户拼图列表
+   * 获取用户拼图列表（支持分页）
    */
-  async getUserCollages(userId: string, page = 1, limit = 10) {
-    // userId 可能是 Clerk ID，需要转换为数据库 UUID
+  async getUserCollages(userId: string, page = 1, limit = 10): Promise<Collage[]> {
     const user = await getUserInfo(userId, 'clerk_id');
     if (!user) {
       throw new Error('用户不存在');
     }
     
-    return await collageModel.findByUserId(user.uuid, page, limit);
+    const dbCollages = await collageModel.findByUser(user.uuid, { page, limit });
+    return dbCollages.map(transformDbCollageToCollage);
   }
 
   /**
    * 获取会话拼图列表（未登录用户）
    */
   async getSessionCollages(sessionId: string): Promise<Collage[]> {
-    return await collageModel.findBySessionId(sessionId);
+    const dbCollages = await collageModel.findBySessionId(sessionId);
+    return dbCollages.map(transformDbCollageToCollage);
   }
 
   /**
@@ -264,80 +258,51 @@ export class CollageService {
 
     // 验证拼图所有权
     const collage = await collageModel.findById(id);
-    if (!collage || collage.user_id !== user.uuid) {
+    if (!collage || collage.userId !== user.uuid) {
       throw new Error('拼图不存在或无权修改');
     }
 
     // 直接传递数据给model，它会自动处理last_edited_at的更新
-    return await collageModel.update(id, data);
+    return transformDbCollageToCollage(await collageModel.update(id, data));
   }
 
   /**
-   * 删除拼图
+   * 删除拼图（软删除）
    */
-  async deleteCollage(id: string, userId: string): Promise<void> {
-    // userId 可能是 Clerk ID，需要转换为数据库 UUID
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      throw new Error('用户不存在');
-    }
-
+  async deleteCollage(collageId: string, userId: string): Promise<boolean> {
     // 验证拼图所有权
-    const collage = await collageModel.findById(id);
-    if (!collage || collage.user_id !== user.uuid) {
-      throw new Error('拼图不存在或无权删除');
+    const dbCollage = await collageModel.findById(collageId);
+    if (!dbCollage) {
+      throw new Error('拼图不存在');
     }
 
-    await collageModel.softDelete(id);
+    const user = await getUserInfo(userId, 'clerk_id');
+    if (!user || dbCollage.userId !== user.uuid) {
+      throw new Error('无权删除此拼图');
+    }
+
+    return await collageModel.softDelete(collageId);
   }
 
   /**
    * 下载拼图
    */
-  async downloadCollage(id: string, userId?: string): Promise<{
-    downloadUrl: string;
-    remainingCredits?: number;
-  }> {
-    const collage = await collageModel.findById(id);
-    if (!collage) {
+  async downloadCollage(collageId: string): Promise<{ url: string; filename: string }> {
+    const dbCollage = await collageModel.findById(collageId);
+    if (!dbCollage) {
       throw new Error('拼图不存在');
     }
 
-    let user: any = null;
-    if (userId) {
-      // userId 是 Clerk 用户 ID，需要转换为数据库信息
-      user = await getUserInfo(userId, 'clerk_id');
-      if (!user) {
-        throw new Error('用户不存在');
-      }
-    }
-
-    // 检查访问权限
-    if (collage.visibility === 'private' && (!user || collage.user_id !== user.uuid)) {
-      throw new Error('无权下载此拼图');
-    }
-
-    // 如果是登录用户且不是自己的拼图，需要扣除下载积分
-    if (user && collage.user_id !== user.uuid) {
-      if (user.credits < AI_CONFIG.credits.download) {
-        throw new Error('积分不足，无法下载高清图片');
-      }
-
-      await consumeCredits({
-        userId: user.uuid, // 使用数据库UUID
-        amount: AI_CONFIG.credits.download,
-        purpose: 'download',
-        relatedEntityId: collage.uuid
-      });
+    if (dbCollage.status !== 'completed') {
+      throw new Error('拼图尚未完成生成');
     }
 
     // 增加下载次数
-    await collageModel.incrementDownloadCount(id);
+    await collageModel.incrementDownloadCount(collageId);
 
-    // 返回下载链接
     return {
-      downloadUrl: collage.full_image_url || collage.preview_url || '',
-      remainingCredits: user?.credits
+      url: dbCollage.fullImageUrl || dbCollage.previewUrl || '',
+      filename: `${dbCollage.title || 'collage'}_${dbCollage.uuid}.png`
     };
   }
 
@@ -345,7 +310,8 @@ export class CollageService {
    * 获取精选拼图
    */
   async getFeaturedCollages(limit = 12): Promise<Collage[]> {
-    return await collageModel.getFeaturedCollages(limit);
+    const dbCollages = await collageModel.getFeaturedCollages(limit);
+    return dbCollages.map(transformDbCollageToCollage);
   }
 
   // ===== 私有方法 =====
@@ -420,12 +386,11 @@ export class CollageService {
     }
 
     const collageData = {
-      user_id: databaseUserId,
-      session_id: request.session_id,
+      userId: databaseUserId,
+      sessionId: request.session_id,
       title: request.title || '我的拼图',
       description: request.description,
-      images: [], // 添加缺失的images字段
-      canvas_config: defaultCanvas,
+      canvasConfig: defaultCanvas,
       elements: [] as CollageElement[],
       metadata: {
         userPreferences: request.preferences,
@@ -433,7 +398,8 @@ export class CollageService {
       }
     };
 
-    return await collageModel.create(collageData);
+    const dbCollage = await collageModel.create(collageData);
+    return transformDbCollageToCollage(dbCollage);
   }
 
   /**
@@ -755,14 +721,14 @@ export class CollageService {
   ): Promise<Collage> {
     // 更新拼图数据
     await collageModel.update(collageId, {
-      canvas_config: collageData.canvas_config,
+      canvasConfig: collageData.canvas_config,
       elements: collageData.elements
     });
 
     // 更新状态为完成
     await collageModel.updateStatus(collageId, 'completed', 'completed', {
-      ai_processing_time: processingTime,
-      ai_model: AI_CONFIG.models.primary
+      aiProcessingTime: processingTime,
+      aiModel: AI_CONFIG.models.primary
     });
 
     const updatedCollage = await collageModel.findById(collageId);
@@ -770,7 +736,7 @@ export class CollageService {
       throw new Error('获取完成的拼图失败');
     }
 
-    return updatedCollage;
+    return transformDbCollageToCollage(updatedCollage);
   }
 
   /**
@@ -1114,55 +1080,6 @@ export class CollageService {
   }
 
   /**
-   * 生成环形布局元素
-   */
-  private generateCircularElements(suggestion: any, imageAnalyses: any[], canvas_config: any, effectiveWidth: number, effectiveHeight: number, elements: CollageElement[]): void {
-    suggestion.suggestions.forEach((imgSuggestion: any, index: number) => {
-      if (index < imageAnalyses.length) {
-        const imageAnalysis = imageAnalyses[imgSuggestion.image_index || index];
-        
-        const actualX = canvas_config.padding + (imgSuggestion.position.x / 100) * effectiveWidth;
-        const actualY = canvas_config.padding + (imgSuggestion.position.y / 100) * effectiveHeight;
-        const actualWidth = (imgSuggestion.position.width / 100) * effectiveWidth;
-        const actualHeight = (imgSuggestion.position.height / 100) * effectiveHeight;
-        
-        console.log(`⭕ 生成环形图片元素 ${index + 1}:`, {
-          position: { x: actualX, y: actualY, width: actualWidth, height: actualHeight },
-          rotation: imgSuggestion.rotation
-        });
-        
-        const element = {
-          id: `image-${index}`,
-          type: 'image',
-          zIndex: imgSuggestion.z_index || 1,
-          transform: {
-            x: actualX,
-            y: actualY,
-            width: actualWidth,
-            height: actualHeight,
-            rotation: imgSuggestion.rotation || 0,
-            scaleX: 1,
-            scaleY: 1,
-            flipX: false,
-            flipY: false
-          },
-          style: {
-            opacity: 1,
-            borderRadius: imgSuggestion.borderRadius || 0
-          },
-          isLocked: false,
-          isVisible: true,
-          src: imageAnalysis.url,
-          originalSrc: imageAnalysis.url,
-          alt: `Image ${index + 1}`
-        } as ImageElement;
-        
-        elements.push(element);
-      }
-    });
-  }
-
-  /**
    * 生成通用AI布局元素 - 支持遮罩拼图模式
    */
   private generateGenericAIElements(suggestion: any, imageAnalyses: any[], canvas_config: any, effectiveWidth: number, effectiveHeight: number, elements: CollageElement[]): void {
@@ -1365,4 +1282,67 @@ export class CollageService {
   }
 }
 
-export const collageService = new CollageService(); 
+// 数据库模型转业务模型
+function transformDbCollageToCollage(dbCollage: any): any {
+  return {
+    id: dbCollage.id,
+    uuid: dbCollage.uuid,
+    user_id: dbCollage.userId || undefined,
+    session_id: dbCollage.sessionId || undefined,
+    title: dbCollage.title || undefined,
+    description: dbCollage.description || undefined,
+    
+    // 默认值用于必需字段
+    canvas_config: dbCollage.canvasConfig || { 
+      width: 800, 
+      height: 600, 
+      aspectRatio: '4:3', 
+      backgroundColor: '#ffffff', 
+      padding: 20 
+    },
+    elements: Array.isArray(dbCollage.elements) ? dbCollage.elements : [],
+    metadata: dbCollage.metadata || { 
+      aiAnalysis: {
+        processingTime: 0,
+        model: '',
+        confidence: 0,
+        recommendations: [],
+        colorPalette: [],
+        theme: '',
+        mood: ''
+      },
+      performance: {}
+    },
+    
+    template_id: dbCollage.templateId || undefined,
+    generated_style: dbCollage.generatedStyle || undefined,
+    user_preferences: dbCollage.userPreferences || undefined,
+    
+    thumbnail_url: dbCollage.thumbnailUrl || undefined,
+    preview_url: dbCollage.previewUrl || undefined,
+    full_image_url: dbCollage.fullImageUrl || undefined,
+    
+    ai_model: dbCollage.aiModel || undefined,
+    ai_processing_time: dbCollage.aiProcessingTime || undefined,
+    credits_used: dbCollage.creditsUsed || 0,
+    
+    status: dbCollage.status as any || 'draft',
+    generation_status: dbCollage.generationStatus as any || 'pending',
+    
+    visibility: dbCollage.visibility as any || 'private',
+    is_featured: dbCollage.isFeatured || false,
+    download_count: dbCollage.downloadCount || 0,
+    view_count: dbCollage.viewCount || 0,
+    
+    version: dbCollage.version || 1,
+    parent_collage_id: dbCollage.parentCollageId || undefined,
+    
+    started_at: dbCollage.startedAt?.toISOString() || dbCollage.createdAt.toISOString(),
+    completed_at: dbCollage.completedAt?.toISOString() || undefined,
+    last_edited_at: dbCollage.lastEditedAt?.toISOString() || dbCollage.updatedAt.toISOString(),
+    created_at: dbCollage.createdAt.toISOString(),
+    updated_at: dbCollage.updatedAt.toISOString(),
+  };
+}
+
+export const collageService = new CollageService();

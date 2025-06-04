@@ -1,4 +1,4 @@
-import { findUserByEmail, createUser } from "@/models/user";
+import { findUserByEmail, createUser } from "@/lib/repositories/user";
 import { respData, respErr } from "@/lib/resp";
 
 import { currentUser } from "@clerk/nextjs/server";
@@ -20,10 +20,11 @@ export async function POST() {
     if (!userInfo) {
       // 创建新用户
       userInfo = await createUser({
-        clerk_user_id: user.id,
+        clerkUserId: user.id,
         email: email,
-        display_name: nickname,
-        avatar_url: avatarUrl
+        displayName: nickname,
+        avatarUrl: avatarUrl,
+        inviteCode: Math.random().toString(36).substring(2, 12).toUpperCase()
       });
     }
 

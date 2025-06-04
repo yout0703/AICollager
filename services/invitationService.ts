@@ -1,4 +1,5 @@
 import { Invitation, CreateInvitationRequest } from "@/types/credits";
+import { Invitation as InvitationModel } from "@/db/schema/credits";
 import {
   createInvitation,
   findInvitationByCode,
@@ -7,9 +8,33 @@ import {
   markInvitationRewardGiven,
   getUserInvitations,
   getUserInvitationStats,
-  isInvitationValid
-} from "@/models/invitation";
-import { addUserCredits } from "@/models/credits";
+  isInvitationValid,
+  cleanupExpiredInvitations
+} from "@/lib/repositories/invitation";
+import { addUserCredits } from "@/lib/repositories/credits";
+
+// 类型转换工具函数
+function convertInvitationModelToInvitation(invitationModel: InvitationModel): Invitation {
+  return {
+    id: invitationModel.id,
+    uuid: invitationModel.uuid,
+    inviter_id: invitationModel.inviterId,
+    invitee_id: invitationModel.inviteeId || '',
+    invite_code: invitationModel.inviteCode,
+    email: invitationModel.email || '',
+    invitation_method: (invitationModel.invitationMethod as 'link' | 'email' | 'social') || 'link',
+    inviter_reward: invitationModel.inviterReward,
+    invitee_reward: invitationModel.inviteeReward,
+    status: invitationModel.status as 'pending' | 'completed' | 'expired',
+    clicked_at: invitationModel.clickedAt ? invitationModel.clickedAt.toISOString() : undefined,
+    registered_at: invitationModel.registeredAt ? invitationModel.registeredAt.toISOString() : undefined,
+    reward_given_at: invitationModel.rewardGivenAt ? invitationModel.rewardGivenAt.toISOString() : undefined,
+    metadata: (invitationModel.metadata as Record<string, any>) || {},
+    created_at: invitationModel.createdAt.toISOString(),
+    updated_at: invitationModel.updatedAt.toISOString(),
+    expires_at: invitationModel.expiresAt.toISOString()
+  };
+}
 
 // 生成邀请链接
 export async function generateInviteLink(params: {
@@ -37,13 +62,13 @@ export async function generateInviteLink(params: {
       };
     }
     
-    const invitation = await createInvitation({
-      inviter_id: user.uuid, // 使用数据库 UUID
-      email,
-      invitation_method: method,
-      inviter_reward: customReward?.inviterReward || 20,
-      invitee_reward: customReward?.inviteeReward || 20
+    const invitationModel = await createInvitation({
+      inviterId: user.uuid, // 使用数据库 UUID
+      inviterReward: customReward?.inviterReward || 20,
+      inviteeReward: customReward?.inviteeReward || 20
     });
+    
+    const invitation = convertInvitationModelToInvitation(invitationModel);
     
     // 生成邀请链接
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.aicollager.com';
@@ -80,11 +105,11 @@ export async function validateInviteCode(inviteCode: string): Promise<{
       };
     }
     
-    const invitation = await findInvitationByCode(inviteCode);
+    const invitationModel = await findInvitationByCode(inviteCode);
     
     return {
       valid: true,
-      invitation
+      invitation: invitationModel ? convertInvitationModelToInvitation(invitationModel) : undefined
     };
     
   } catch (error) {
@@ -149,39 +174,39 @@ export async function processInviteCompletion(inviteCode: string, inviteeId: str
       };
     }
     
-    const invitation = completionResult.invitation;
+    const invitationModel = completionResult.invitation;
     
     // 给邀请人发放奖励
     const inviterRewardResult = await addUserCredits(
-      invitation.inviter_id,
-      invitation.inviter_reward,
+      invitationModel.inviterId,
+      invitationModel.inviterReward,
       'invite',
       '邀请奖励',
       `成功邀请用户获得奖励`,
       'invitation',
-      invitation.uuid
+      invitationModel.uuid
     );
     
     // 给被邀请人发放奖励
     const inviteeRewardResult = await addUserCredits(
       inviteeId,
-      invitation.invitee_reward,
+      invitationModel.inviteeReward,
       'invite',
       '邀请奖励',
       `通过邀请码 ${inviteCode} 获得奖励`,
       'invitation',
-      invitation.uuid
+      invitationModel.uuid
     );
     
     // 标记奖励已发放
     if (inviterRewardResult.success && inviteeRewardResult.success) {
-      await markInvitationRewardGiven(inviteCode);
+      await markInvitationRewardGiven(inviteCode, inviteeId);
     }
     
     return {
       success: true,
-      inviterReward: invitation.inviter_reward,
-      inviteeReward: invitation.invitee_reward
+      inviterReward: invitationModel.inviterReward,
+      inviteeReward: invitationModel.inviteeReward
     };
     
   } catch (error) {
@@ -232,10 +257,21 @@ export async function getUserInviteHistory(
       };
     }
     
-    const [invitations, stats] = await Promise.all([
-      getUserInvitations(user.uuid, limit, offset),
+    const [invitationModels, statsResult] = await Promise.all([
+      getUserInvitations(user.uuid),
       getUserInvitationStats(user.uuid)
     ]);
+    
+    // 转换类型
+    const invitations = invitationModels.map(convertInvitationModelToInvitation);
+    
+    // 转换统计数据
+    const stats = {
+      total: statsResult.totalInvitations,
+      completed: statsResult.completedInvitations,
+      pending: statsResult.totalInvitations - statsResult.completedInvitations,
+      totalRewards: statsResult.totalRewardsEarned
+    };
     
     return {
       invitations,
@@ -266,14 +302,16 @@ export async function getInviteDetails(inviteCode: string): Promise<{
   message?: string;
 }> {
   try {
-    const invitation = await findInvitationByCode(inviteCode);
+    const invitationModel = await findInvitationByCode(inviteCode);
     
-    if (!invitation) {
+    if (!invitationModel) {
       return {
         success: false,
         message: '邀请不存在或已过期'
       };
     }
+    
+    const invitation = convertInvitationModelToInvitation(invitationModel);
     
     // TODO: 如果需要显示邀请人信息，可以在这里查询用户表
     // const inviter = await findUserByUuid(invitation.inviter_id);
@@ -318,10 +356,10 @@ export async function checkCanCreateInvite(userId: string): Promise<{
     const maxInvites = 100; // 最大邀请数限制
     
     return {
-      canCreate: stats.total < maxInvites,
-      currentInvites: stats.total,
+      canCreate: stats.totalInvitations < maxInvites,
+      currentInvites: stats.totalInvitations,
       maxInvites,
-      reason: stats.total >= maxInvites ? '已达到最大邀请数限制' : undefined
+      reason: stats.totalInvitations >= maxInvites ? '已达到最大邀请数限制' : undefined
     };
     
   } catch (error) {

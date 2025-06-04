@@ -1,6 +1,7 @@
-import { getAIConfig } from '@/lib/ai-config';
-import { checkUserDailyAILimit, incrementUserDailyAIUsage } from '@/services/userService';
-import { getTodayAIStats } from '@/models/aiUsageStats';
+import { getAIConfig } from '../lib/ai-config';
+import { checkUserDailyAILimit, incrementUserDailyAIUsage } from './userService';
+import { getTodayAIStats } from '../lib/repositories/aiUsageStats';
+import { db } from '../db/client';
 
 // 全局限制检查结果类型
 export interface LimitCheckResult {
@@ -24,7 +25,7 @@ export async function checkUserAILimit(userId: string): Promise<LimitCheckResult
     const config = getAIConfig();
     
     // userId 可能是 Clerk ID，需要先获取用户的数据库 UUID
-    const { getUserInfo } = await import('@/services/userService');
+    const { getUserInfo } = await import('./userService');
     const user = await getUserInfo(userId, 'clerk_id');
     
     if (!user) {
@@ -79,7 +80,7 @@ export async function checkGlobalAILimit(): Promise<LimitCheckResult> {
     
     // 获取今日全站使用统计
     const todayStats = await getTodayAIStats();
-    const currentUsage = todayStats?.total_requests || 0;
+    const currentUsage = todayStats?.totalRequests || 0;
     const maxUsage = config.limits.globalDailyLimit;
     
     if (currentUsage >= maxUsage) {
@@ -171,7 +172,7 @@ export async function consumeAIUsage(userId: string): Promise<{
     }
     
     // 获取用户的数据库 UUID
-    const { getUserInfo, incrementUserDailyAIUsage } = await import('@/services/userService');
+    const { getUserInfo, incrementUserDailyAIUsage } = await import('./userService');
     const user = await getUserInfo(userId, 'clerk_id');
     
     if (!user) {
@@ -213,7 +214,7 @@ export async function checkSessionTrialLimit(sessionId: string): Promise<LimitCh
     const config = getAIConfig();
     
     // 使用用户服务中的会话限制检查
-    const { checkSessionTrialLimit: checkLimit } = await import('@/services/userService');
+    const { checkSessionTrialLimit: checkLimit } = await import('./userService');
     const sessionCheck = await checkLimit(sessionId);
     
     if (!sessionCheck.canUse) {
@@ -278,7 +279,7 @@ export async function consumeTrialUsage(sessionId: string): Promise<{
     }
     
     // 增加会话试用使用次数
-    const { incrementSessionTrialUsageCount } = await import('@/services/userService');
+    const { incrementSessionTrialUsageCount } = await import('./userService');
     const incrementSuccess = await incrementSessionTrialUsageCount(sessionId);
     
     if (!incrementSuccess) {

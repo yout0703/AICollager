@@ -17,3 +17,10 @@ alwaysApply: true
 
 
 使用 pnpm 管理依赖。
+
+
+db/schema/           → 纯数据库定义层
+lib/validations/     → 数据验证层  
+lib/repositories/    → 数据访问层
+lib/services/        → 业务逻辑层
+types/              → 业务类型定义层
