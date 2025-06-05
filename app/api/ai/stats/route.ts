@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 import { AIStatsService } from '@/lib/services/aiStatsService';
 import { AICacheService } from '@/lib/services/aiCacheService';
 
 // AI统计信息API
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userInfo = await resolveUser();
     
     // 这个API需要管理员权限或用户只能查看今日统计
     // 暂时简化，所有用户都可以查看今日统计
@@ -90,9 +90,9 @@ export async function GET(req: NextRequest) {
 // 管理员功能：生成统计报告
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { clerkUserId } = await resolveUser() || {};
     
-    if (!userId) {
+    if (!clerkUserId) {
       return NextResponse.json(
         { error: '未登录' },
         { status: 401 }

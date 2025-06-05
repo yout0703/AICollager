@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 import { getUserInfo } from '@/lib/services/userService';
 import { checkAllAILimits, consumeAIUsage, checkSessionTrialLimit, consumeTrialUsage } from '@/lib/services/dailyLimitService';
 import { analyzeImages, performCompleteAnalysis } from '@/lib/services/geminiService';
@@ -8,7 +8,7 @@ import { preCheckConsumption, consumeCredits } from '@/lib/services/creditServic
 // 图片分析API
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userInfo = await resolveUser();
     const body = await req.json();
     const { images, complete_analysis = false, preferences, session_id } = body;
     
@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
     let user = null;
     let usageResult = null;
     
-    if (userId) {
-      // 已登录用户流程
-      user = await getUserInfo(userId, 'clerk_id');
+    if (userInfo?.userId) {
+      // 已登录用户流程 - userInfo.userId 是内部 UUID
+      user = await getUserInfo(userInfo.userId);
       if (!user) {
         return NextResponse.json(
           { error: '用户不存在' },

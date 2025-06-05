@@ -20,9 +20,9 @@ import {
   LayoutSuggestion,
   ColorScheme
 } from './geminiService';
-import { checkUserAILimit, checkSessionTrialLimit, consumeAIUsage, consumeTrialUsage } from './dailyLimitService';
-import { consumeCredits, checkCreditsAvailable } from './creditService';
-import { getUserInfo, incrementSessionTrialUsageCount, checkSessionTrialLimit as checkSessionLimit, getOrCreateUserSession } from './userService';
+import { checkUserAILimit, checkSessionTrialLimit, consumeAIUsage, consumeTrialUsage } from '@/lib/services/dailyLimitService';
+import { consumeCredits, checkCreditsAvailable } from '@/lib/services/creditService';
+import { getUserInfo, incrementSessionTrialUsageCount, checkSessionTrialLimit as checkSessionLimit, getOrCreateUserSession } from '@/lib/services/userService';
 import { IconService } from '@/lib/services/iconService';
 import { AI_CONFIG } from '@/lib/ai-config';
 import type { Collage as DbCollage } from "@/lib/repositories/collage";
@@ -161,17 +161,14 @@ export class CollageService {
       // 8. 扣除积分（如果是登录用户）
       if (request.user_id) {
         console.log('💰 扣除用户积分...');
-        // 获取用户的数据库UUID用于积分操作
-        const user = await getUserInfo(request.user_id, 'clerk_id');
-        if (user) {
-          await consumeCredits({
-            userId: user.uuid, // 使用数据库UUID
-            amount: AI_CONFIG.credits.collage,
-            purpose: 'collage',
-            relatedEntityId: updatedCollage.uuid
-          });
-          console.log('✅ 积分扣除完成:', { amount: AI_CONFIG.credits.collage });
-        }
+        // request.user_id 现在应该是内部 UUID
+        await consumeCredits({
+          userId: request.user_id, // 直接使用内部 UUID
+          amount: AI_CONFIG.credits.collage,
+          purpose: 'collage',
+          relatedEntityId: updatedCollage.uuid
+        });
+        console.log('✅ 积分扣除完成:', { amount: AI_CONFIG.credits.collage });
       }
 
       return {
@@ -200,6 +197,8 @@ export class CollageService {
 
   /**
    * 获取拼图详情
+   * @param id 拼图ID
+   * @param userId 内部用户UUID（不是Clerk ID）
    */
   async getCollageById(id: string, userId?: string): Promise<Collage | null> {
     const dbCollage = await collageModel.findById(id);
@@ -209,8 +208,11 @@ export class CollageService {
     }
 
     // 检查访问权限
-    if (dbCollage.visibility === 'private' && userId && dbCollage.userId !== userId) {
-      return null;
+    if (dbCollage.visibility === 'private' && userId) {
+      // 这里的 userId 已经是内部 UUID，直接比较
+      if (dbCollage.userId !== userId) {
+        throw new Error('无权访问此拼图');
+      }
     }
 
     // 增加查看次数
@@ -221,14 +223,10 @@ export class CollageService {
 
   /**
    * 获取用户拼图列表（支持分页）
+   * @param userId 内部用户UUID（不是Clerk ID）
    */
   async getUserCollages(userId: string, page = 1, limit = 10): Promise<Collage[]> {
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      throw new Error('用户不存在');
-    }
-    
-    const dbCollages = await collageModel.findByUser(user.uuid, { page, limit });
+    const dbCollages = await collageModel.findByUser(userId, { page, limit });
     return dbCollages.map(transformDbCollageToCollage);
   }
 
@@ -242,6 +240,8 @@ export class CollageService {
 
   /**
    * 更新拼图（包含编辑器数据）
+   * @param id 拼图ID
+   * @param userId 内部用户UUID（不是Clerk ID）
    */
   async updateCollage(id: string, userId: string, data: {
     title?: string;
@@ -250,15 +250,9 @@ export class CollageService {
     canvas_config?: CanvasConfig;
     elements?: CollageElement[];
   }): Promise<Collage> {
-    // userId 可能是 Clerk ID，需要转换为数据库 UUID
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      throw new Error('用户不存在');
-    }
-
     // 验证拼图所有权
     const collage = await collageModel.findById(id);
-    if (!collage || collage.userId !== user.uuid) {
+    if (!collage || collage.userId !== userId) {
       throw new Error('拼图不存在或无权修改');
     }
 
@@ -268,17 +262,14 @@ export class CollageService {
 
   /**
    * 删除拼图（软删除）
+   * @param collageId 拼图ID
+   * @param userId 内部用户UUID（不是Clerk ID）
    */
   async deleteCollage(collageId: string, userId: string): Promise<boolean> {
     // 验证拼图所有权
     const dbCollage = await collageModel.findById(collageId);
-    if (!dbCollage) {
-      throw new Error('拼图不存在');
-    }
-
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user || dbCollage.userId !== user.uuid) {
-      throw new Error('无权删除此拼图');
+    if (!dbCollage || dbCollage.userId !== userId) {
+      throw new Error('拼图不存在或无权删除');
     }
 
     return await collageModel.softDelete(collageId);
@@ -318,6 +309,7 @@ export class CollageService {
 
   /**
    * 验证用户身份和使用限制
+   * @param userId 内部用户UUID（不是Clerk ID）
    */
   private async validateUserAndLimits(userId?: string, sessionId?: string): Promise<{
     canUse: boolean;
@@ -327,7 +319,7 @@ export class CollageService {
   }> {
     if (userId) {
       // 登录用户：检查积分和每日限制
-      const user = await getUserInfo(userId, 'clerk_id'); 
+      const user = await getUserInfo(userId); // 使用内部 UUID 查询
       if (!user) {
         return { canUse: false, message: '用户不存在' };
       }
@@ -336,7 +328,9 @@ export class CollageService {
         return { canUse: false, message: '积分不足，请邀请朋友获取积分' };
       }
 
-      const limitCheck = await checkUserAILimit(userId);
+      // checkUserAILimit 需要 Clerk ID，但这里需要重新设计
+      // 暂时保留旧逻辑，但这个函数需要更新为接受内部 UUID
+      const limitCheck = await checkUserAILimit(user.clerk_user_id);
       if (!limitCheck.allowed) {
         return { canUse: false, message: limitCheck.reason || '今日AI使用次数已达上限' };
       }
@@ -376,10 +370,11 @@ export class CollageService {
       padding: 20
     };
 
-    // 如果有用户ID，需要将 Clerk ID 转换为数据库 UUID
+    // 如果有用户ID，使用缓存优化的函数获取数据库 UUID
     let databaseUserId: string | undefined = undefined;
     if (request.user_id) {
-      const user = await getUserInfo(request.user_id, 'clerk_id');
+      const { getUserInfoCached } = await import('./userCache');
+      const user = await getUserInfoCached(request.user_id);
       if (user) {
         databaseUserId = user.uuid;
       }

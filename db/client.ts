@@ -17,7 +17,7 @@ function createDbClient() {
     const nodeEnv = process.env.NODE_ENV
     if (nodeEnv === 'development' || !nodeEnv) {
       console.log('🔧 使用开发环境默认 PostgreSQL 配置')
-      const defaultUrl = 'postgresql://postgres:123123@localhost:5432/aicollager'
+      const defaultUrl = 'postgresql://postgres:123123@localhost:3333/aicollager'
       const client = postgres(defaultUrl, {
         max: 1,
         idle_timeout: 20,

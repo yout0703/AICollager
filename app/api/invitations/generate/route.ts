@@ -1,30 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/lib/services/userService';
+import { requireAuth } from '@/lib/utils/userResolver';
 import { generateInviteLink, checkCanCreateInvite } from '@/lib/services/invitationService';
 
 // 生成邀请链接
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { userId, clerkUserId } = await requireAuth();
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未登录' },
-        { status: 401 }
-      );
-    }
-    
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
-    }
-    
-    // 检查是否可以创建邀请（传递 Clerk ID）
-    const canCreateResult = await checkCanCreateInvite(userId);
+    // 检查是否可以创建邀请（使用 Clerk ID）
+    const canCreateResult = await checkCanCreateInvite(clerkUserId);
     if (!canCreateResult.canCreate) {
       return NextResponse.json(
         { error: canCreateResult.reason || '无法创建邀请' },
@@ -36,7 +20,7 @@ export async function POST(req: NextRequest) {
     const { email, method, custom_reward } = body;
     
     const result = await generateInviteLink({
-      inviterId: userId, // 传递 Clerk ID
+      inviterId: clerkUserId, // 传递 Clerk ID
       email,
       method: method || 'link',
       customReward: custom_reward

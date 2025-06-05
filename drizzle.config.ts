@@ -36,7 +36,7 @@ function getDatabaseUrl(): string {
   // 开发环境默认配置
   if (nodeEnv === 'development' || !nodeEnv) {
     console.log('🔧 使用开发环境默认 PostgreSQL 配置');
-    return 'postgresql://postgres:123123@localhost:5432/aicollager';
+    return 'postgresql://postgres:123123@localhost:3333/aicollager';
   }
   
   // 生产环境需要明确配置

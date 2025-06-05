@@ -24,3 +24,6 @@ lib/validations/     → 数据验证层
 lib/repositories/    → 数据访问层
 lib/services/        → 业务逻辑层
 types/              → 业务类型定义层
+
+- node 文件在引用其他文件的时候尽量使用 @ 开头的路径。
+- 如果没有特意明确说明要生成 markdown 格式是说明文档，就不要生成。

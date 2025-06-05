@@ -1,31 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 
 // 检查是否允许访问调试 API
-function isDebugAccessAllowed(userId?: string | null): boolean {
+function isDebugAccessAllowed(): boolean {
   // 在开发环境允许所有人访问
   if (process.env.NODE_ENV === 'development') {
     return true;
   }
 
-  // 在生产环境需要特定的环境变量或用户权限
+  // 在生产环境需要特定的环境变量
   const debugEnabled = process.env.ENABLE_DEBUG_API === 'true';
-  if (!debugEnabled) {
-    return false;
-  }
-
-  // 可以添加更多的权限检查逻辑
-  return true;
+  return debugEnabled;
 }
 
 export async function GET(request: NextRequest) {
   try {
-    // 获取用户认证信息
-    const { userId } = await auth();
-    
-    // 检查访问权限
-    if (!isDebugAccessAllowed(userId)) {
+    // 检查访问权限（调试API主要看环境变量）
+    if (!isDebugAccessAllowed()) {
       return NextResponse.json(
         { error: '调试 API 在生产环境中被禁用' },
         { status: 403 }

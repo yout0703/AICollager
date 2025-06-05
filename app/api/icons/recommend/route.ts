@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 import { IconService } from '@/lib/services/iconService';
 import { IconRecommendationRequest } from '@/types/icons';
 import { checkAllAILimits, checkSessionTrialLimit, consumeAIUsage, consumeTrialUsage } from '@/lib/services/dailyLimitService';
@@ -8,7 +8,7 @@ import { getUserInfo } from '@/lib/services/userService';
 // AI Icon推荐API
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userInfo = await resolveUser();
     const body = await req.json();
     
     const {
@@ -32,9 +32,9 @@ export async function POST(req: NextRequest) {
     let usageResult = null;
     
     // 验证用户和使用限制
-    if (userId) {
+    if (userInfo?.userId) {
       // 已登录用户流程
-      user = await getUserInfo(userId, 'clerk_id');
+      user = await getUserInfo(userInfo.userId);
       if (!user) {
         return NextResponse.json(
           { error: '用户不存在' },

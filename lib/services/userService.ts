@@ -19,6 +19,7 @@ import {
 import { addUserCredits } from "@/lib/repositories/credits";
 import { completeInvitation, markInvitationRewardGiven } from "@/lib/repositories/invitation";
 
+
 // 生成唯一邀请码
 function generateInviteCode(): string {
   return Math.random().toString(36).substring(2, 12).toUpperCase();
@@ -434,4 +435,6 @@ export async function checkUserPermission(clerkId: string, permission: 'admin' |
     console.error('Check user permission failed:', error);
     return false;
   }
-} 
+}
+
+ 

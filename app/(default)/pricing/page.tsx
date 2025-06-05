@@ -5,8 +5,6 @@ import { CheckIcon } from "@heroicons/react/20/solid";
 import { loadStripe } from "@stripe/stripe-js";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
-import { Check, Sparkles, Crown, Zap } from "lucide-react";
 import { toastMessage } from '@/lib/toast';
 
 const tiers = [

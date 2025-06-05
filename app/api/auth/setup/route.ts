@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
     
     // 检查用户是否已存在
     console.log('🔍 [AUTH_SETUP] 检查用户是否已存在');
-    let user = await getUserInfo(userId, 'clerk_id');
+    const { getUserInfoCached } = await import('@/lib/services/userCache');
+    let user = await getUserInfoCached(userId);
     console.log('🔍 [AUTH_SETUP] 数据库中的用户信息:', user ? { uuid: user.uuid, email: user.email } : '用户不存在');
     
     if (!user) {
@@ -150,7 +151,8 @@ export async function GET(req: NextRequest) {
     }
     
     console.log('🔍 [AUTH_SETUP] GET 开始查询用户信息');
-    const user = await getUserInfo(userId, 'clerk_id');
+    const { getUserInfoCached } = await import('@/lib/services/userCache');
+    const user = await getUserInfoCached(userId);
     console.log('🔍 [AUTH_SETUP] GET 查询结果:', user ? { uuid: user.uuid, needs_setup: false } : { needs_setup: true });
     
     return NextResponse.json({

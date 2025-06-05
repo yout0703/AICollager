@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { requireAuth } from '@/lib/utils/userResolver';
 import { IconService } from '@/lib/services/iconService';
 import { checkUserPermission } from '@/lib/services/userService';
 
 // 获取Icon统计信息
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { clerkUserId } = await requireAuth();
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: '请先登录' },
-        { status: 401 }
-      );
-    }
-    
-    // 检查管理员权限
-    const hasPermission = await checkUserPermission(userId, 'admin');
+    // 检查管理员权限（使用 Clerk ID）
+    const hasPermission = await checkUserPermission(clerkUserId, 'admin');
     if (!hasPermission) {
       return NextResponse.json(
         { error: '权限不足' },
@@ -51,17 +44,10 @@ export async function GET(req: NextRequest) {
 // 批量导入Icons
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { clerkUserId } = await requireAuth();
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: '请先登录' },
-        { status: 401 }
-      );
-    }
-    
-    // 检查管理员权限
-    const hasPermission = await checkUserPermission(userId, 'admin');
+    // 检查管理员权限（使用 Clerk ID）
+    const hasPermission = await checkUserPermission(clerkUserId, 'admin');
     if (!hasPermission) {
       return NextResponse.json(
         { error: '权限不足' },

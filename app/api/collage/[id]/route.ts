@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CollageService } from '@/lib/services/collageService';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = await resolveUser(); // userId 是内部 UUID 或 undefined
     const { id: collageId } = await params;
     
     if (!collageId) {
@@ -18,7 +18,7 @@ export async function GET(
     }
     
     const collageService = new CollageService();
-    const collage = await collageService.getCollageById(collageId, userId || undefined);
+    const collage = await collageService.getCollageById(collageId, userId);
     
     if (!collage) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = await resolveUser();
     const { id: collageId } = await params;
     
     if (!userId) {
@@ -133,7 +133,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = await resolveUser();
     const { id: collageId } = await params;
     
     if (!userId) {

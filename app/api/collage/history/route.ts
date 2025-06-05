@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CollageService } from '@/lib/services/collageService';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const userInfo = await resolveUser();
     const { searchParams } = new URL(request.url);
     
     const page = parseInt(searchParams.get('page') || '1');
@@ -13,9 +13,9 @@ export async function GET(request: NextRequest) {
     
     const collageService = new CollageService();
     
-    if (userId) {
+    if (userInfo?.userId) {
       // 登录用户：获取用户拼图历史
-      const result = await collageService.getUserCollages(userId, page, limit);
+      const result = await collageService.getUserCollages(userInfo.userId, page, limit);
       
       return NextResponse.json({
         success: true,

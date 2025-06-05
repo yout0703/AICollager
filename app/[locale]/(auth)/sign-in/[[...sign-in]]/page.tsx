@@ -1,13 +1,19 @@
 "use client";
 import { SignIn } from "@clerk/nextjs";
 
-export default async function SignInPage({
-  params,
-  searchParams,
-}: {
+interface SignInPageProps {
   params: Promise<{ locale: string }>;
   searchParams: Promise<{ return_url?: string }>;
-}) {
+}
+
+export default function SignInPage(props: SignInPageProps) {
+  return <SignInPageContent {...props} />;
+}
+
+async function SignInPageContent({
+  params,
+  searchParams,
+}: SignInPageProps) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const { locale } = resolvedParams;

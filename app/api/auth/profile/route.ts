@@ -1,31 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { getUserInfo, updateUserInfo } from '@/lib/services/userService';
+import { requireAuth } from '@/lib/utils/userResolver';
+import { updateUserInfo } from '@/lib/services/userService';
 
 // 获取用户信息
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    // 在边界处解析用户身份，后续业务逻辑只使用内部 UUID
+    const { userId, user } = await requireAuth();
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未登录' },
-        { status: 401 }
-      );
-    }
-    
-    const user = await getUserInfo(userId, 'clerk_id');
-    
-    if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
-    }
+    // 注意：这里的 userId 已经是内部 UUID，不是 Clerk ID
     
     // 返回用户信息（隐藏敏感信息）
     const publicUserInfo = {
-      uuid: user.uuid,
+      userId: userId, // 内部 UUID，前端主要使用这个
+      uuid: user.uuid, // 兼容性保留
+      clerkUserId: user.clerk_user_id, // 前端缓存需要
       email: user.email,
       username: user.username,
       display_name: user.display_name,
@@ -58,22 +47,9 @@ export async function GET(req: NextRequest) {
 // 更新用户信息
 export async function PUT(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未登录' },
-        { status: 401 }
-      );
-    }
-    
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
-    }
+    // 在边界处解析用户身份
+    const { userId, user } = await requireAuth();
+    // 注意：这里的 userId 已经是内部 UUID
     
     const body = await req.json();
     const { display_name, username, language, timezone, email_notifications } = body;
@@ -86,7 +62,7 @@ export async function PUT(req: NextRequest) {
     if (timezone !== undefined) updateData.timezone = timezone;
     if (email_notifications !== undefined) updateData.email_notifications = email_notifications;
     
-    const updatedUser = await updateUserInfo(user.uuid, updateData);
+    const updatedUser = await updateUserInfo(userId, updateData);
     
     if (!updatedUser) {
       return NextResponse.json(

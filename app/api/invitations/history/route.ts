@@ -1,33 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/lib/services/userService';
+import { requireAuth } from '@/lib/utils/userResolver';
 import { getUserInviteHistory } from '@/lib/services/invitationService';
 
 // 获取用户邀请历史
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未登录' },
-        { status: 401 }
-      );
-    }
-    
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
-    }
+    const { clerkUserId } = await requireAuth();
     
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '20');
     const offset = parseInt(searchParams.get('offset') || '0');
     
-    const result = await getUserInviteHistory(userId, {
+    const result = await getUserInviteHistory(clerkUserId, {
       limit,
       offset
     });

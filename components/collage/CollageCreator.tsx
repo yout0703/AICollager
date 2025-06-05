@@ -48,9 +48,9 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
   }, []);
 
   // 辅助函数获取翻译
-  const t = (key: string): string => {
+  const t = useCallback((key: string): string => {
     return getTranslation(dict, key);
-  };
+  }, [dict]);
 
   // 处理文件上传
   const handleFileUpload = useCallback((files: FileList | null) => {

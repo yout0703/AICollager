@@ -1,27 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/lib/services/userService';
+import { requireAuth } from '@/lib/utils/userResolver';
 import { getUserTransactionHistory, getUserCreditStats } from '@/lib/services/creditService';
 
 // 获取用户积分交易历史
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未登录' },
-        { status: 401 }
-      );
-    }
-    
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
-    }
+    const { userId } = await requireAuth();
     
     const { searchParams } = new URL(req.url);
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -29,7 +13,7 @@ export async function GET(req: NextRequest) {
     const type = searchParams.get('type') as any;
     const includeStats = searchParams.get('include_stats') === 'true';
     
-    const historyResult = await getUserTransactionHistory(user.uuid, {
+    const historyResult = await getUserTransactionHistory(userId, {
       limit,
       offset,
       type
@@ -52,7 +36,7 @@ export async function GET(req: NextRequest) {
     
     // 如果需要统计信息
     if (includeStats) {
-      const statsResult = await getUserCreditStats(user.uuid);
+      const statsResult = await getUserCreditStats(userId);
       if (statsResult.success) {
         response.stats = {
           currentBalance: statsResult.currentBalance,

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 import { CollageService, CollageGenerationRequest } from '@/lib/services/collageService';
 
 export async function POST(request: NextRequest) {
@@ -9,8 +9,8 @@ export async function POST(request: NextRequest) {
   try {
     console.log(`[${requestId}] 🚀 开始处理拼图生成请求`);
     
-    const { userId } = await auth();
-    console.log(`[${requestId}] 👤 用户认证: ${userId ? '已登录' : '未登录'}`);
+    const userInfo = await resolveUser();
+    console.log(`[${requestId}] 👤 用户认证: ${userInfo ? '已登录' : '未登录'}`);
     
     // 解析请求数据
     const formData = await request.formData();
@@ -73,8 +73,8 @@ export async function POST(request: NextRequest) {
 
     // 构建拼图生成请求
     const collageRequest: CollageGenerationRequest = {
-      user_id: userId || undefined,
-      session_id: userId ? undefined : generateSessionId(request),
+      user_id: userInfo?.userId || undefined,
+      session_id: userInfo ? undefined : generateSessionId(request),
       title: title || undefined,
       description: description || undefined,
       images: files,

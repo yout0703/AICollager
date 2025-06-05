@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CollageService } from '@/lib/services/collageService';
-import { auth } from '@clerk/nextjs/server';
+import { resolveUser } from '@/lib/utils/userResolver';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const userInfo = await resolveUser();
     const { id: collageId } = await params;
     
     if (!collageId) {

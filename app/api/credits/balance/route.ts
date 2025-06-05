@@ -1,29 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/lib/services/userService';
+import { requireAuth } from '@/lib/utils/userResolver';
 import { getUserBalance } from '@/lib/services/creditService';
 
 // 查询用户积分余额
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = await auth();
+    const { userId } = await requireAuth();
     
-    if (!userId) {
-      return NextResponse.json(
-        { error: '未登录' },
-        { status: 401 }
-      );
-    }
-    
-    const user = await getUserInfo(userId, 'clerk_id');
-    if (!user) {
-      return NextResponse.json(
-        { error: '用户不存在' },
-        { status: 404 }
-      );
-    }
-    
-    const balanceResult = await getUserBalance(user.uuid);
+    const balanceResult = await getUserBalance(userId);
     
     if (!balanceResult.success) {
       return NextResponse.json(
@@ -35,7 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       balance: balanceResult.balance,
-      user_uuid: user.uuid
+      user_uuid: userId
     });
     
   } catch (error) {

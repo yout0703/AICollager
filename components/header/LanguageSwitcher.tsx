@@ -52,10 +52,11 @@ export default function LanguageSwitcher({ locale, pathnameWithoutLocale }: Lang
         aria-haspopup="true"
       >
         <div className="w-6 h-4 relative overflow-hidden rounded-sm shadow-sm border border-gray-200">
-          <img 
+          <Image 
             src={`/flags/${locale}.svg`}
             alt={languageNames[locale]}
-            className="absolute inset-0 w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         </div>
         <span>{locale.toUpperCase()}</span>
@@ -85,10 +86,11 @@ export default function LanguageSwitcher({ locale, pathnameWithoutLocale }: Lang
                 onClick={closeDropdown}
               >
                 <div className="w-6 h-4 relative overflow-hidden rounded-sm shadow-sm border border-gray-200">
-                  <img 
+                  <Image 
                     src={`/flags/${l}.svg`}
                     alt={languageNames[l]}
-                    className="absolute inset-0 w-full h-full object-cover"
+                    fill
+                    className="object-cover"
                   />
                 </div>
                 <span>{languageNames[l]}</span>
