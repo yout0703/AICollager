@@ -3,7 +3,7 @@
 import React from 'react';
 import { getDictionary, getTranslation, type Locale } from '@/lib/i18n';
 import { CreditsBadge } from './CreditsBadge';
-import { InviteModal } from '../invite/InviteModal';
+import { InviteModal } from '@/components/invite/InviteModal';
 import { ResponsiveWrapper, ResponsiveButton } from './ResponsiveWrapper';
 import { LazyImage } from './LazyImage';
 

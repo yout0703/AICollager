@@ -1,5 +1,5 @@
-import { db } from '../../db/client'
-import { aiAnalysisCache, type AiAnalysisCache, type NewAiAnalysisCache } from '../../db/schema/ai'
+import { db } from '@/db/client'
+import { aiAnalysisCache, type AiAnalysisCache, type NewAiAnalysisCache } from '@/db/schema/ai'
 import { eq, and, lt, desc, sql, count, inArray } from 'drizzle-orm'
 import { createHash } from 'crypto'
 

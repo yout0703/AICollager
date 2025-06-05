@@ -8,8 +8,8 @@
  * - 历史数据管理
  */
 
-import { db } from '../../db/client'
-import { aiUsageStats, type AiUsageStats, type NewAiUsageStats } from '../../db/schema/ai'
+import { db } from '@/db/client'
+import { aiUsageStats, type AiUsageStats, type NewAiUsageStats } from '@/db/schema/ai'
 import { eq, and, gte, lte, desc, sql, count, sum, avg } from 'drizzle-orm'
 
 // 统一的操作类型定义

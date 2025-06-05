@@ -1,12 +1,12 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { getAIConfig } from '../lib/ai-config';
+import { getAIConfig } from '@/lib/ai-config';
 import {
   generateCacheKey,
   findAIAnalysisCache,
   createAIAnalysisCache
-} from '../lib/repositories/aiAnalysisCache';
-import { recordAIRequest } from '../lib/repositories/aiUsageStats';
-import { AIImageAnalysis, AILayoutSuggestion, CollageElement, CanvasConfig } from '../types/collage';
+} from '@/lib/repositories/aiAnalysisCache';
+import { recordAIRequest } from '@/lib/repositories/aiUsageStats';
+import { AIImageAnalysis, AILayoutSuggestion, CollageElement, CanvasConfig } from '@/types/collage';
 
 // 初始化Gemini AI客户端
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);

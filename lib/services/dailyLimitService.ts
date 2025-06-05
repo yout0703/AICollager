@@ -1,7 +1,7 @@
-import { getAIConfig } from '../lib/ai-config';
+import { getAIConfig } from '@/lib/ai-config';
 import { checkUserDailyAILimit, incrementUserDailyAIUsage } from './userService';
-import { getTodayAIStats } from '../lib/repositories/aiUsageStats';
-import { db } from '../db/client';
+import { getTodayAIStats } from '@/lib/repositories/aiUsageStats';
+import { db } from '@/db/client';
 
 // 全局限制检查结果类型
 export interface LimitCheckResult {

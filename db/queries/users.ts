@@ -1,7 +1,7 @@
-import { db } from '../client'
-import { users, userSessions } from '../schema/users'
+import { db } from '@/db/client'
+import { users, userSessions } from '@/db/schema/users'
 import { eq, and, desc, sql } from 'drizzle-orm'
-import type { User, NewUser, UserSession, NewUserSession } from '../schema/users'
+import type { User, NewUser, UserSession, NewUserSession } from '@/db/schema/users'
 
 /**
  * 用户查询类 - 替代原有的 UserModel

@@ -1,5 +1,5 @@
-import { db } from '../../db/client'
-import { collageImages, type CollageImage as DbCollageImage, type NewCollageImage } from '../../db/schema/collages'
+import { db } from '@/db/client'
+import { collageImages, type CollageImage as DbCollageImage, type NewCollageImage } from '@/db/schema/collages'
 import { eq } from 'drizzle-orm'
 
 // 创建拼图图片记录

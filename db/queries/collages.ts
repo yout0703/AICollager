@@ -1,8 +1,8 @@
-import { db } from '../client'
-import { collages, collageImages } from '../schema/collages'
-import { users } from '../schema/users'
+import { db } from '@/db/client'
+import { collages, collageImages } from '@/db/schema/collages'
+import { users } from '@/db/schema/users'
 import { eq, and, desc, sql, isNull, or } from 'drizzle-orm'
-import type { Collage, NewCollage, CollageImage, NewCollageImage } from '../schema/collages'
+import type { Collage, NewCollage, CollageImage, NewCollageImage } from '@/db/schema/collages'
 
 /**
  * 拼图查询类 - 替代原有的 CollageModel

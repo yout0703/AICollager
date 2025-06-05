@@ -5,7 +5,7 @@ export { UserQueries, UserSessionQueries } from './users'
 export { CollageQueries, CollageImageQueries } from './collages'
 
 // 导出数据库客户端
-export { db } from '../client'
+export { db } from '@/db/client'
 
 // 导出所有类型
-export * from '../schema' 
+export * from '@/db/schema' 
