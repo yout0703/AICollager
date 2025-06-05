@@ -35,11 +35,21 @@ export async function GET(
   } catch (error) {
     console.error('获取拼图详情错误:', error);
     
-    if (error instanceof Error && error.message.includes('无权访问')) {
-      return NextResponse.json(
-        { error: '无权访问此拼图' },
-        { status: 403 }
-      );
+    if (error instanceof Error) {
+      if (error.message.includes('无权访问')) {
+        // 检查具体的权限错误类型
+        if (error.message.includes('需要登录')) {
+          return NextResponse.json(
+            { error: '请先登录后访问此拼图' },
+            { status: 401 }
+          );
+        } else {
+          return NextResponse.json(
+            { error: '无权访问此拼图，您不是拼图所有者' },
+            { status: 403 }
+          );
+        }
+      }
     }
     
     return NextResponse.json(

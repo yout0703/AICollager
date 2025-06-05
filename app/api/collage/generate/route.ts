@@ -10,7 +10,12 @@ export async function POST(request: NextRequest) {
     console.log(`[${requestId}] 🚀 开始处理拼图生成请求`);
     
     const userInfo = await resolveUser();
-    console.log(`[${requestId}] 👤 用户认证: ${userInfo ? '已登录' : '未登录'}`);
+    console.log(`[${requestId}] 👤 用户认证结果:`, {
+      isAuthenticated: userInfo?.isAuthenticated,
+      hasUserId: !!userInfo?.userId,
+      userId: userInfo?.userId,
+      clerkUserId: userInfo?.clerkUserId
+    });
     
     // 解析请求数据
     const formData = await request.formData();
@@ -74,12 +79,28 @@ export async function POST(request: NextRequest) {
     // 构建拼图生成请求
     const collageRequest: CollageGenerationRequest = {
       user_id: userInfo?.userId || undefined,
-      session_id: userInfo ? undefined : generateSessionId(request),
+      session_id: userInfo?.isAuthenticated ? undefined : generateSessionId(request),
       title: title || undefined,
       description: description || undefined,
       images: files,
       preferences: preferences
     };
+
+    console.log(`[${requestId}] 🎨 构建拼图请求:`, {
+      hasUserId: !!collageRequest.user_id,
+      userId: collageRequest.user_id,
+      hasSessionId: !!collageRequest.session_id,
+      sessionId: collageRequest.session_id,
+      title: collageRequest.title,
+      imageCount: collageRequest.images.length
+    });
+
+    // 强制输出，确保能看到用户ID传递
+    if (collageRequest.user_id) {
+      console.log(`✅ [API] 用户ID将传递给拼图服务: ${collageRequest.user_id}`);
+    } else {
+      console.log(`❌ [API] 警告：没有用户ID传递给拼图服务！`);
+    }
 
     console.log(`[${requestId}] 🎨 开始拼图生成...`);
 

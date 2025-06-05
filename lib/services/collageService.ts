@@ -208,10 +208,15 @@ export class CollageService {
     }
 
     // 检查访问权限
-    if (dbCollage.visibility === 'private' && userId) {
-      // 这里的 userId 已经是内部 UUID，直接比较
+    if (dbCollage.visibility === 'private') {
+      // 对于私有拼图，必须有用户身份且是拼图所有者
+      if (!userId) {
+        throw new Error('无权访问此拼图：需要登录');
+      }
+      
       if (dbCollage.userId !== userId) {
-        throw new Error('无权访问此拼图');
+        console.log(`🚫 权限检查失败: 拼图所有者=${dbCollage.userId}, 当前用户=${userId}`);
+        throw new Error('无权访问此拼图：您不是拼图所有者');
       }
     }
 
@@ -370,14 +375,55 @@ export class CollageService {
       padding: 20
     };
 
-    // 如果有用户ID，使用缓存优化的函数获取数据库 UUID
+    // 处理用户ID - 关键步骤，确保用户归属正确
     let databaseUserId: string | undefined = undefined;
+    
+    console.log(`🔍 [CREATE_COLLAGE] 开始处理用户ID: request.user_id = ${request.user_id}`);
+    
     if (request.user_id) {
-      const { getUserInfoCached } = await import('./userCache');
-      const user = await getUserInfoCached(request.user_id);
-      if (user) {
-        databaseUserId = user.uuid;
+      // 检查传入的是否是UUID格式（36个字符，包含4个连字符）
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request.user_id);
+      
+      if (isUUID) {
+        // 传入的已经是数据库UUID，直接使用
+        databaseUserId = request.user_id;
+        console.log(`✅ [CREATE_COLLAGE] 接收到数据库UUID，直接使用: ${databaseUserId}`);
+      } else {
+        // 传入的是Clerk ID，需要解析为UUID
+        console.log(`🔍 [CREATE_COLLAGE] 接收到Clerk ID，开始解析: ${request.user_id}`);
+        
+        try {
+          const { getUserInfoCached } = await import('./userCache');
+          const user = await getUserInfoCached(request.user_id);
+          if (user) {
+            databaseUserId = user.uuid;
+            console.log(`✅ [CREATE_COLLAGE] Clerk ID解析成功: ${request.user_id} -> ${databaseUserId}`);
+          } else {
+            console.log(`⚠️ [CREATE_COLLAGE] 缓存查询失败，尝试直接查询`);
+            
+            // 方法2: 直接从数据库查询
+            const { getUserInfo } = await import('@/lib/services/userService');
+            const userFromDB = await getUserInfo(request.user_id, 'clerk_id');
+            if (userFromDB) {
+              databaseUserId = userFromDB.uuid;
+              console.log(`✅ [CREATE_COLLAGE] 直接查询成功: ${request.user_id} -> ${databaseUserId}`);
+            } else {
+              console.error(`❌ [CREATE_COLLAGE] 所有查询都失败，用户不存在: ${request.user_id}`);
+            }
+          }
+        } catch (error) {
+          console.error(`💥 [CREATE_COLLAGE] 用户查询异常:`, error);
+        }
       }
+    } else {
+      console.log(`⚠️ [CREATE_COLLAGE] 没有用户ID，创建匿名拼图`);
+    }
+    
+    console.log(`📋 [CREATE_COLLAGE] 最终用户ID结果: ${databaseUserId || 'null'}`);
+    
+    // 如果有用户但解析失败，这是一个严重问题
+    if (request.user_id && !databaseUserId) {
+      console.error(`🚨 [CREATE_COLLAGE] 严重错误：有用户ID但解析失败，这会导致拼图归属错误！`);
     }
 
     const collageData = {
@@ -393,7 +439,24 @@ export class CollageService {
       }
     };
 
+    console.log(`📝 [CREATE_COLLAGE] 创建拼图数据:`, {
+      hasUserId: !!collageData.userId,
+      userId: collageData.userId,
+      hasSessionId: !!collageData.sessionId,
+      sessionId: collageData.sessionId,
+      title: collageData.title,
+      description: collageData.description
+    });
+
     const dbCollage = await collageModel.create(collageData);
+    
+    console.log(`✅ [CREATE_COLLAGE] 拼图创建成功:`, {
+      uuid: dbCollage.uuid,
+      dbUserId: dbCollage.userId,
+      dbSessionId: dbCollage.sessionId,
+      title: dbCollage.title
+    });
+    
     return transformDbCollageToCollage(dbCollage);
   }
 

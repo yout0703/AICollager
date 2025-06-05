@@ -588,7 +588,27 @@ export default function EditorPage() {
         const response = await fetch(`/api/collage/${collageId}`);
         
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorData = await response.json().catch(() => ({}));
+          
+          // 处理不同的HTTP状态码
+          if (response.status === 401) {
+            // 需要登录
+            alert('请先登录后访问此拼图');
+            router.push('/sign-in');
+            return;
+          } else if (response.status === 403) {
+            // 权限不足
+            alert('无权访问此拼图，您不是拼图所有者');
+            router.push('/gallery');
+            return;
+          } else if (response.status === 404) {
+            // 拼图不存在
+            alert('拼图不存在或已被删除');
+            router.push('/gallery');
+            return;
+          }
+          
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();

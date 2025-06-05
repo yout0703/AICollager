@@ -262,15 +262,25 @@ export async function downloadImage(imageUrl: string, outputPath: string): Promi
 
 /**
  * 生成 R2 文件的公开访问 URL
+ * 
+ * 支持以下配置方式：
+ * 1. 自定义域名：设置 R2_PUBLIC_URL=https://static.aicollager.com
+ * 2. R2.dev 域名：使用默认的 pub-{account_id}.r2.dev
+ * 
+ * @param r2Key R2 文件键，例如：collage-images/abc123
+ * @returns 完整的公开访问 URL
  */
 export function getR2PublicUrl(r2Key: string): string {
   // 移除 r2Key 开头的 /，确保路径正确
   const cleanKey = r2Key.startsWith('/') ? r2Key.slice(1) : r2Key;
   
+  // 优先使用自定义域名
   if (process.env.R2_PUBLIC_URL) {
     // 确保 R2_PUBLIC_URL 不以 / 结尾
     const baseUrl = process.env.R2_PUBLIC_URL.replace(/\/$/, '');
-    return `${baseUrl}/${cleanKey}`;
+    const publicUrl = `${baseUrl}/${cleanKey}`;
+    console.log(`🔗 使用自定义域名: ${publicUrl}`);
+    return publicUrl;
   }
   
   // 使用默认的 R2.dev 域名
@@ -279,7 +289,9 @@ export function getR2PublicUrl(r2Key: string): string {
     throw new Error('R2_ACCOUNT_ID 环境变量未设置');
   }
   
-  return `https://pub-${accountId}.r2.dev/${cleanKey}`;
+  const publicUrl = `https://pub-${accountId}.r2.dev/${cleanKey}`;
+  console.log(`🔗 使用 R2.dev 域名: ${publicUrl}`);
+  return publicUrl;
 }
 
 /**
@@ -325,6 +337,15 @@ export function generateR2Key(prefix: string = 'collage-images', extension: stri
 
 /**
  * 验证 R2 配置
+ * 
+ * 必需的环境变量：
+ * - R2_ACCOUNT_ID: Cloudflare 账户 ID
+ * - R2_ACCESS_KEY_ID: R2 API Token 的 Access Key ID
+ * - R2_SECRET_ACCESS_KEY: R2 API Token 的 Secret Access Key
+ * - R2_BUCKET_NAME: R2 存储桶名称
+ * 
+ * 可选的环境变量：
+ * - R2_PUBLIC_URL: 自定义域名，例如 https://static.aicollager.com
  */
 export function validateR2Config(): boolean {
   const required = [
@@ -343,6 +364,9 @@ export function validateR2Config(): boolean {
   
   if (!process.env.R2_PUBLIC_URL) {
     console.warn('⚠️  未设置 R2_PUBLIC_URL，将使用默认的 R2.dev 域名');
+    console.warn('💡 如需使用自定义域名，请设置 R2_PUBLIC_URL=https://your-domain.com');
+  } else {
+    console.log(`✅ 使用自定义域名: ${process.env.R2_PUBLIC_URL}`);
   }
   
   return true;
