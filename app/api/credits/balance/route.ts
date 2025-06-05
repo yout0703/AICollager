@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/services/userService';
-import { getUserBalance } from '@/services/creditService';
+import { getUserInfo } from '@/lib/services/userService';
+import { getUserBalance } from '@/lib/services/creditService';
 
 // 查询用户积分余额
 export async function GET(req: NextRequest) {

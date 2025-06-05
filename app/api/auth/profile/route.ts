@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserInfo, updateUserInfo } from '@/services/userService';
+import { getUserInfo, updateUserInfo } from '@/lib/services/userService';
 
 // 获取用户信息
 export async function GET(req: NextRequest) {

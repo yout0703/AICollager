@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { registerUser, getUserInfo, initializeUserSettings } from '@/services/userService';
+import { registerUser, getUserInfo, initializeUserSettings } from '@/lib/services/userService';
 
 // 用户初始化设置
 export async function POST(req: NextRequest) {

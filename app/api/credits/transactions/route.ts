@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/services/userService';
-import { getUserTransactionHistory, getUserCreditStats } from '@/services/creditService';
+import { getUserInfo } from '@/lib/services/userService';
+import { getUserTransactionHistory, getUserCreditStats } from '@/lib/services/creditService';
 
 // 获取用户积分交易历史
 export async function GET(req: NextRequest) {

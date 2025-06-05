@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateInviteCode, handleInviteClick, getInviteDetails } from '@/services/invitationService';
+import { validateInviteCode, handleInviteClick, getInviteDetails } from '@/lib/services/invitationService';
 
 // 验证邀请码
 export async function GET(

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/services/userService';
-import { generateInviteLink, checkCanCreateInvite } from '@/services/invitationService';
+import { getUserInfo } from '@/lib/services/userService';
+import { generateInviteLink, checkCanCreateInvite } from '@/lib/services/invitationService';
 
 // 生成邀请链接
 export async function POST(req: NextRequest) {

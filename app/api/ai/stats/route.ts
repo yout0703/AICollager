@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { AIStatsService } from '@/services/aiStatsService';
-import { AICacheService } from '@/services/aiCacheService';
+import { AIStatsService } from '@/lib/services/aiStatsService';
+import { AICacheService } from '@/lib/services/aiCacheService';
 
 // AI统计信息API
 export async function GET(req: NextRequest) {

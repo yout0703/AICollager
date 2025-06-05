@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { IconService } from '@/services/iconService';
+import { IconService } from '@/lib/services/iconService';
 import { IconSearchRequest } from '@/types/icons';
 
 // Icon搜索API

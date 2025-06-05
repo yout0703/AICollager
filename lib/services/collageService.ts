@@ -23,7 +23,7 @@ import {
 import { checkUserAILimit, checkSessionTrialLimit, consumeAIUsage, consumeTrialUsage } from './dailyLimitService';
 import { consumeCredits, checkCreditsAvailable } from './creditService';
 import { getUserInfo, incrementSessionTrialUsageCount, checkSessionTrialLimit as checkSessionLimit, getOrCreateUserSession } from './userService';
-import { IconService } from '@/services/iconService';
+import { IconService } from '@/lib/services/iconService';
 import { AI_CONFIG } from '@/lib/ai-config';
 import type { Collage as DbCollage } from "@/lib/repositories/collage";
 
@@ -756,7 +756,7 @@ export class CollageService {
   private async uploadImageToR2(image: File): Promise<string> {
     try {
       // 验证 R2 配置
-      const { validateR2Config, uploadBufferToR2WithDedup, getAccessibleR2Url } = await import('../lib/storage');
+      const { validateR2Config, uploadBufferToR2WithDedup, getAccessibleR2Url } = await import('@/lib/storage');
       
       if (!validateR2Config()) {
         throw new Error('R2 配置验证失败');

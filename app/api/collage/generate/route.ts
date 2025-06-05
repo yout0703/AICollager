@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { CollageService, CollageGenerationRequest } from '@/services/collageService';
+import { CollageService, CollageGenerationRequest } from '@/lib/services/collageService';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/services/userService';
-import { getUsageLimitInfo } from '@/services/dailyLimitService';
+import { getUserInfo } from '@/lib/services/userService';
+import { getUsageLimitInfo } from '@/lib/services/dailyLimitService';
 
 // 检查AI使用限制API
 export async function GET(req: NextRequest) {

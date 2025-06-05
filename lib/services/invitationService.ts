@@ -52,7 +52,7 @@ export async function generateInviteLink(params: {
     const { inviterId, email, method = 'link', customReward } = params;
     
     // inviterId 可能是 Clerk ID，需要转换为数据库 UUID
-    const { getUserInfo } = await import('@/services/userService');
+    const { getUserInfo } = await import('@/lib/services/userService');
     const user = await getUserInfo(inviterId, 'clerk_id');
     
     if (!user) {
@@ -241,7 +241,7 @@ export async function getUserInviteHistory(
     const { limit = 20, offset = 0 } = options;
     
     // userId 可能是 Clerk ID，需要转换为数据库 UUID
-    const { getUserInfo } = await import('@/services/userService');
+    const { getUserInfo } = await import('@/lib/services/userService');
     const user = await getUserInfo(userId, 'clerk_id');
     
     if (!user) {
@@ -340,7 +340,7 @@ export async function checkCanCreateInvite(userId: string): Promise<{
 }> {
   try {
     // userId 可能是 Clerk ID，需要转换为数据库 UUID
-    const { getUserInfo } = await import('@/services/userService');
+    const { getUserInfo } = await import('@/lib/services/userService');
     const user = await getUserInfo(userId, 'clerk_id');
     
     if (!user) {

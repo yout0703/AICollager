@@ -1,4 +1,4 @@
-import { IconService } from '@/services/iconService';
+import { IconService } from '@/lib/services/iconService';
 import fs from 'fs';
 import path from 'path';
 

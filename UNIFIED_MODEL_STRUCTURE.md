@@ -260,7 +260,7 @@ Canvas.tsx 组件完全支持统一的 CollageElement 数据结构：
 
 ```typescript
 // AI生成拼图
-import { collageService } from '@/services/collageService';
+import { collageService } from '@/lib/services/collageService';
 
 const result = await collageService.generateCollage({
   images: uploadedFiles,

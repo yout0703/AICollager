@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CollageService } from '@/services/collageService';
+import { CollageService } from '@/lib/services/collageService';
 import { auth } from '@clerk/nextjs/server';
 
 export async function GET(

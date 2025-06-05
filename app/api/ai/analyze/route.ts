@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { getUserInfo } from '@/services/userService';
-import { checkAllAILimits, consumeAIUsage, checkSessionTrialLimit, consumeTrialUsage } from '@/services/dailyLimitService';
-import { analyzeImages, performCompleteAnalysis } from '@/services/geminiService';
-import { preCheckConsumption, consumeCredits } from '@/services/creditService';
+import { getUserInfo } from '@/lib/services/userService';
+import { checkAllAILimits, consumeAIUsage, checkSessionTrialLimit, consumeTrialUsage } from '@/lib/services/dailyLimitService';
+import { analyzeImages, performCompleteAnalysis } from '@/lib/services/geminiService';
+import { preCheckConsumption, consumeCredits } from '@/lib/services/creditService';
 
 // 图片分析API
 export async function POST(req: NextRequest) {

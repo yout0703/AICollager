@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { IconService } from '@/services/iconService';
+import { IconService } from '@/lib/services/iconService';
 
 // 获取Icon分类列表
 export async function GET(req: NextRequest) {

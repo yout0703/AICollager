@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { IconService } from '@/services/iconService';
-import { checkUserPermission } from '@/services/userService';
+import { IconService } from '@/lib/services/iconService';
+import { checkUserPermission } from '@/lib/services/userService';
 
 // 获取Icon统计信息
 export async function GET(req: NextRequest) {

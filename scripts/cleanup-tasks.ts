@@ -1,7 +1,7 @@
 import { cleanupExpiredSessions } from '@/lib/repositories/session';
 import { cleanupExpiredInvitations } from '@/lib/repositories/invitation';
-import { AICacheService } from '@/services/aiCacheService';
-import { AIStatsService } from '@/services/aiStatsService';
+import { AICacheService } from '@/lib/services/aiCacheService';
+import { AIStatsService } from '@/lib/services/aiStatsService';
 
 // 清理过期会话、邀请和AI相关数据的定期任务
 export async function runCleanupTasks(): Promise<{

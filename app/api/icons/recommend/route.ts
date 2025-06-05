@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { IconService } from '@/services/iconService';
+import { IconService } from '@/lib/services/iconService';
 import { IconRecommendationRequest } from '@/types/icons';
-import { checkAllAILimits, checkSessionTrialLimit, consumeAIUsage, consumeTrialUsage } from '@/services/dailyLimitService';
-import { getUserInfo } from '@/services/userService';
+import { checkAllAILimits, checkSessionTrialLimit, consumeAIUsage, consumeTrialUsage } from '@/lib/services/dailyLimitService';
+import { getUserInfo } from '@/lib/services/userService';
 
 // AI Icon推荐API
 export async function POST(req: NextRequest) {
