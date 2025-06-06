@@ -1,5 +1,5 @@
 import { User, CreateUserRequest, UserSession } from "@/types/user";
-import { User as DbUser, NewUser } from "@/db/schema/users";
+import { User as DbUser, NewUser, UserSession as DbUserSession } from "@/db/schema/users";
 import {
   findUserByEmail,
   findUserByClerkId,
@@ -25,32 +25,20 @@ function generateInviteCode(): string {
   return Math.random().toString(36).substring(2, 12).toUpperCase();
 }
 
-// 数据库用户模型转换为业务用户模型
+// 数据库用户模型转换为业务用户模型（转换时间字段格式和null/undefined）
 function transformDbUserToUser(dbUser: DbUser): User {
   return {
-    id: dbUser.id,
-    uuid: dbUser.uuid,
-    clerk_user_id: dbUser.clerkUserId,
-    email: dbUser.email,
+    ...dbUser,
     username: dbUser.username || undefined,
-    display_name: dbUser.displayName || undefined,
-    avatar_url: dbUser.avatarUrl || undefined,
-    credits: dbUser.credits,
-    total_earned_credits: dbUser.totalEarnedCredits,
-    total_used_credits: dbUser.totalUsedCredits,
-    invite_code: dbUser.inviteCode,
-    invited_by_code: dbUser.invitedByCode || undefined,
-    invited_by_user_id: dbUser.invitedByUserId || undefined,
-    daily_ai_usage: dbUser.dailyAiUsage,
-    last_ai_usage_date: dbUser.lastAiUsageDate?.toISOString().split('T')[0],
-    total_ai_usage: dbUser.totalAiUsage,
-    language: dbUser.language,
-    timezone: dbUser.timezone,
-    email_notifications: dbUser.emailNotifications,
+    displayName: dbUser.displayName || undefined,
+    avatarUrl: dbUser.avatarUrl || undefined,
+    invitedByCode: dbUser.invitedByCode || undefined,
+    invitedByUserId: dbUser.invitedByUserId || undefined,
+    lastAiUsageDate: dbUser.lastAiUsageDate?.toISOString().split('T')[0],
+    lastLoginAt: dbUser.lastLoginAt?.toISOString(),
+    createdAt: dbUser.createdAt.toISOString(),
+    updatedAt: dbUser.updatedAt.toISOString(),
     status: dbUser.status as 'active' | 'suspended' | 'deleted',
-    last_login_at: dbUser.lastLoginAt?.toISOString(),
-    created_at: dbUser.createdAt.toISOString(),
-    updated_at: dbUser.updatedAt.toISOString(),
   };
 }
 
@@ -62,13 +50,13 @@ export async function registerUser(userData: CreateUserRequest): Promise<{
   try {
     // 1. 创建用户数据
     const newUserData: NewUser = {
-      clerkUserId: userData.clerk_user_id,
+      clerkUserId: userData.clerkUserId,
       email: userData.email,
       username: userData.username || null,
-      displayName: userData.display_name || null,
-      avatarUrl: userData.avatar_url || null,
+      displayName: userData.displayName || null,
+      avatarUrl: userData.avatarUrl || null,
       inviteCode: generateInviteCode(),
-      invitedByCode: userData.invited_by_code || null,
+      invitedByCode: userData.invitedByCode || null,
     };
 
     const dbUser = await createUser(newUserData);
@@ -77,8 +65,8 @@ export async function registerUser(userData: CreateUserRequest): Promise<{
     let invitationReward = 0;
     
     // 2. 处理邀请奖励
-    if (userData.invited_by_code) {
-      const invitationResult = await completeInvitation(userData.invited_by_code, user.uuid);
+    if (userData.invitedByCode) {
+      const invitationResult = await completeInvitation(userData.invitedByCode, user.uuid);
       
       if (invitationResult.success && invitationResult.invitation) {
         const invitation = invitationResult.invitation;
@@ -89,7 +77,7 @@ export async function registerUser(userData: CreateUserRequest): Promise<{
           invitation.inviteeReward,
           'invite',
           '邀请奖励',
-          `通过邀请码 ${userData.invited_by_code} 获得奖励`,
+          `通过邀请码 ${userData.invitedByCode} 获得奖励`,
           'invitation',
           invitation.uuid
         );
@@ -155,11 +143,11 @@ export async function updateUserInfo(uuid: string, updates: Partial<User>): Prom
     const dbUpdates: Partial<DbUser> = {};
     
     if (updates.username !== undefined) dbUpdates.username = updates.username || null;
-    if (updates.display_name !== undefined) dbUpdates.displayName = updates.display_name || null;
-    if (updates.avatar_url !== undefined) dbUpdates.avatarUrl = updates.avatar_url || null;
+    if (updates.displayName !== undefined) dbUpdates.displayName = updates.displayName || null;
+    if (updates.avatarUrl !== undefined) dbUpdates.avatarUrl = updates.avatarUrl || null;
     if (updates.language !== undefined) dbUpdates.language = updates.language;
     if (updates.timezone !== undefined) dbUpdates.timezone = updates.timezone;
-    if (updates.email_notifications !== undefined) dbUpdates.emailNotifications = updates.email_notifications;
+    if (updates.emailNotifications !== undefined) dbUpdates.emailNotifications = updates.emailNotifications;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
 
     const dbUser = await updateUser(uuid, dbUpdates);
@@ -175,14 +163,14 @@ export async function updateUserInfo(uuid: string, updates: Partial<User>): Prom
 export async function initializeUserSettings(uuid: string, settings: {
   language?: string;
   timezone?: string;
-  email_notifications?: boolean;
+  emailNotifications?: boolean;
 }): Promise<boolean> {
   try {
     const dbSettings: Partial<DbUser> = {};
     
     if (settings.language) dbSettings.language = settings.language;
     if (settings.timezone) dbSettings.timezone = settings.timezone;
-    if (settings.email_notifications !== undefined) dbSettings.emailNotifications = settings.email_notifications;
+    if (settings.emailNotifications !== undefined) dbSettings.emailNotifications = settings.emailNotifications;
 
     const updatedUser = await updateUser(uuid, dbSettings);
     return !!updatedUser;
@@ -252,9 +240,9 @@ export async function incrementUserDailyAIUsage(uuid: string): Promise<boolean> 
 
 // 创建或获取用户会话
 export async function getOrCreateUserSession(sessionId: string, userData?: {
-  user_id?: string;
-  ip_address?: string;
-  user_agent?: string;
+  userId?: string;
+  ipAddress?: string;
+  userAgent?: string;
 }): Promise<UserSession | null> {
   try {
     // 先尝试查找现有会话
@@ -264,9 +252,9 @@ export async function getOrCreateUserSession(sessionId: string, userData?: {
       // 创建新会话
       session = await createSession({
         sessionId: sessionId,
-        userId: userData?.user_id,
-        ipAddress: userData?.ip_address,
-        userAgent: userData?.user_agent
+        userId: userData?.userId,
+        ipAddress: userData?.ipAddress,
+        userAgent: userData?.userAgent
       });
     } else {
       // 更新活动时间
@@ -277,14 +265,14 @@ export async function getOrCreateUserSession(sessionId: string, userData?: {
     if (session) {
       return {
         id: session.id,
-        session_id: session.sessionId,
-        user_id: session.userId || undefined,
-        trial_usage_count: session.trialUsageCount,
-        ip_address: session.ipAddress || undefined,
-        user_agent: session.userAgent || undefined,
-        last_activity_at: session.lastActivityAt.toISOString(),
-        created_at: session.createdAt.toISOString(),
-        expires_at: session.expiresAt.toISOString()
+        sessionId: session.sessionId,
+        userId: session.userId || undefined,
+        trialUsageCount: session.trialUsageCount,
+        ipAddress: session.ipAddress || undefined,
+        userAgent: session.userAgent || undefined,
+        lastActivityAt: session.lastActivityAt.toISOString(),
+        createdAt: session.createdAt.toISOString(),
+        expiresAt: session.expiresAt.toISOString()
       };
     }
     
@@ -380,14 +368,14 @@ export async function getUserActiveSessions(userId: string): Promise<UserSession
     // 转换会话数据格式
     return sessions.map(session => ({
       id: session.id,
-      session_id: session.sessionId,
-      user_id: session.userId || undefined,
-      trial_usage_count: session.trialUsageCount,
-      ip_address: session.ipAddress || undefined,
-      user_agent: session.userAgent || undefined,
-      last_activity_at: session.lastActivityAt.toISOString(),
-      created_at: session.createdAt.toISOString(),
-      expires_at: session.expiresAt.toISOString()
+      sessionId: session.sessionId,
+      userId: session.userId || undefined,
+      trialUsageCount: session.trialUsageCount,
+      ipAddress: session.ipAddress || undefined,
+      userAgent: session.userAgent || undefined,
+      lastActivityAt: session.lastActivityAt.toISOString(),
+      createdAt: session.createdAt.toISOString(),
+      expiresAt: session.expiresAt.toISOString()
     }));
     
   } catch (error) {

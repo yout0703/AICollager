@@ -34,11 +34,25 @@ export const collages = pgTable('ac_collages', {
   viewCount: integer('view_count').default(0).notNull(),
   downloadCount: integer('download_count').default(0).notNull(),
   likeCount: integer('like_count').default(0).notNull(),
+  isFeatured: integer('is_featured').default(0).notNull(), // 0=false, 1=true
   
   // AI处理信息
   aiProcessingTime: integer('ai_processing_time'),
   aiModel: varchar('ai_model', { length: 50 }),
   aiCost: decimal('ai_cost', { precision: 10, scale: 4 }).default('0'),
+  creditsUsed: integer('credits_used').default(0).notNull(),
+  
+  // 模板和版本信息
+  templateId: varchar('template_id', { length: 100 }),
+  generatedStyle: varchar('generated_style', { length: 100 }),
+  userPreferences: jsonb('user_preferences').default({}),
+  version: integer('version').default(1).notNull(),
+  parentCollageId: uuid('parent_collage_id'),
+  
+  // 时间记录
+  startedAt: timestamp('started_at', { withTimezone: true }),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  lastEditedAt: timestamp('last_edited_at', { withTimezone: true }),
   
   // 元数据
   metadata: jsonb('metadata').default({}),
@@ -98,11 +112,11 @@ export const collageImagesRelations = relations(collageImages, ({ one }) => ({
   }),
 }))
 
-// Zod Schemas
-export const insertCollageSchema = createInsertSchema(collages)
-export const selectCollageSchema = createSelectSchema(collages)
-export const insertCollageImageSchema = createInsertSchema(collageImages)
-export const selectCollageImageSchema = createSelectSchema(collageImages)
+// Zod Schemas (暂时保留，如果后续需要API验证可以启用)
+// export const insertCollageSchema = createInsertSchema(collages)
+// export const selectCollageSchema = createSelectSchema(collages)
+// export const insertCollageImageSchema = createInsertSchema(collageImages)
+// export const selectCollageImageSchema = createSelectSchema(collageImages)
 
 // TypeScript 类型
 export type Collage = typeof collages.$inferSelect

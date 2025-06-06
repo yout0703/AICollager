@@ -276,10 +276,10 @@ export function getR2PublicUrl(r2Key: string): string {
   
   // 优先使用自定义域名
   if (process.env.R2_PUBLIC_URL) {
+    console.log('🔗 使用自定义域名:', process.env.R2_PUBLIC_URL);
     // 确保 R2_PUBLIC_URL 不以 / 结尾
     const baseUrl = process.env.R2_PUBLIC_URL.replace(/\/$/, '');
     const publicUrl = `${baseUrl}/${cleanKey}`;
-    console.log(`🔗 使用自定义域名: ${publicUrl}`);
     return publicUrl;
   }
   

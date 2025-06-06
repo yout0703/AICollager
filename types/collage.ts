@@ -206,7 +206,7 @@ export interface AILayoutSuggestion {
     style: string;
   };
   suggestions: Array<{
-    image_index: number;
+    imageIndex: number;
     z_index: number;
     
     // 遮罩拼图专用字段
@@ -282,88 +282,92 @@ export interface CollageMetadata {
 }
 
 // 拼图主类型 - 数据库存储和API传输格式
+// 统一使用数据库字段命名（驼峰命名）
 export interface Collage {
   id: number;
   uuid: string;
-  user_id?: string;
-  session_id?: string;
-  title?: string;
-  description?: string;
+  userId: string | null;
+  sessionId: string | null;
+  title: string;
+  description: string | null;
   
-  // 拼图数据 - 这是Canvas组件需要的核心数据
-  canvas_config: CanvasConfig;
-  elements: CollageElement[];
-  metadata: CollageMetadata;
+  // 拼图数据 - 这是Canvas组件需要的核心数据  
+  canvasConfig: unknown; // 数据库中存储为 jsonb
+  elements: unknown; // 数据库中存储为 jsonb
+  metadata: unknown; // 数据库中存储为 jsonb
   
   // 模板和风格
-  template_id?: string;
-  generated_style?: string;
-  user_preferences?: Record<string, any>;
+  templateId: string | null;
+  generatedStyle: string | null;
+  userPreferences: unknown;
   
   // 图片资源
-  thumbnail_url?: string;
-  preview_url?: string;
-  full_image_url?: string;
+  thumbnailUrl: string | null;
+  previewUrl: string | null;
+  fullImageUrl: string | null;
   
   // AI相关
-  ai_model?: string;
-  ai_processing_time?: number;
-  credits_used: number;
+  aiModel: string | null;
+  aiProcessingTime: number | null;
+  creditsUsed: number;
   
   // 状态管理
-  status: 'draft' | 'processing' | 'completed' | 'failed' | 'deleted';
-  generation_status: 'pending' | 'analyzing' | 'generating' | 'rendering' | 'completed';
+  status: string;
+  generationStatus: string;
   
   // 权限和分享
-  visibility: 'private' | 'public' | 'unlisted';
-  is_featured: boolean;
-  download_count: number;
-  view_count: number;
+  visibility: string;
+  isFeatured: number; // 数据库存储为 0 或 1
+  downloadCount: number;
+  viewCount: number;
   
   // 版本控制
   version: number;
-  parent_collage_id?: string;
+  parentCollageId: string | null;
   
-  // 时间记录
-  started_at: string;
-  completed_at?: string;
-  last_edited_at: string;
-  created_at: string;
-  updated_at: string;
+  // 时间记录 - 数据库存储为 Date 对象
+  startedAt: Date | null;
+  completedAt: Date | null;
+  lastEditedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// 拼图图片记录类型
+// 拼图图片记录类型 - 与数据库模型保持一致
 export interface CollageImage {
   id: number;
   uuid: string;
-  collage_id: string;
-  image_index: number;
-  element_id?: string;
+  collageId: string;
+  imageIndex: number;
   
   // 图片信息
-  original_url: string;
-  processed_url?: string;
-  file_name?: string;
-  file_size?: number;
-  mime_type?: string;
+  originalUrl: string;
+  processedUrl: string | null;
+  thumbnailUrl: string | null;
+  
+  // 文件信息
+  fileName: string | null;
+  fileSize: number | null;
+  mimeType: string | null;
   
   // 图片属性
-  original_dimensions?: { width: number; height: number };
-  processed_dimensions?: { width: number; height: number };
+  width: number | null;
+  height: number | null;
+  format: string | null;
   
   // AI分析结果
-  ai_analysis?: Record<string, any>;
-  dominant_colors?: string[];
-  content_tags?: string[];
+  aiAnalysis: unknown; // 数据库中存储为 jsonb
   
-  // 处理状态
-  processing_status: 'uploaded' | 'processing' | 'completed' | 'failed';
+  // 元数据
+  metadata: unknown; // 数据库中存储为 jsonb
   
-  uploaded_at: string;
-  created_at: string;
+  // 时间记录
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// API请求类型
+// API请求类型 - 保持下划线命名（snake_case）用于外部API接口
+// 注意：这些接口与内部数据库模型（驼峰命名）有所不同，在业务逻辑层进行转换
 export interface CreateCollageRequest {
   user_id?: string;
   session_id?: string;

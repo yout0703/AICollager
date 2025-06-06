@@ -1,5 +1,5 @@
 import { db } from '@/db/client'
-import { aiAnalysisCache, type AiAnalysisCache, type NewAiAnalysisCache } from '@/db/schema/ai'
+import { aiAnalysisCache, type AIAnalysisCache, type NewAIAnalysisCache } from '@/db/schema/ai'
 import { eq, and, lt, desc, sql, count, inArray } from 'drizzle-orm'
 import { createHash } from 'crypto'
 
@@ -13,7 +13,7 @@ export function generateCacheKey(input: any): string {
 export async function findAIAnalysisCache(
   inputHash: string, 
   cacheType?: string
-): Promise<AiAnalysisCache | null> {
+): Promise<AIAnalysisCache | null> {
   try {
     const conditions = [
       eq(aiAnalysisCache.inputHash, inputHash),
@@ -55,7 +55,7 @@ export async function findAIAnalysisCache(
 export async function findMultipleAIAnalysisCache(
   inputHashes: string[], 
   cacheType: string
-): Promise<Record<string, AiAnalysisCache>> {
+): Promise<Record<string, AIAnalysisCache>> {
   try {
     if (inputHashes.length === 0) return {}
     
@@ -72,7 +72,7 @@ export async function findMultipleAIAnalysisCache(
     
     // 批量更新使用计数
     if (caches.length > 0) {
-      const cacheIds = caches.map((c: AiAnalysisCache) => c.uuid)
+      const cacheIds = caches.map((c: AIAnalysisCache) => c.uuid)
       await db
         .update(aiAnalysisCache)
         .set({
@@ -84,8 +84,8 @@ export async function findMultipleAIAnalysisCache(
     }
     
     // 转换为哈希映射
-    const result: Record<string, AiAnalysisCache> = {}
-    caches.forEach((cache: AiAnalysisCache) => {
+    const result: Record<string, AIAnalysisCache> = {}
+    caches.forEach((cache: AIAnalysisCache) => {
       result[cache.inputHash] = cache
     })
     
@@ -107,12 +107,12 @@ export async function createAIAnalysisCache(data: {
   confidenceScore?: number
   expiresInDays?: number
   metadata?: any
-}): Promise<AiAnalysisCache> {
+}): Promise<AIAnalysisCache> {
   try {
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + (data.expiresInDays || 30))
     
-    const newCache: NewAiAnalysisCache = {
+    const newCache: NewAIAnalysisCache = {
       inputHash: data.cacheKey,
       cacheType: data.cacheType,
       analysisResult: data.analysisResult,

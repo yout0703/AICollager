@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { toastMessage } from '@/lib/toast';
-import { ContextProviderProps, ContextProviderValue } from "@/types/context";
+import { ContextProviderProps, AppContextValue } from "@/types/context";
 
 import { User } from "@/types/user";
 
-export const AppContext = createContext({} as ContextProviderValue);
+export const AppContext = createContext({} as AppContextValue);
 
 export const AppContextProvider = ({ children }: ContextProviderProps) => {
   const [user, setUser] = useState<User | null | undefined>(undefined);

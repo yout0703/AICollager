@@ -6,8 +6,8 @@ interface UserInfo {
   clerkUserId: string;
   email: string;
   username?: string;
-  display_name?: string;
-  avatar_url?: string;
+  displayName?: string;
+  avatarUrl?: string;
   credits: number;
   [key: string]: any;
 }

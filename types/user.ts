@@ -2,58 +2,58 @@
 export interface User {
   id: number;
   uuid: string;
-  clerk_user_id: string;
+  clerkUserId: string;
   email: string;
   username?: string;
-  display_name?: string;
-  avatar_url?: string;
+  displayName?: string;
+  avatarUrl?: string;
   
   // 积分相关
   credits: number;
-  total_earned_credits: number;
-  total_used_credits: number;
+  totalEarnedCredits: number;
+  totalUsedCredits: number;
   
   // 邀请相关
-  invite_code: string;
-  invited_by_code?: string;
-  invited_by_user_id?: string;
+  inviteCode: string;
+  invitedByCode?: string;
+  invitedByUserId?: string;
   
   // AI使用限制
-  daily_ai_usage: number;
-  last_ai_usage_date?: string;
-  total_ai_usage: number;
+  dailyAiUsage: number;
+  lastAiUsageDate?: string;
+  totalAiUsage: number;
   
   // 用户设置
   language: string;
   timezone: string;
-  email_notifications: boolean;
+  emailNotifications: boolean;
   
   // 状态和时间
   status: 'active' | 'suspended' | 'deleted';
-  last_login_at?: string;
-  created_at: string;
-  updated_at: string;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 用户会话类型
 export interface UserSession {
   id: number;
-  session_id: string;
-  user_id?: string;
-  trial_usage_count: number;
-  ip_address?: string;
-  user_agent?: string;
-  last_activity_at: string;
-  created_at: string;
-  expires_at: string;
+  sessionId: string;
+  userId?: string;
+  trialUsageCount: number;
+  ipAddress?: string;
+  userAgent?: string;
+  lastActivityAt: string;
+  createdAt: string;
+  expiresAt: string;
 }
 
 // 用户创建请求类型
 export interface CreateUserRequest {
-  clerk_user_id: string;
+  clerkUserId: string;
   email: string;
   username?: string;
-  display_name?: string;
-  avatar_url?: string;
-  invited_by_code?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  invitedByCode?: string;
 } 

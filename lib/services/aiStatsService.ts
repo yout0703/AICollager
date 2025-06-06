@@ -1,4 +1,4 @@
-import { AiUsageStats } from '@/db/schema';
+import { AIUsageStats } from '@/db/schema';
 import {
   recordAIRequest,
   getTodayAIStats,
@@ -6,7 +6,6 @@ import {
   getAIUsageStats,
   cleanupOldAIStats
 } from '@/lib/repositories/aiUsageStats';
-import { AiUsageStatsModel as AIUsageStats } from '@/lib/repositories/aiUsageStats';
 
 // AI统计服务
 export class AIStatsService {
@@ -39,7 +38,7 @@ export class AIStatsService {
   // 获取今日统计
   static async getTodayStatistics(): Promise<{
     success: boolean;
-    stats?: AiUsageStats;
+    stats?: AIUsageStats;
     summary?: {
       total_requests: number;
       success_rate: number;
@@ -99,7 +98,7 @@ export class AIStatsService {
     statType?: 'daily' | 'weekly' | 'monthly';
   }): Promise<{
     success: boolean;
-    stats?: AiUsageStats[];
+    stats?: AIUsageStats[];
     aggregated?: {
       total_requests: number;
       total_successful: number;

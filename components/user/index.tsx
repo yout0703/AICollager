@@ -28,13 +28,13 @@ export default function ({ user }: Props) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar className="cursor-pointer">
-          <AvatarImage src={user.avatar_url} alt={user.display_name || user.username || user.email} />
-          <AvatarFallback>{user.display_name || user.username || user.email}</AvatarFallback>
+                  <AvatarImage src={user.avatarUrl} alt={user.displayName || user.username || user.email} />
+        <AvatarFallback>{user.displayName || user.username || user.email}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="mx-4">
         <DropdownMenuLabel className="text-center truncate">
-          {user.display_name || user.username || user.email}
+          {user.displayName || user.username || user.email}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
 

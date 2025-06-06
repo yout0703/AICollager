@@ -1,4 +1,4 @@
-import { AiAnalysisCache } from '@/db/schema/ai';
+import { AIAnalysisCache } from '@/db/schema/ai';
 import {
   generateCacheKey,
   findAIAnalysisCache,
@@ -16,7 +16,7 @@ export class AICacheService {
   static async findCache(
     inputData: any,
     cacheType: string
-  ): Promise<AiAnalysisCache | null> {
+  ): Promise<AIAnalysisCache | null> {
     try {
       const cacheKey = generateCacheKey(inputData);
       const cache = await findAIAnalysisCache(cacheKey, cacheType);
@@ -31,7 +31,7 @@ export class AICacheService {
   static async findMultipleCaches(
     inputDataList: any[],
     cacheType: string
-  ): Promise<Record<string, AiAnalysisCache>> {
+  ): Promise<Record<string, AIAnalysisCache>> {
     try {
       const cacheKeys = inputDataList.map(data => generateCacheKey(data));
       return await findMultipleAIAnalysisCache(cacheKeys, cacheType);
@@ -50,7 +50,7 @@ export class AICacheService {
     confidenceScore?: number;
     modelVersion?: string;
     expiresDays?: number;
-  }): Promise<AiAnalysisCache | null> {
+  }): Promise<AIAnalysisCache | null> {
     try {
       const cacheKey = generateCacheKey(params.inputData);
       

@@ -9,14 +9,14 @@
  */
 
 import { db } from '@/db/client'
-import { aiUsageStats, type AiUsageStats, type NewAiUsageStats } from '@/db/schema/ai'
+import { aiUsageStats, type AIUsageStats, type NewAIUsageStats } from '@/db/schema/ai'
 import { eq, and, gte, lte, desc, sql, count, sum, avg } from 'drizzle-orm'
 
 // 统一的操作类型定义
 export type AIOperationType = 'image_analysis' | 'layout_suggestion' | 'icon_recommendation' | 'collage_generation'
 
 // 兼容性类型定义
-export interface AiUsageStatsModel {
+export interface AIUsageStatsModel {
   id: number;
   uuid: string;
   userId?: string;
@@ -62,7 +62,7 @@ export async function recordAIRequest(data: {
     
     if (!todayStats) {
       // 创建今天的统计记录
-      const newStats: NewAiUsageStats = {
+      const newStats: NewAIUsageStats = {
         date: today,
         totalRequests: 0,
         successfulRequests: 0,
@@ -90,7 +90,7 @@ export async function recordAIRequest(data: {
     const newAvgResponseTime = newTotalProcessingTime / newTotalRequests
     
     // 准备更新数据
-    const updateData: Partial<NewAiUsageStats> = {
+    const updateData: Partial<NewAIUsageStats> = {
       totalRequests: newTotalRequests,
       totalProcessingTime: newTotalProcessingTime.toString(),
       avgResponseTime: newAvgResponseTime.toString(),
@@ -133,7 +133,7 @@ export async function recordAIRequest(data: {
 }
 
 // 获取今天的AI统计
-export async function getTodayAIStats(): Promise<AiUsageStats | null> {
+export async function getTodayAIStats(): Promise<AIUsageStats | null> {
   try {
     const today = new Date().toISOString().split('T')[0]
     
@@ -151,7 +151,7 @@ export async function getTodayAIStats(): Promise<AiUsageStats | null> {
 }
 
 // 按时间范围获取AI使用统计
-export async function getAIUsageByUser(startDate: string, endDate?: string): Promise<AiUsageStats[]> {
+export async function getAIUsageByUser(startDate: string, endDate?: string): Promise<AIUsageStats[]> {
   try {
     const conditions = [gte(aiUsageStats.date, startDate)]
     
@@ -176,7 +176,7 @@ export async function getAIUsageStats(params: {
   endDate?: string
   operationType?: string
 }): Promise<{
-  stats: AiUsageStats[]
+  stats: AIUsageStats[]
   total: number
   summary: {
     totalRequests: number
@@ -282,7 +282,7 @@ export async function cleanupOldAIStats(keepDays: number = 90): Promise<number> 
  * 为了保持与现有代码的兼容性，提供传统的类式接口
  */
 export class AiUsageStatsRepository {
-  static async create(data: Partial<AiUsageStatsModel>): Promise<AiUsageStatsModel> {
+  static async create(data: Partial<AIUsageStatsModel>): Promise<AIUsageStatsModel> {
     await recordAIRequest({
       operationType: data.operationType || 'image_analysis',
       aiModel: data.aiModel || 'gemini-1.5-flash',
@@ -303,7 +303,7 @@ export class AiUsageStatsRepository {
       metadata: data.metadata || {},
       createdAt: new Date().toISOString(),
       ...data
-    } as AiUsageStatsModel
+          } as AIUsageStatsModel
   }
 
   static async getStatsForUser(userId: string, options?: {

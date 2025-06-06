@@ -48,17 +48,17 @@ export async function POST(req: NextRequest) {
       console.log('🆕 [AUTH_SETUP] 用户不存在，开始创建新用户');
       const body = await req.json();
       console.log('🔍 [AUTH_SETUP] 请求体:', body);
-      const { invited_by_code, language, timezone } = body;
+      const { invitedByCode, language, timezone } = body;
       
       const registrationData = {
-        clerk_user_id: userId,
+        clerkUserId: userId,
         email: clerkUser.emailAddresses[0]?.emailAddress || '',
         username: clerkUser.username || '',
-        display_name: clerkUser.firstName && clerkUser.lastName 
+        displayName: clerkUser.firstName && clerkUser.lastName 
           ? `${clerkUser.firstName} ${clerkUser.lastName}` 
           : clerkUser.username || '',
-        avatar_url: clerkUser.imageUrl || '',
-        invited_by_code
+        avatarUrl: clerkUser.imageUrl || '',
+        invitedByCode: invitedByCode
       };
       console.log('🔍 [AUTH_SETUP] 注册数据:', registrationData);
       
@@ -87,13 +87,13 @@ export async function POST(req: NextRequest) {
       // 用户已存在，更新设置
       console.log('🔄 [AUTH_SETUP] 用户已存在，更新设置');
       const body = await req.json();
-      const { language, timezone, email_notifications } = body;
-      console.log('🔍 [AUTH_SETUP] 更新设置数据:', { language, timezone, email_notifications });
+      const { language, timezone, emailNotifications } = body;
+      console.log('🔍 [AUTH_SETUP] 更新设置数据:', { language, timezone, emailNotifications });
       
       const settingsUpdated = await initializeUserSettings(user.uuid, {
         language,
         timezone,
-        email_notifications
+        emailNotifications
       });
       
       if (!settingsUpdated) {
@@ -161,7 +161,7 @@ export async function GET(req: NextRequest) {
         uuid: user.uuid,
         email: user.email,
         username: user.username,
-        display_name: user.display_name,
+        displayName: user.displayName,
         language: user.language,
         timezone: user.timezone
       } : null

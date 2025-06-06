@@ -110,102 +110,43 @@ export async function deleteCollageImage(uuid: string): Promise<boolean> {
   }
 }
 
-// 兼容性类型定义
-export interface CollageImage {
-  id: number
-  uuid: string
-  collage_id: string
-  image_index: number
-  original_url: string
-  processed_url?: string
-  thumbnail_url?: string
-  file_name?: string
-  file_size?: number
-  mime_type?: string
-  width?: number
-  height?: number
-  format?: string
-  ai_analysis?: Record<string, any>
-  metadata?: Record<string, any>
-  created_at: string
-  updated_at: string
-}
+// 使用数据库模型作为统一接口
+export type { CollageImage as DbCollageImage } from '@/db/schema/collages';
 
-// 数据库模型转业务模型
-function transformDbImageToImage(dbImage: DbCollageImage): CollageImage {
-  return {
-    id: dbImage.id,
-    uuid: dbImage.uuid,
-    collage_id: dbImage.collageId,
-    image_index: dbImage.imageIndex,
-    original_url: dbImage.originalUrl,
-    processed_url: dbImage.processedUrl || undefined,
-    thumbnail_url: dbImage.thumbnailUrl || undefined,
-    file_name: dbImage.fileName || undefined,
-    file_size: dbImage.fileSize || undefined,
-    mime_type: dbImage.mimeType || undefined,
-    width: dbImage.width || undefined,
-    height: dbImage.height || undefined,
-    format: dbImage.format || undefined,
-    ai_analysis: dbImage.aiAnalysis as any,
-    metadata: dbImage.metadata as any,
-    created_at: dbImage.createdAt.toISOString(),
-    updated_at: dbImage.updatedAt.toISOString()
-  }
-}
-
-// 兼容性模型接口
+// 统一模型接口 - 直接使用数据库模型
 export const collageImageModel = {
-  async create(data: Partial<CollageImage>): Promise<CollageImage> {
-    const dbImage = await createCollageImage({
-      collageId: data.collage_id!,
-      imageIndex: data.image_index!,
-      originalUrl: data.original_url!,
-      fileName: data.file_name,
-      fileSize: data.file_size,
-      mimeType: data.mime_type,
-      processedUrl: data.processed_url,
-      thumbnailUrl: data.thumbnail_url,
-      width: data.width,
-      height: data.height,
-      format: data.format,
-      aiAnalysis: data.ai_analysis,
-      metadata: data.metadata
+  async create(data: Partial<DbCollageImage>): Promise<DbCollageImage> {
+    return await createCollageImage({
+      collageId: data.collageId!,
+      imageIndex: data.imageIndex!,
+      originalUrl: data.originalUrl!,
+      fileName: data.fileName || undefined,
+      fileSize: data.fileSize || undefined,
+      mimeType: data.mimeType || undefined,
+      processedUrl: data.processedUrl || undefined,
+      thumbnailUrl: data.thumbnailUrl || undefined,
+      width: data.width || undefined,
+      height: data.height || undefined,
+      format: data.format || undefined,
+      aiAnalysis: (data.aiAnalysis as Record<string, any>) || {},
+      metadata: (data.metadata as Record<string, any>) || {}
     })
-    
-    return transformDbImageToImage(dbImage)
   },
   
-  async findById(uuid: string): Promise<CollageImage | null> {
-    const dbImage = await findCollageImageById(uuid)
-    return dbImage ? transformDbImageToImage(dbImage) : null
+  async findById(uuid: string): Promise<DbCollageImage | null> {
+    return await findCollageImageById(uuid)
   },
   
-  async findByCollageId(collageId: string): Promise<CollageImage[]> {
-    const dbImages = await findCollageImagesByCollageId(collageId)
-    return dbImages.map(transformDbImageToImage)
+  async findByCollageId(collageId: string): Promise<DbCollageImage[]> {
+    return await findCollageImagesByCollageId(collageId)
   },
   
-  async update(uuid: string, data: Partial<CollageImage>): Promise<CollageImage | null> {
-    const updateData = {
-      processedUrl: data.processed_url,
-      thumbnailUrl: data.thumbnail_url,
-      fileName: data.file_name,
-      fileSize: data.file_size,
-      mimeType: data.mime_type,
-      width: data.width,
-      height: data.height,
-      format: data.format,
-      aiAnalysis: data.ai_analysis,
-      metadata: data.metadata
-    }
-    
-    const dbImage = await updateCollageImage(uuid, updateData)
-    return dbImage ? transformDbImageToImage(dbImage) : null
+  async update(uuid: string, data: Partial<DbCollageImage>): Promise<DbCollageImage | null> {
+    return await updateCollageImage(uuid, data)
   },
   
   async delete(uuid: string): Promise<boolean> {
-    return deleteCollageImage(uuid)
+    return await deleteCollageImage(uuid)
   }
 }
 

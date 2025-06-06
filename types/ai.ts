@@ -1,94 +1,101 @@
 // AI服务相关类型定义
 
-// AI使用统计类型
+// AI使用统计类型 - 与数据库模型保持一致（驼峰命名）
 export interface AIUsageStats {
   id: number;
+  uuid: string;
   date: string;
   
   // 请求统计
-  total_requests: number;
-  successful_requests: number;
-  failed_requests: number;
+  totalRequests: number;
+  successfulRequests: number;
+  failedRequests: number;
+  cachedRequests: number;
   
   // 功能分类统计
-  image_analysis_requests: number;
-  layout_generation_requests: number;
-  icon_recommendation_requests: number;
+  imageAnalysisCount: number;
+  layoutSuggestionCount: number;
+  iconRecommendationCount: number;
   
   // 成本统计
-  total_cost: number;
-  avg_cost_per_request: number;
+  estimatedCost: string; // 数据库中存储为 decimal 字符串
+  costCurrency: string;
   
   // 性能统计
-  avg_processing_time: number;
-  max_processing_time: number;
+  avgResponseTime: string; // 数据库中存储为 decimal 字符串
+  totalProcessingTime: string;
   
-  created_at: string;
+  // 元数据
+  metadata: unknown; // 数据库中存储为 jsonb
+  
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// AI分析缓存类型
+// AI分析缓存类型 - 与数据库模型保持一致（驼峰命名）
 export interface AIAnalysisCache {
   id: number;
   uuid: string;
-  cache_key: string;
-  cache_type: 'image_analysis' | 'layout_suggestion' | 'icon_recommendation';
+  cacheType: 'image_analysis' | 'layout_suggestion' | 'icon_recommendation';
+  inputHash: string; // 输入内容的hash
   
-  // AI模型信息
-  ai_model: string;
-  model_version?: string;
-  
-  // 缓存内容
-  input_data?: Record<string, any>;
-  analysis_result: Record<string, any>;
-  confidence_score?: number;
+  // 分析结果
+  analysisResult: unknown; // 数据库中存储为 jsonb
+  confidenceScore: string | null; // 数据库中存储为 decimal
   
   // 使用统计
-  use_count: number;
-  last_used_at: string;
+  useCount: number;
+  lastUsedAt: Date;
   
-  // 有效期
-  expires_at: string;
-  created_at: string;
+  // 缓存管理
+  expiresAt: Date;
+  isValid: boolean;
+  
+  // 元数据
+  metadata: unknown; // 数据库中存储为 jsonb
+  
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-// AI图片分析请求类型
+// AI图片分析请求类型 - API 层保持下划线命名（面向前端）
 export interface ImageAnalysisRequest {
   image_url: string;
   analysis_type: 'content' | 'color' | 'composition' | 'full';
   cache_enabled?: boolean;
 }
 
-// AI图片分析结果类型
+// AI图片分析结果类型 - 业务逻辑层使用驼峰命名
 export interface ImageAnalysisResult {
   content: {
     objects: string[];
     scenes: string[];
     activities: string[];
-    people_count: number;
-    main_subject: string;
+    peopleCount: number;
+    mainSubject: string;
     confidence: number;
   };
   colors: {
-    dominant_colors: string[];
-    color_palette: string[];
+    dominantColors: string[];
+    colorPalette: string[];
     brightness: number;
     contrast: number;
     saturation: number;
   };
   composition: {
-    rule_of_thirds: boolean;
+    ruleOfThirds: boolean;
     symmetry: number;
     balance: number;
-    focal_points: { x: number; y: number; strength: number }[];
+    focalPoints: { x: number; y: number; strength: number }[];
   };
   metadata: {
-    processing_time: number;
+    processingTime: number;
     model: string;
     confidence: number;
   };
 }
 
-// AI布局生成请求类型
+// AI布局生成请求类型 - API 层保持下划线命名（面向前端）
 export interface LayoutGenerationRequest {
   images: {
     url: string;
@@ -107,13 +114,13 @@ export interface LayoutGenerationRequest {
   };
 }
 
-// AI布局生成结果类型
+// AI布局生成结果类型 - 业务逻辑层使用驼峰命名
 export interface LayoutGenerationResult {
-  canvas_config: {
+  canvasConfig: {
     width: number;
     height: number;
-    aspect_ratio: string;
-    background_color: string;
+    aspectRatio: string;
+    backgroundColor: string;
     padding: number;
   };
   elements: {
@@ -122,33 +129,33 @@ export interface LayoutGenerationResult {
     position: { x: number; y: number };
     size: { width: number; height: number };
     rotation: number;
-    z_index: number;
+    zIndex: number;
     style: Record<string, any>;
     content?: any;
   }[];
-  recommended_icons?: string[];
-  color_palette: string[];
+  recommendedIcons?: string[];
+  colorPalette: string[];
   metadata: {
-    template_id: string;
+    templateId: string;
     style: string;
     confidence: number;
     reasoning: string;
-    processing_time: number;
+    processingTime: number;
   };
 }
 
-// AI服务配置类型
+// AI服务配置类型 - 业务逻辑层使用驼峰命名
 export interface AIServiceConfig {
   model: string;
-  fallback_model?: string;
-  max_requests_per_day: number;
-  max_requests_per_user_per_day: number;
-  cache_duration_days: number;
-  timeout_ms: number;
-  retry_attempts: number;
+  fallbackModel?: string;
+  maxRequestsPerDay: number;
+  maxRequestsPerUserPerDay: number;
+  cacheDurationDays: number;
+  timeoutMs: number;
+  retryAttempts: number;
 }
 
-// AI请求日志类型
+// AI请求日志类型 - API 层保持下划线命名（面向前端）
 export interface AIRequestLog {
   id: string;
   user_id?: string;
@@ -165,7 +172,7 @@ export interface AIRequestLog {
   created_at: string;
 }
 
-// AI限制检查结果类型
+// AI限制检查结果类型 - API 层保持下划线命名（面向前端）
 export interface AILimitCheckResult {
   allowed: boolean;
   reason?: string;

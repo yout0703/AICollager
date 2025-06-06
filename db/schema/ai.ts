@@ -107,9 +107,9 @@ export const insertDailyLimitsSchema = createInsertSchema(dailyLimits)
 export const selectDailyLimitsSchema = createSelectSchema(dailyLimits)
 
 // TypeScript 类型
-export type AiAnalysisCache = typeof aiAnalysisCache.$inferSelect
-export type NewAiAnalysisCache = typeof aiAnalysisCache.$inferInsert
-export type AiUsageStats = typeof aiUsageStats.$inferSelect
-export type NewAiUsageStats = typeof aiUsageStats.$inferInsert
+export type AIAnalysisCache = typeof aiAnalysisCache.$inferSelect
+export type NewAIAnalysisCache = typeof aiAnalysisCache.$inferInsert
+export type AIUsageStats = typeof aiUsageStats.$inferSelect
+export type NewAIUsageStats = typeof aiUsageStats.$inferInsert
 export type DailyLimits = typeof dailyLimits.$inferSelect
 export type NewDailyLimits = typeof dailyLimits.$inferInsert 

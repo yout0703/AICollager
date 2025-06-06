@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveUser } from '@/lib/utils/userResolver';
 import { getUserInfo } from '@/lib/services/userService';
 import { checkAllAILimits, consumeAIUsage, checkSessionTrialLimit, consumeTrialUsage } from '@/lib/services/dailyLimitService';
-import { analyzeImages, performCompleteAnalysis } from '@/lib/services/geminiService';
+import { analyzeImages, performCompleteAnalysis } from '@/lib/services/aiAnalysisService';
 import { preCheckConsumption, consumeCredits } from '@/lib/services/creditService';
 
 // 图片分析API

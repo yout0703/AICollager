@@ -14,20 +14,20 @@ export async function GET(req: NextRequest) {
     const publicUserInfo = {
       userId: userId, // 内部 UUID，前端主要使用这个
       uuid: user.uuid, // 兼容性保留
-      clerkUserId: user.clerk_user_id, // 前端缓存需要
+      clerkUserId: user.clerkUserId, // 前端缓存需要
       email: user.email,
       username: user.username,
-      display_name: user.display_name,
-      avatar_url: user.avatar_url,
+      displayName: user.displayName,
+      avatarUrl: user.avatarUrl,
       credits: user.credits,
-      invite_code: user.invite_code,
+      inviteCode: user.inviteCode,
       language: user.language,
       timezone: user.timezone,
-      email_notifications: user.email_notifications,
-      daily_ai_usage: user.daily_ai_usage,
-      total_ai_usage: user.total_ai_usage,
-      created_at: user.created_at,
-      last_login_at: user.last_login_at
+      emailNotifications: user.emailNotifications,
+      dailyAiUsage: user.dailyAiUsage,
+      totalAiUsage: user.totalAiUsage,
+      createdAt: user.createdAt,
+      lastLoginAt: user.lastLoginAt
     };
     
     return NextResponse.json({
@@ -52,15 +52,15 @@ export async function PUT(req: NextRequest) {
     // 注意：这里的 userId 已经是内部 UUID
     
     const body = await req.json();
-    const { display_name, username, language, timezone, email_notifications } = body;
+    const { displayName, username, language, timezone, emailNotifications } = body;
     
     // 只允许更新特定字段
     const updateData: any = {};
-    if (display_name !== undefined) updateData.display_name = display_name;
+    if (displayName !== undefined) updateData.displayName = displayName;
     if (username !== undefined) updateData.username = username;
     if (language !== undefined) updateData.language = language;
     if (timezone !== undefined) updateData.timezone = timezone;
-    if (email_notifications !== undefined) updateData.email_notifications = email_notifications;
+    if (emailNotifications !== undefined) updateData.emailNotifications = emailNotifications;
     
     const updatedUser = await updateUserInfo(userId, updateData);
     
@@ -77,11 +77,11 @@ export async function PUT(req: NextRequest) {
         uuid: updatedUser.uuid,
         email: updatedUser.email,
         username: updatedUser.username,
-        display_name: updatedUser.display_name,
-        avatar_url: updatedUser.avatar_url,
+        displayName: updatedUser.displayName,
+        avatarUrl: updatedUser.avatarUrl,
         language: updatedUser.language,
         timezone: updatedUser.timezone,
-        email_notifications: updatedUser.email_notifications
+        emailNotifications: updatedUser.emailNotifications
       }
     });
     
