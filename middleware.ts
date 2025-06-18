@@ -42,11 +42,13 @@ const isPublicRoute = createRouteMatcher([
   "/collage(.*)", 
   "/sign-in(.*)",
   "/sign-up(.*)",
+  "/ucm-test(.*)",
   "/:locale",
   "/:locale/pricing(.*)",
   "/:locale/collage(.*)",
   "/:locale/sign-in(.*)",
   "/:locale/sign-up(.*)",
+  "/:locale/ucm-test(.*)",
 ]);
 
 // 使用 Clerk 的中间件
