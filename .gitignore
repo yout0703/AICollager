@@ -35,3 +35,53 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env*.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+*.pid
+*.seed
+*.pid.lock
+
+# Database files
+*.sql.bak
+*.db.bak
+backup_*.sql
+
+# Debug and test files
+/debug/
+*.http
+*.rest
+
+# Documentation drafts
+/docs/drafts/
+/docs/temp/
+
+# Scripts output
+/scripts/output/
+
+# Generated files
+*.generated.*
+
+# Lock files (keeping pnpm-lock.yaml as it's important for pnpm)
+# npm-shrinkwrap.json
+# package-lock.json
+# yarn.lock
