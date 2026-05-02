@@ -27,6 +27,9 @@ export const pricingTranslations = {
       subtitle: "Choose Your",
       highlight: "Credit Package",
       description: "Flexible credit system, pay as you use, no monthly fees. 5 credits per beautiful collage",
+      popularLabel: "Most Popular",
+      unitPricePrefix: "Approx.",
+      unitPriceSuffix: "per collage",
       freePackage: {
         name: "Free Trial",
         price: "Free",
@@ -43,7 +46,7 @@ export const pricingTranslations = {
       basicPackage: {
         name: "Basic Package",
         price: "$19",
-        credits: "50 credits", 
+        credits: "50 credits",
         description: "Perfect for personal users",
         features: [
           "50 credits (10 collages)",
@@ -62,7 +65,7 @@ export const pricingTranslations = {
         description: "Perfect for designers and creators",
         features: [
           "150 credits (30 collages)",
-          "All AI features", 
+          "All AI features",
           "4K ultra HD download",
           "50+ professional templates",
           "Premium decorative materials",
@@ -120,6 +123,9 @@ export const pricingTranslations = {
       subtitle: "选择适合你的",
       highlight: "积分套餐",
       description: "灵活的积分制度，按需使用，无月费负担。每5积分制作一个精美拼图",
+      popularLabel: "最受欢迎",
+      unitPricePrefix: "约",
+      unitPriceSuffix: "每个拼图",
       freePackage: {
         name: "免费体验",
         price: "¥0",
@@ -136,7 +142,7 @@ export const pricingTranslations = {
       basicPackage: {
         name: "基础套餐",
         price: "¥19",
-        credits: "50积分", 
+        credits: "50积分",
         description: "适合个人用户",
         features: [
           "50积分 (可制作10个拼图)",
@@ -155,7 +161,7 @@ export const pricingTranslations = {
         description: "适合设计师和创作者",
         features: [
           "150积分 (可制作30个拼图)",
-          "全部AI功能", 
+          "全部AI功能",
           "4K超高清下载",
           "50+专业模板",
           "高级装饰素材",
@@ -190,4 +196,4 @@ export const pricingTranslations = {
   de: {},
   ja: {},
   ko: {}
-}; 
+};

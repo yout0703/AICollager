@@ -5,8 +5,8 @@ import { generateInviteLink, checkCanCreateInvite } from '@/lib/services/invitat
 // 生成邀请链接
 export async function POST(req: NextRequest) {
   try {
-    const { userId, clerkUserId } = await requireAuth();
-    
+    const { clerkUserId } = await requireAuth();
+
     // 检查是否可以创建邀请（使用 Clerk ID）
     const canCreateResult = await checkCanCreateInvite(clerkUserId);
     if (!canCreateResult.canCreate) {
@@ -15,30 +15,30 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const body = await req.json();
     const { email, method, custom_reward } = body;
-    
+
     const result = await generateInviteLink({
       inviterId: clerkUserId, // 传递 Clerk ID
       email,
       method: method || 'link',
       customReward: custom_reward
     });
-    
+
     if (!result.success) {
       return NextResponse.json(
         { error: result.message || '生成邀请链接失败' },
         { status: 500 }
       );
     }
-    
+
     return NextResponse.json({
       success: true,
       invitation: result.invitation,
       invite_url: result.inviteUrl
     });
-    
+
   } catch (error) {
     console.error('Generate invite link failed:', error);
     return NextResponse.json(
@@ -46,4 +46,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

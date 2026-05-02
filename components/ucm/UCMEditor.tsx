@@ -20,22 +20,22 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
   // 处理 JSON 输入变化
   const handleJsonChange = (value: string) => {
     setJsonString(value);
-    
+
     try {
       const parsedModel = JSON.parse(value) as UCMModel;
-      
+
       // 基本验证
       if (!parsedModel.version || !parsedModel.canvas || !parsedModel.elements) {
         throw new Error('缺少必要字段: version, canvas, elements');
       }
-      
+
       if (!Array.isArray(parsedModel.elements)) {
         throw new Error('elements 必须是数组');
       }
-      
+
       setIsValid(true);
       setError(null);
-      
+
       if (!readOnly) {
         onChange(parsedModel);
       }
@@ -51,7 +51,7 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
       const parsed = JSON.parse(jsonString);
       const formatted = JSON.stringify(parsed, null, 2);
       setJsonString(formatted);
-    } catch (err) {
+    } catch {
       // 如果解析失败，保持原样
     }
   };
@@ -68,12 +68,12 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
       {/* 工具栏 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <span className={`inline-block w-3 h-3 rounded-full ${isValid ? 'bg-green-500' : 'bg-red-500'}`}></span>
+          <span className={`inline-block w-3 h-3 rounded-full ${isValid ? 'bg-accent' : 'bg-destructive'}`}></span>
           <span className="text-sm text-gray-600">
             {isValid ? 'JSON 格式正确' : 'JSON 格式错误'}
           </span>
         </div>
-        
+
         {!readOnly && (
           <div className="flex space-x-2">
             <button
@@ -94,7 +94,7 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
 
       {/* 错误信息 */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded text-destructive text-sm">
           <strong>错误:</strong> {error}
         </div>
       )}
@@ -107,14 +107,14 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
           readOnly={readOnly}
           className={`
             w-full h-96 p-4 font-mono text-sm border rounded-lg resize-none
-            ${isValid ? 'border-gray-300' : 'border-red-300'}
+            ${isValid ? 'border-input' : 'border-destructive/30'}
             ${readOnly ? 'bg-gray-50 cursor-not-allowed' : 'bg-white'}
             focus:outline-none focus:ring-2 focus:ring-blue-500
           `}
           placeholder="输入 UCM JSON 数据..."
           spellCheck={false}
         />
-        
+
         {/* 行号指示器（简化版） */}
         <div className="absolute top-4 left-2 text-xs text-gray-400 pointer-events-none">
           {jsonString.split('\n').map((_, index) => (
@@ -142,7 +142,7 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
                   const parsed = JSON.parse(jsonString);
                   parsed.canvas.background.color = '#ffffff';
                   handleJsonChange(JSON.stringify(parsed, null, 2));
-                } catch (err) {
+                } catch {
                   // 忽略错误
                 }
               }}
@@ -160,7 +160,7 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
                     }
                   });
                   handleJsonChange(JSON.stringify(parsed, null, 2));
-                } catch (err) {
+                } catch {
                   // 忽略错误
                 }
               }}
@@ -176,7 +176,7 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
                     element.transform.rotation_degrees = 0;
                   });
                   handleJsonChange(JSON.stringify(parsed, null, 2));
-                } catch (err) {
+                } catch {
                   // 忽略错误
                 }
               }}
@@ -192,7 +192,7 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
                     element.transform.scale = 1.0;
                   });
                   handleJsonChange(JSON.stringify(parsed, null, 2));
-                } catch (err) {
+                } catch {
                   // 忽略错误
                 }
               }}
@@ -205,4 +205,4 @@ export const UCMEditor: React.FC<UCMEditorProps> = ({
       )}
     </div>
   );
-}; 
+};

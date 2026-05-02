@@ -1,8 +1,8 @@
 import { collageModel } from '@/lib/repositories/collage';
 import { Collage, CanvasConfig, CollageElement } from '@/types/collage';
 import { AI_CONFIG } from '@/lib/ai-config';
-import { collageValidationService, type ValidationResult } from './collageValidationService';
-import { collageImageService, type ImageAnalysisResult } from './collageImageService';
+import { collageValidationService } from './collageValidationService';
+import { collageImageService } from './collageImageService';
 import { collageLayoutService, type LayoutGenerationResult } from './collageLayoutService';
 import { collageCrudService } from './collageCrudService';
 
@@ -43,13 +43,13 @@ export class CollageGenerationService {
       description: request.description,
       preferences: request.preferences
     });
-    
+
     try {
       // 1. 验证用户身份和使用限制
       console.log('🔐 开始验证用户身份和使用限制...');
       const validationResult = await collageValidationService.validateUserAndLimits(request.user_id, request.session_id);
       console.log('✅ 用户验证结果:', validationResult);
-      
+
       if (!validationResult.canUse) {
         console.log('❌ 用户验证失败:', validationResult.message);
         return {
@@ -118,7 +118,7 @@ export class CollageGenerationService {
           return acc;
         }, {} as Record<string, number>)
       });
-      
+
       // 详细显示画布配置
       console.log('🖼️  画布配置详情:', JSON.stringify(finalCollageData.canvas_config, null, 2));
 
@@ -152,7 +152,7 @@ export class CollageGenerationService {
     } catch (error) {
       console.error('❌ 拼图生成失败:', error);
       console.error('错误堆栈:', error instanceof Error ? error.stack : 'No stack trace');
-      
+
       return {
         success: false,
         error: error instanceof Error ? error.message : '拼图生成失败，请稍后重试'
@@ -174,13 +174,13 @@ export class CollageGenerationService {
 
     // 处理用户ID - 关键步骤，确保用户归属正确
     let databaseUserId: string | undefined = undefined;
-    
+
     console.log(`🔍 [CREATE_COLLAGE] 开始处理用户ID: request.user_id = ${request.user_id}`);
-    
+
     if (request.user_id) {
       // 检查传入的是否是UUID格式（36个字符，包含4个连字符）
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(request.user_id);
-      
+
       if (isUUID) {
         // 传入的已经是数据库UUID，直接使用
         databaseUserId = request.user_id;
@@ -188,7 +188,7 @@ export class CollageGenerationService {
       } else {
         // 传入的是Clerk ID，需要解析为UUID
         console.log(`🔍 [CREATE_COLLAGE] 接收到Clerk ID，开始解析: ${request.user_id}`);
-        
+
         try {
           const { getUserInfoCached } = await import('@/lib/services/userCache');
           const user = await getUserInfoCached(request.user_id);
@@ -197,7 +197,7 @@ export class CollageGenerationService {
             console.log(`✅ [CREATE_COLLAGE] Clerk ID解析成功: ${request.user_id} -> ${databaseUserId}`);
           } else {
             console.log(`⚠️ [CREATE_COLLAGE] 缓存查询失败，尝试直接查询`);
-            
+
             // 方法2: 直接从数据库查询
             const { getUserInfo } = await import('@/lib/services/userService');
             const userFromDB = await getUserInfo(request.user_id, 'clerk_id');
@@ -215,9 +215,9 @@ export class CollageGenerationService {
     } else {
       console.log(`⚠️ [CREATE_COLLAGE] 没有用户ID，创建匿名拼图`);
     }
-    
+
     console.log(`📋 [CREATE_COLLAGE] 最终用户ID结果: ${databaseUserId || 'null'}`);
-    
+
     // 如果有用户但解析失败，这是一个严重问题
     if (request.user_id && !databaseUserId) {
       console.error(`🚨 [CREATE_COLLAGE] 严重错误：有用户ID但解析失败，这会导致拼图归属错误！`);
@@ -246,14 +246,14 @@ export class CollageGenerationService {
     });
 
     const dbCollage = await collageModel.create(collageData);
-    
+
     console.log(`✅ [CREATE_COLLAGE] 拼图创建成功:`, {
       uuid: dbCollage.uuid,
       dbUserId: dbCollage.userId,
       dbSessionId: dbCollage.sessionId,
       title: dbCollage.title
     });
-    
+
     return dbCollage;
   }
 
@@ -286,4 +286,4 @@ export class CollageGenerationService {
   }
 }
 
-export const collageGenerationService = new CollageGenerationService(); 
+export const collageGenerationService = new CollageGenerationService();

@@ -1,6 +1,6 @@
 import { db } from '@/db/client'
 import { users, userSessions } from '@/db/schema'
-import { eq, and, desc, sql } from 'drizzle-orm'
+import { eq, and, sql } from 'drizzle-orm'
 import type { User, NewUser, UserSession, NewUserSession } from '@/db/schema'
 
 export class UserRepository {
@@ -15,11 +15,11 @@ export class UserRepository {
       totalAiUsage: 0,
       status: 'active'
     }).returning()
-    
+
     if (!user) {
       throw new Error('Failed to create user')
     }
-    
+
     return user
   }
 
@@ -30,7 +30,7 @@ export class UserRepository {
       .from(users)
       .where(eq(users.uuid, uuid))
       .limit(1)
-    
+
     return user || null
   }
 
@@ -41,19 +41,19 @@ export class UserRepository {
       .from(users)
       .where(eq(users.clerkUserId, clerkUserId))
       .limit(1)
-    
+
     return user || null
   }
 
   // 根据邮箱获取用户
-  static async findByEmail(email: string): Promise<User | undefined> {
+  static async findByEmail(email: string): Promise<User | null> {
     const result = await db
       .select()
       .from(users)
       .where(eq(users.email, email))
       .limit(1)
-    
-    return result[0]
+
+    return result[0] || null
   }
 
   // 根据邀请码获取用户
@@ -63,7 +63,7 @@ export class UserRepository {
       .from(users)
       .where(eq(users.inviteCode, inviteCode))
       .limit(1)
-    
+
     return user || null
   }
 
@@ -74,7 +74,7 @@ export class UserRepository {
       .set({ ...data, updatedAt: new Date() })
       .where(eq(users.uuid, uuid))
       .returning()
-    
+
     return result[0]
   }
 
@@ -88,7 +88,7 @@ export class UserRepository {
           updatedAt: new Date()
         })
         .where(eq(users.uuid, userId))
-      
+
       return true
     } catch (error) {
       console.error('Update last login failed:', error)
@@ -107,6 +107,22 @@ export class UserRepository {
     return result[0]?.credits || 0
   }
 
+  // 获取用户统计信息
+  static async getStats(uuid: string) {
+    const user = await this.findByUuid(uuid)
+    if (!user) return null
+
+    return {
+      totalCredits: user.credits,
+      totalEarned: user.totalEarnedCredits,
+      totalUsed: user.totalUsedCredits,
+      dailyAiUsage: user.dailyAiUsage,
+      totalAiUsage: user.totalAiUsage,
+      lastLogin: user.lastLoginAt,
+      createdAt: user.createdAt,
+    }
+  }
+
   // 原子性更新用户积分
   static async updateCredits(userId: string, amount: number): Promise<{ success: boolean; newBalance: number }> {
     try {
@@ -120,11 +136,11 @@ export class UserRepository {
         })
         .where(eq(users.uuid, userId))
         .returning()
-      
+
       if (!user) {
         return { success: false, newBalance: 0 }
       }
-      
+
       return { success: true, newBalance: user.credits }
     } catch (error) {
       console.error('Update user credits failed:', error)
@@ -136,20 +152,20 @@ export class UserRepository {
   static async softDeleteUser(uuid: string): Promise<boolean> {
     const result = await db
       .update(users)
-      .set({ 
+      .set({
         status: 'inactive',
         updatedAt: new Date()
       })
       .where(eq(users.uuid, uuid))
       .returning()
-    
+
     return result.length > 0
   }
 
   // 检查每日AI使用限制
   static async checkDailyAiUsage(userId: string): Promise<{ canUse: boolean; remaining: number }> {
     const today = new Date()
-    
+
     const [user] = await db
       .select({
         dailyAiUsage: users.dailyAiUsage,
@@ -158,18 +174,18 @@ export class UserRepository {
       .from(users)
       .where(eq(users.uuid, userId))
       .limit(1)
-    
+
     if (!user) {
       return { canUse: false, remaining: 0 }
     }
-    
+
     // 比较日期 - 如果lastAiUsageDate为null或不是今天，则重置计数
-    const isToday = user.lastAiUsageDate && 
+    const isToday = user.lastAiUsageDate &&
       user.lastAiUsageDate.toDateString() === today.toDateString()
-    
+
     const currentUsage = isToday ? user.dailyAiUsage : 0
     const remaining = Math.max(0, 20 - currentUsage)
-    
+
     return {
       canUse: remaining > 0,
       remaining
@@ -180,21 +196,21 @@ export class UserRepository {
   static async incrementAiUsage(userId: string): Promise<boolean> {
     try {
       const today = new Date()
-      
+
       await db
         .update(users)
         .set({
-          dailyAiUsage: sql`CASE 
-            WHEN ${users.lastAiUsageDate}::date = ${today.toISOString().split('T')[0]}::date 
-            THEN ${users.dailyAiUsage} + 1 
-            ELSE 1 
+          dailyAiUsage: sql`CASE
+            WHEN ${users.lastAiUsageDate}::date = ${today.toISOString().split('T')[0]}::date
+            THEN ${users.dailyAiUsage} + 1
+            ELSE 1
           END`,
           lastAiUsageDate: today,
           totalAiUsage: sql`${users.totalAiUsage} + 1`,
           updatedAt: new Date()
         })
         .where(eq(users.uuid, userId))
-      
+
       return true
     } catch (error) {
       console.error('Increment AI usage failed:', error)
@@ -207,11 +223,11 @@ export class UserSessionRepository {
   // 创建会话
   static async createSession(data: NewUserSession): Promise<UserSession> {
     const result = await db.insert(userSessions).values(data).returning()
-    
+
     if (!result.length) {
       throw new Error('Failed to create user session')
     }
-    
+
     return result[0]
   }
 
@@ -222,7 +238,7 @@ export class UserSessionRepository {
       .from(userSessions)
       .where(eq(userSessions.sessionId, sessionId))
       .limit(1)
-    
+
     return result[0]
   }
 
@@ -239,17 +255,17 @@ export class UserSessionRepository {
     try {
       const result = await db
         .update(userSessions)
-        .set({ 
+        .set({
           trialUsageCount: sql`${userSessions.trialUsageCount} + 1`,
           lastActivityAt: new Date()
         })
         .where(eq(userSessions.sessionId, sessionId))
         .returning()
-      
+
       if (result.length === 0) {
         return { success: false, newCount: 0 }
       }
-      
+
       return { success: true, newCount: result[0].trialUsageCount }
     } catch (error) {
       console.error('Error incrementing trial usage:', error)
@@ -263,17 +279,21 @@ export class UserSessionRepository {
       .delete(userSessions)
       .where(sql`${userSessions.expiresAt} < NOW()`)
       .returning()
-    
+
     return result.length
   }
 }
 
 // 导出兼容的函数
 export const createUser = UserRepository.create
+export const findUserByEmail = UserRepository.findByEmail
 export const findUserByClerkId = UserRepository.findByClerkId
 export const findUserByUuid = UserRepository.findByUuid
 export const findUserByInviteCode = UserRepository.findByInviteCode
+export const updateUser = UserRepository.updateUser
 export const updateUserCredits = UserRepository.updateCredits
 export const checkDailyAiUsage = UserRepository.checkDailyAiUsage
 export const incrementAiUsage = UserRepository.incrementAiUsage
-export const updateLastLogin = UserRepository.updateLastLogin 
+export const updateLastLogin = UserRepository.updateLastLogin
+export const updateUserLastLogin = UserRepository.updateLastLogin
+export const getUserStats = UserRepository.getStats

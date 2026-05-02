@@ -1,12 +1,12 @@
 import { AppContext } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { Nav } from "@/types/nav";
-import Social from "@/components/social";
 import User from "@/components/user";
 import { useContext } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
-export default function () {
+export default function Header() {
   const { user } = useContext(AppContext);
 
   const navigations: Nav[] = [
@@ -24,7 +24,7 @@ export default function () {
       <div className="h-auto w-screen">
         <nav className="font-inter mx-auto h-auto w-full max-w-[1600px] lg:relative lg:top-0">
           <div className="flex flex-row items-center px-6 py-8 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:py-8 xl:px-20">
-            <a href="/" className="text-xl font-medium flex items-center">
+            <Link href="/" className="text-xl font-medium flex items-center">
               <Image
                 src="/logo.png"
                 width={32}
@@ -35,18 +35,17 @@ export default function () {
               <span className="font-bold text-primary text-2xl">
                 AICollager
               </span>
-            </a>
+            </Link>
 
             <div className="hidden md:flex ml-16">
               {navigations.map((tab: Nav, idx: number) => (
-                <a
+                <Link
                   className="text-md font-normal leading-6 text-gray-800 mx-4"
                   key={idx}
-                  href={tab.url}
-                  target={tab.target}
+                  href={tab.url ?? "/"}
                 >
                   {tab.title}
-                </a>
+                </Link>
               ))}
             </div>
 
@@ -62,7 +61,7 @@ export default function () {
                   {user ? (
                     <>
                       {user.credits !== undefined && (
-                        <a
+                        <Link
                           href="/pricing"
                           className="hidden md:block mr-8 font-normal text-gray-800 cursor-pointer"
                         >
@@ -70,20 +69,19 @@ export default function () {
                           <span className="text-primary">
                             {user.credits}
                           </span>
-                        </a>
+                        </Link>
                       )}
 
                       <User user={user} />
                     </>
                   ) : (
-                    <a className="cursor-pointer" href="/sign-in">
+                    <Link className="cursor-pointer" href="/sign-in">
                       <Button>登录</Button>
-                    </a>
+                    </Link>
                   )}
                 </>
               )}
             </div>
-            <a href="#" className="absolute right-5 lg:hidden"></a>
           </div>
         </nav>
       </div>

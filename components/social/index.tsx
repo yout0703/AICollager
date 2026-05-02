@@ -3,7 +3,7 @@ import { BsGithub, BsTwitterX } from "react-icons/bs";
 import { FaProductHunt } from "react-icons/fa";
 import { SiBuymeacoffee } from "react-icons/si";
 
-export default function () {
+export default function Social() {
   return (
     <div className="mx-auto flex flex-row items-center">
       <a

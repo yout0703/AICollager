@@ -41,10 +41,15 @@ export const heroTranslations: Record<Locale, any> = {
       inviteButton: {
         text: "Invite Friends for Credits",
         reward: "+20"
+      },
+      sample: {
+        label: "AI-generated realistic collage sample",
+        badge: "Sample",
+        details: ["4 photos", "Smart layout", "Ready to export"]
       }
     }
   },
-  
+
   zh: {
     hero: {
       title: {
@@ -83,6 +88,11 @@ export const heroTranslations: Record<Locale, any> = {
       inviteButton: {
         text: "邀请好友得积分",
         reward: "+20"
+      },
+      sample: {
+        label: "AI 生成的真实拼贴案例",
+        badge: "案例",
+        details: ["4 张照片", "智能布局", "可直接导出"]
       }
     }
   },
@@ -93,4 +103,4 @@ export const heroTranslations: Record<Locale, any> = {
   de: {},
   ja: {},
   ko: {}
-}; 
+};

@@ -5,11 +5,11 @@
 
 import { db } from '@/db/client'
 import { collages, collageImages } from '@/db/schema/collages'
-import type { 
-  Collage as DbCollage, 
-  NewCollage as DbNewCollage, 
-  CollageImage as DbCollageImage, 
-  NewCollageImage as DbNewCollageImage 
+import type {
+  Collage as DbCollage,
+  NewCollage as DbNewCollage,
+  CollageImage as DbCollageImage,
+  NewCollageImage as DbNewCollageImage
 } from '@/db/schema/collages'
 import { eq, and, desc, sql, count, isNull, inArray } from 'drizzle-orm'
 
@@ -107,7 +107,7 @@ export class CollageRepository {
     const { page = 1, limit: queryLimit = 10, status, visibility } = options;
     const offset = (page - 1) * queryLimit;
 
-    let whereConditions = [
+    const whereConditions = [
       eq(collages.userId, userId),
       isNull(collages.deletedAt)
     ];
@@ -154,9 +154,9 @@ export class CollageRepository {
   }
 
   static async updateStatus(
-    collageId: string, 
-    status: string, 
-    generationStatus?: string, 
+    collageId: string,
+    status: string,
+    generationStatus?: string,
     additionalData?: Record<string, any>
   ): Promise<void> {
     const updateData: Partial<DbCollage> = {
@@ -274,4 +274,4 @@ export type NewCollageImage = DbNewCollageImage;
 export const createCollage = CollageRepository.create;
 export const getCollageById = CollageRepository.findById;
 export const getUserCollages = CollageRepository.findByUser;
-export const updateCollageStatus = CollageRepository.updateStatus; 
+export const updateCollageStatus = CollageRepository.updateStatus;

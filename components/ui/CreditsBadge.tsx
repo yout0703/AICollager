@@ -24,7 +24,7 @@ export function CreditsBadge({
   locale = 'zh'
 }: CreditsBadgeProps) {
   const dict = getDictionary(locale);
-  
+
   const formatCredits = (credits: number): string => {
     if (credits >= 1000000) {
       return `${(credits / 1000000).toFixed(1)}M`;
@@ -36,10 +36,10 @@ export function CreditsBadge({
   };
 
   const getCreditsColor = (credits: number): string => {
-    if (credits <= 0) return 'text-red-600 bg-red-50 border-red-200';
-    if (credits <= 10) return 'text-orange-600 bg-orange-50 border-orange-200';
-    if (credits <= 50) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
-    return 'text-green-600 bg-green-50 border-green-200';
+    if (credits <= 0) return 'text-destructive bg-destructive/10 border-destructive/20';
+    if (credits <= 10) return 'text-primary bg-primary/10 border-primary/20';
+    if (credits <= 50) return 'text-primary bg-primary/10 border-primary/20';
+    return 'text-accent bg-accent/10 border-accent/20';
   };
 
   const getStatusMessage = (credits: number): string => {
@@ -65,9 +65,9 @@ export function CreditsBadge({
 
   if (variant === 'detailed') {
     return (
-      <div className={`bg-white rounded-lg border border-gray-200 p-4 ${className}`}>
+      <div className={`bg-card rounded-lg border border-border p-4 ${className}`}>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-900">
+          <h3 className="text-sm font-medium text-foreground">
             {getTranslation(dict, 'credits.myCredits')}
           </h3>
           <div className={`
@@ -78,10 +78,10 @@ export function CreditsBadge({
             {isLoading ? '...' : credits}
           </div>
         </div>
-        
+
         <div className="flex items-start space-x-2 mb-3">
-          <Info className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-          <p className="text-xs text-gray-600">
+          <Info className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-muted-foreground">
             {getStatusMessage(credits)}
           </p>
         </div>
@@ -89,15 +89,15 @@ export function CreditsBadge({
         {showAddButton && onAddCredits && (
           <button
             onClick={onAddCredits}
-            className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 transition-colors"
+            className="w-full flex items-center justify-center px-3 py-2 bg-primary text-primary-foreground text-xs font-medium rounded-md hover:bg-primary/90 transition-colors"
           >
             <Plus className="w-3 h-3 mr-1" />
             {getTranslation(dict, 'invite.title')}
           </button>
         )}
 
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="text-xs text-gray-500 space-y-1">
+        <div className="mt-3 pt-3 border-t border-border">
+          <div className="text-xs text-muted-foreground space-y-1">
             <div className="flex justify-between">
               <span>{getTranslation(dict, 'credits.costPerCollage').split(':')[0]}:</span>
               <span>5 {getTranslation(dict, 'credits.title')}/{getTranslation(dict, 'ui.view')}</span>
@@ -127,7 +127,7 @@ export function CreditsBadge({
       {showAddButton && onAddCredits && (
         <button
           onClick={onAddCredits}
-          className="inline-flex items-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors"
+          className="inline-flex items-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-3 h-3 mr-1" />
           {getTranslation(dict, 'credits.getCredits')}
@@ -137,4 +137,4 @@ export function CreditsBadge({
   );
 }
 
-export default CreditsBadge; 
+export default CreditsBadge;

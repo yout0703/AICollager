@@ -1,5 +1,3 @@
-import Social from "@/components/social";
-
 export default function Footer() {
   return (
     <footer className="border-t border-gray-200 bg-white py-6">

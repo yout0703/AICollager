@@ -1,4 +1,4 @@
-import { Invitation, CreateInvitationRequest } from "@/types/credits";
+import { Invitation } from "@/types/credits";
 import { Invitation as InvitationModel } from "@/db/schema/credits";
 import {
   createInvitation,
@@ -9,7 +9,6 @@ import {
   getUserInvitations,
   getUserInvitationStats,
   isInvitationValid,
-  cleanupExpiredInvitations
 } from "@/lib/repositories/invitation";
 import { addUserCredits } from "@/lib/repositories/credits";
 
@@ -50,36 +49,38 @@ export async function generateInviteLink(params: {
 }> {
   try {
     const { inviterId, email, method = 'link', customReward } = params;
-    
+
     // inviterId 可能是 Clerk ID，需要转换为数据库 UUID
     const { getUserInfo } = await import('@/lib/services/userService');
     const user = await getUserInfo(inviterId, 'clerk_id');
-    
+
     if (!user) {
       return {
         success: false,
         message: '用户不存在'
       };
     }
-    
+
     const invitationModel = await createInvitation({
       inviterId: user.uuid, // 使用数据库 UUID
       inviterReward: customReward?.inviterReward || 20,
-      inviteeReward: customReward?.inviteeReward || 20
+      inviteeReward: customReward?.inviteeReward || 20,
+      email,
+      invitationMethod: method
     });
-    
+
     const invitation = convertInvitationModelToInvitation(invitationModel);
-    
+
     // 生成邀请链接
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.aicollager.com';
     const inviteUrl = `${baseUrl}/invite/${invitation.invite_code}`;
-    
+
     return {
       success: true,
       invitation,
       inviteUrl,
     };
-    
+
   } catch (error) {
     console.error('Generate invite link failed:', error);
     return {
@@ -97,21 +98,21 @@ export async function validateInviteCode(inviteCode: string): Promise<{
 }> {
   try {
     const isValid = await isInvitationValid(inviteCode);
-    
+
     if (!isValid) {
       return {
         valid: false,
         message: '邀请码无效或已过期'
       };
     }
-    
+
     const invitationModel = await findInvitationByCode(inviteCode);
-    
+
     return {
       valid: true,
       invitation: invitationModel ? convertInvitationModelToInvitation(invitationModel) : undefined
     };
-    
+
   } catch (error) {
     console.error('Validate invite code failed:', error);
     return {
@@ -136,15 +137,15 @@ export async function handleInviteClick(inviteCode: string): Promise<{
         message: validation.message
       };
     }
-    
+
     // 标记为已点击
     await markInvitationClicked(inviteCode);
-    
+
     return {
       success: true,
       invitation: validation.invitation
     };
-    
+
   } catch (error) {
     console.error('Handle invite click failed:', error);
     return {
@@ -164,7 +165,7 @@ export async function processInviteCompletion(inviteCode: string, inviteeId: str
   try {
     // 完成邀请
     const completionResult = await completeInvitation(inviteCode, inviteeId);
-    
+
     if (!completionResult.success || !completionResult.invitation) {
       return {
         success: false,
@@ -173,9 +174,9 @@ export async function processInviteCompletion(inviteCode: string, inviteeId: str
         message: '邀请完成失败'
       };
     }
-    
+
     const invitationModel = completionResult.invitation;
-    
+
     // 给邀请人发放奖励
     const inviterRewardResult = await addUserCredits(
       invitationModel.inviterId,
@@ -186,7 +187,7 @@ export async function processInviteCompletion(inviteCode: string, inviteeId: str
       'invitation',
       invitationModel.uuid
     );
-    
+
     // 给被邀请人发放奖励
     const inviteeRewardResult = await addUserCredits(
       inviteeId,
@@ -197,18 +198,18 @@ export async function processInviteCompletion(inviteCode: string, inviteeId: str
       'invitation',
       invitationModel.uuid
     );
-    
+
     // 标记奖励已发放
     if (inviterRewardResult.success && inviteeRewardResult.success) {
       await markInvitationRewardGiven(inviteCode, inviteeId);
     }
-    
+
     return {
       success: true,
       inviterReward: invitationModel.inviterReward,
       inviteeReward: invitationModel.inviteeReward
     };
-    
+
   } catch (error) {
     console.error('Process invite completion failed:', error);
     return {
@@ -239,11 +240,11 @@ export async function getUserInviteHistory(
 }> {
   try {
     const { limit = 20, offset = 0 } = options;
-    
+
     // userId 可能是 Clerk ID，需要转换为数据库 UUID
     const { getUserInfo } = await import('@/lib/services/userService');
     const user = await getUserInfo(userId, 'clerk_id');
-    
+
     if (!user) {
       return {
         invitations: [],
@@ -256,15 +257,17 @@ export async function getUserInviteHistory(
         success: false
       };
     }
-    
+
     const [invitationModels, statsResult] = await Promise.all([
       getUserInvitations(user.uuid),
       getUserInvitationStats(user.uuid)
     ]);
-    
+
     // 转换类型
-    const invitations = invitationModels.map(convertInvitationModelToInvitation);
-    
+    const invitations = invitationModels
+      .slice(offset, offset + limit)
+      .map(convertInvitationModelToInvitation);
+
     // 转换统计数据
     const stats = {
       total: statsResult.totalInvitations,
@@ -272,13 +275,13 @@ export async function getUserInviteHistory(
       pending: statsResult.totalInvitations - statsResult.completedInvitations,
       totalRewards: statsResult.totalRewardsEarned
     };
-    
+
     return {
       invitations,
       stats,
       success: true
     };
-    
+
   } catch (error) {
     console.error('Get user invite history failed:', error);
     return {
@@ -303,25 +306,25 @@ export async function getInviteDetails(inviteCode: string): Promise<{
 }> {
   try {
     const invitationModel = await findInvitationByCode(inviteCode);
-    
+
     if (!invitationModel) {
       return {
         success: false,
         message: '邀请不存在或已过期'
       };
     }
-    
+
     const invitation = convertInvitationModelToInvitation(invitationModel);
-    
+
     // TODO: 如果需要显示邀请人信息，可以在这里查询用户表
     // const inviter = await findUserByUuid(invitation.inviter_id);
-    
+
     return {
       success: true,
       invitation,
       // inviterName: inviter?.display_name || inviter?.username
     };
-    
+
   } catch (error) {
     console.error('Get invite details failed:', error);
     return {
@@ -342,26 +345,26 @@ export async function checkCanCreateInvite(userId: string): Promise<{
     // userId 可能是 Clerk ID，需要转换为数据库 UUID
     const { getUserInfo } = await import('@/lib/services/userService');
     const user = await getUserInfo(userId, 'clerk_id');
-    
+
     if (!user) {
       return {
         canCreate: false,
         reason: '用户不存在'
       };
     }
-    
+
     const stats = await getUserInvitationStats(user.uuid);
-    
+
     // 设置邀请限制（可以根据用户等级调整）
     const maxInvites = 100; // 最大邀请数限制
-    
+
     return {
       canCreate: stats.totalInvitations < maxInvites,
       currentInvites: stats.totalInvitations,
       maxInvites,
       reason: stats.totalInvitations >= maxInvites ? '已达到最大邀请数限制' : undefined
     };
-    
+
   } catch (error) {
     console.error('Check can create invite failed:', error);
     return {
@@ -379,10 +382,10 @@ export function generateShareText(invitation: Invitation): {
 } {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.aicollager.com';
   const shortUrl = `${baseUrl}/i/${invitation.invite_code}`;
-  
+
   return {
     title: '🎨 AI Collager - 智能拼图工具',
     description: `我在使用 AI Collager 制作拼图，效果很棒！使用我的邀请码注册，我们都能获得 ${invitation.invitee_reward} 积分奖励哦！`,
     shortUrl
   };
-} 
+}

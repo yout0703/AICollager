@@ -1,20 +1,25 @@
 import React from 'react';
 import { Dictionary, getTranslation } from "@/lib/i18n";
-import { 
-  Upload, 
-  Sparkles, 
-  Download, 
+import {
+  Upload,
+  Sparkles,
+  Download,
   ArrowRight,
-  Image,
   Wand2,
   CheckCircle
 } from "lucide-react";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Section, SectionHeader, SectionInner } from "@/components/ui/section";
 
 interface HowItWorksProps {
   dict: Dictionary;
+  locale?: string;
 }
 
-const HowItWorks = ({ dict }: HowItWorksProps) => {
+const HowItWorks = ({ dict, locale = 'zh' }: HowItWorksProps) => {
   const t = (key: string): string => {
     return getTranslation(dict, key);
   };
@@ -30,21 +35,17 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
         t('howItWorks.steps.upload.details.autoOptimize'),
         t('howItWorks.steps.upload.details.duplicateDetection')
       ],
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-blue-50"
     },
     {
-      step: "02", 
+      step: "02",
       icon: Sparkles,
       title: t('howItWorks.steps.analyze.title'),
       description: t('howItWorks.steps.analyze.description'),
       details: [
         t('howItWorks.steps.analyze.details.contentRecognition'),
-        t('howItWorks.steps.analyze.details.colorMatching'), 
+        t('howItWorks.steps.analyze.details.colorMatching'),
         t('howItWorks.steps.analyze.details.layoutRecommendation')
       ],
-      color: "from-purple-500 to-pink-500",
-      bgColor: "bg-purple-50"
     },
     {
       step: "03",
@@ -56,8 +57,6 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
         t('howItWorks.steps.generate.details.autoDecoration'),
         t('howItWorks.steps.generate.details.realTimePreview')
       ],
-      color: "from-green-500 to-emerald-500", 
-      bgColor: "bg-green-50"
     },
     {
       step: "04",
@@ -69,110 +68,87 @@ const HowItWorks = ({ dict }: HowItWorksProps) => {
         t('howItWorks.steps.download.details.hdNoWatermark'),
         t('howItWorks.steps.download.details.oneClickShare')
       ],
-      color: "from-orange-500 to-red-500",
-      bgColor: "bg-orange-50"
     }
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 标题部分 */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 mb-6">
-            <Wand2 className="w-4 h-4 text-blue-600 mr-2" />
-            <span className="text-sm font-medium text-blue-700">
-              {t('howItWorks.tagline')}
-            </span>
-          </div>
-          
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            {t('howItWorks.title')}
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}{t('howItWorks.highlight')}
-            </span>
-            {t('howItWorks.subtitle')}，创作精美拼图
+    <Section muted>
+      <SectionInner>
+        <SectionHeader>
+          <Badge variant="soft" className="mb-5 gap-2">
+            <Wand2 className="h-3.5 w-3.5" />
+            {t('howItWorks.tagline')}
+          </Badge>
+
+          <h2 className="text-3xl font-semibold tracking-normal text-foreground md:text-5xl">
+            {t('howItWorks.title')} <span className="text-primary">{t('howItWorks.highlight')}</span>{' '}
+            {t('howItWorks.subtitle')} {t('howItWorks.titleSuffix')}
           </h2>
-          
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+
+          <p className="mt-5 text-lg leading-8 text-muted-foreground">
             {t('howItWorks.description')}
           </p>
-        </div>
+        </SectionHeader>
 
-        {/* 步骤展示 */}
-        <div className="relative">
-          {/* 连接线 - 桌面端 */}
-          <div className="hidden lg:block absolute top-24 left-1/2 transform -translate-x-1/2 w-full max-w-4xl">
-            <div className="relative h-1">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-200 via-purple-200 via-green-200 to-orange-200 rounded-full"></div>
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 via-green-500 to-orange-500 rounded-full animate-pulse opacity-50"></div>
-            </div>
-          </div>
+        <div className="relative isolate mb-16 lg:mb-20">
+          <div className="absolute left-8 right-8 top-8 z-0 hidden h-px bg-border lg:block" />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-4">
+          <div className="relative z-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, index) => {
               const IconComponent = step.icon;
               return (
-                <div key={index} className="relative">
-                  {/* 移动端连接线 */}
-                  {index < steps.length - 1 && (
-                    <div className="lg:hidden absolute top-32 left-1/2 transform -translate-x-1/2 w-1 h-16 bg-gradient-to-b from-gray-300 to-gray-200"></div>
-                  )}
-                  
-                  <div className="relative bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border border-gray-100">
-                    {/* 步骤编号 */}
-                    <div className="absolute -top-4 -right-4 w-12 h-12 bg-gradient-to-r from-gray-800 to-gray-600 text-white rounded-full flex items-center justify-center font-bold text-lg shadow-lg">
-                      {step.step}
-                    </div>
-                    
-                    {/* 图标 */}
-                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-r ${step.color} mb-6 shadow-lg`}>
-                      <IconComponent className="w-8 h-8 text-white" />
-                    </div>
-                    
-                    {/* 内容 */}
-                    <h3 className="text-xl font-bold text-gray-900 mb-3">
-                      {step.title}
-                    </h3>
-                    <p className="text-gray-600 mb-6 leading-relaxed">
-                      {step.description}
-                    </p>
-                    
-                    {/* 详细特性 */}
-                    <ul className="space-y-2">
-                      {step.details.map((detail, detailIndex) => (
-                        <li key={detailIndex} className="flex items-center text-sm text-gray-500">
-                          <CheckCircle className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                          {detail}
-                        </li>
-                      ))}
-                    </ul>
+                <div key={index} className="relative flex flex-col">
+                  <div className="relative z-10 mb-4 flex h-16 w-16 items-center justify-center rounded-full border border-border bg-background text-sm font-semibold text-primary">
+                    <IconComponent className="h-6 w-6" />
                   </div>
+
+                  <Card className="flex h-full min-h-[330px] flex-col">
+                    <CardHeader>
+                      <div className="mb-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {step.step}
+                      </div>
+                      <CardTitle>{step.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1">
+                      <p className="mb-6 leading-7 text-muted-foreground">
+                        {step.description}
+                      </p>
+                      <ul className="space-y-2">
+                        {step.details.map((detail, detailIndex) => (
+                          <li key={detailIndex} className="flex items-center text-sm text-muted-foreground">
+                            <CheckCircle className="mr-2 h-4 w-4 flex-shrink-0 text-accent" />
+                            {detail}
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* 底部CTA */}
-        <div className="text-center mt-16">
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 max-w-2xl mx-auto">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className="text-center">
+          <div className="mx-auto max-w-2xl rounded-lg border border-border bg-background p-8">
+            <h3 className="text-2xl font-semibold text-foreground">
               {t('howItWorks.cta.title')}
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 mt-3 text-muted-foreground">
               {t('howItWorks.cta.description')}
             </p>
-            <button className="group inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
-              <Sparkles className="w-5 h-5 mr-2" />
-              {t('howItWorks.cta.button')}
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </button>
+            <Button asChild size="lg" className="group">
+              <Link href={`/${locale}/collage`}>
+                <Sparkles className="mr-2 h-5 w-5" />
+                {t('howItWorks.cta.button')}
+                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </Button>
           </div>
         </div>
-      </div>
-    </section>
+      </SectionInner>
+    </Section>
   );
 };
 
-export default HowItWorks; 
+export default HowItWorks;

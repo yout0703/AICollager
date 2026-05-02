@@ -1,15 +1,15 @@
 'use client';
 
 import React from 'react';
-import { 
-  toastSuccess, 
-  toastError, 
-  toastWarning, 
-  toastInfo, 
+import {
+  toastSuccess,
+  toastError,
+  toastWarning,
+  toastInfo,
   toastLoading,
   toastMessage,
   toastPromise,
-  dismissAllToasts 
+  dismissAllToasts
 } from '@/lib/toast';
 import { type Locale } from '@/lib/i18n';
 
@@ -44,72 +44,72 @@ export function ToastExample({ locale = 'zh' }: ToastExampleProps) {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg max-w-md mx-auto">
-      <h3 className="text-lg font-semibold mb-4 text-gray-900">
+    <div className="p-6 bg-card rounded-lg border border-border max-w-md mx-auto">
+      <h3 className="text-lg font-semibold mb-4 text-foreground">
         Toast 消息示例
       </h3>
-      
+
       <div className="space-y-3">
         {/* 基础 Toast */}
         <button
           onClick={() => toastSuccess('common.success', locale)}
-          className="w-full px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-accent hover:bg-accent/90 text-accent-foreground rounded-md transition-colors"
         >
           成功消息
         </button>
-        
+
         <button
           onClick={() => toastError('common.error', locale)}
-          className="w-full px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-md transition-colors"
         >
           错误消息
         </button>
-        
+
         <button
           onClick={() => toastWarning('common.warning', locale)}
-          className="w-full px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors"
         >
           警告消息
         </button>
-        
+
         <button
           onClick={() => toastInfo('common.info', locale)}
-          className="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors"
         >
           信息消息
         </button>
-        
+
         <button
           onClick={() => toastLoading('common.loading', locale)}
-          className="w-full px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground rounded-md transition-colors"
         >
           加载消息
         </button>
-        
+
         {/* 自定义消息 */}
         <button
           onClick={() => toastMessage('这是一条自定义消息！', 'success')}
-          className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-accent hover:bg-accent/90 text-accent-foreground rounded-md transition-colors"
         >
           自定义消息
         </button>
-        
+
         {/* Promise Toast */}
         <button
           onClick={handlePromiseToast}
-          className="w-full px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-colors"
         >
           异步操作 Toast
         </button>
-        
+
         {/* 清除所有 Toast */}
         <button
           onClick={dismissAllToasts}
-          className="w-full px-4 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg transition-colors"
+          className="w-full px-4 py-2 bg-foreground hover:bg-foreground/90 text-background rounded-md transition-colors"
         >
           清除所有消息
         </button>
       </div>
     </div>
   );
-} 
+}

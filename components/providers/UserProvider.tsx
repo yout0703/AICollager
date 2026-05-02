@@ -9,7 +9,6 @@ interface UserProviderProps {
 
 export default function UserProvider({ children }: UserProviderProps) {
   const { isSignedIn, user, isLoaded } = useUser();
-  const [isUserSetupChecked, setIsUserSetupChecked] = useState(false);
   const [lastCheckedUserId, setLastCheckedUserId] = useState<string | null>(null);
 
   // 检查和设置用户
@@ -44,16 +43,16 @@ export default function UserProvider({ children }: UserProviderProps) {
         if (checkResponse.ok) {
           const checkResult = await checkResponse.json();
           console.log('✅ [USER_PROVIDER] 用户检查结果:', checkResult);
-          
+
           if (checkResult.needs_setup) {
             console.log('🆕 [USER_PROVIDER] 用户需要初始化，开始创建用户记录...');
-            
+
             const setupData = {
               language: navigator.language.startsWith('zh') ? 'zh-CN' : 'en',
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Shanghai',
             };
             console.log('🔍 [USER_PROVIDER] 设置数据:', setupData);
-            
+
             // 用户需要初始化，自动创建用户记录
             const setupResponse = await fetch('/api/auth/setup', {
               method: 'POST',
@@ -75,7 +74,7 @@ export default function UserProvider({ children }: UserProviderProps) {
                 statusText: setupResponse.statusText,
                 error: errorText
               });
-              
+
               // 尝试解析错误响应
               try {
                 const errorJson = JSON.parse(errorText);
@@ -94,7 +93,7 @@ export default function UserProvider({ children }: UserProviderProps) {
             statusText: checkResponse.statusText,
             error: errorText
           });
-          
+
           // 尝试解析错误响应
           try {
             const errorJson = JSON.parse(errorText);
@@ -112,7 +111,6 @@ export default function UserProvider({ children }: UserProviderProps) {
         });
       } finally {
         console.log('🏁 [USER_PROVIDER] 用户检查流程结束');
-        setIsUserSetupChecked(true);
         setLastCheckedUserId(user.id);
       }
     };
@@ -124,10 +122,9 @@ export default function UserProvider({ children }: UserProviderProps) {
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
       console.log('🔄 [USER_PROVIDER] 用户登出，重置检查状态');
-      setIsUserSetupChecked(false);
       setLastCheckedUserId(null);
     }
   }, [isLoaded, isSignedIn]);
 
   return <>{children}</>;
-} 
+}

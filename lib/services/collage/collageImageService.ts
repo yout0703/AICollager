@@ -22,13 +22,13 @@ export class CollageImageService {
         size: `${Math.round(image.size / 1024)}KB`,
         type: image.type
       });
-      
+
       try {
         // 这里应该上传图片到S3并获取URL
         console.log('📤 上传图片到R2...');
         const imageUrl = await this.uploadImageToR2(image);
         console.log('✅ 图片上传成功:', imageUrl);
-        
+
         // 保存图片记录
         console.log('💾 保存图片记录到数据库...');
         await collageImageModel.create({
@@ -53,7 +53,7 @@ export class CollageImageService {
         const analysisStartTime = Date.now();
         const analysis = await analyzeImages([imageData]);
         const analysisTime = Date.now() - analysisStartTime;
-        
+
         console.log('📊 Gemini分析结果:', {
           success: analysis.success,
           analysisTime: `${analysisTime}ms`,
@@ -61,14 +61,14 @@ export class CollageImageService {
           resultCount: analysis.results?.length,
           error: analysis.error
         });
-        
+
         if (analysis.success && analysis.results) {
           console.log('✅ 图片分析成功:', {
             imageIndex: i,
             analysisKeys: Object.keys(analysis.results[0] || {}),
             resultData: analysis.results[0]
           });
-          
+
           analysisResults.push({
             index: i,
             url: imageUrl,
@@ -80,7 +80,7 @@ export class CollageImageService {
             error: analysis.error,
             analysis: analysis
           });
-          
+
           // 即使分析失败也要保留图片信息
           analysisResults.push({
             index: i,
@@ -110,57 +110,55 @@ export class CollageImageService {
     try {
       // 验证 R2 配置
       const { validateR2Config, uploadBufferToR2WithDedup, getAccessibleR2Url } = await import('@/lib/storage');
-      
+
       if (!validateR2Config()) {
         throw new Error('R2 配置验证失败');
       }
-      
+
       // 转换File为Buffer
       const buffer = await this.fileToBuffer(image);
-      
+
       const bucketName = process.env.R2_BUCKET_NAME;
       if (!bucketName) {
         throw new Error('R2_BUCKET_NAME环境变量未设置');
       }
-      
-      // 获取文件扩展名，用于生成适当的MD5文件名
-      const fileExtension = image.name.split('.').pop() || 'jpg';
+
       const contentType = image.type || 'image/jpeg';
-      
+
       console.log(`📤 上传图片到 R2 (智能去重): ${image.name}`);
       const uploadResult = await uploadBufferToR2WithDedup(
-        buffer, 
-        bucketName, 
+        buffer,
+        bucketName,
         contentType,
         'collage-images'
       );
-      
+
       // 使用智能访问获取最终可用的 URL
       console.log(`🔗 获取可访问 URL: ${uploadResult.Key}`);
       const accessResult = await getAccessibleR2Url(uploadResult.Key);
-      
+
       if (uploadResult.isExisting) {
         console.log(`♻️  使用已存在的图片: ${accessResult.url} (${accessResult.type}, MD5: ${uploadResult.md5Hash})`);
       } else {
         console.log(`✅ 新图片上传成功: ${accessResult.url} (${accessResult.type}, MD5: ${uploadResult.md5Hash})`);
       }
-      
+
       // 如果是预签名 URL，记录过期时间
       if (accessResult.type === 'presigned' && accessResult.expiresAt) {
         console.log(`⏰ 预签名 URL 将于 ${accessResult.expiresAt.toLocaleString()} 过期`);
       }
-      
+
       return accessResult.url;
-      
+
     } catch (error) {
       console.error('❌ R2上传失败:', error);
-      
+
       // 如果R2上传失败，返回一个本地临时URL（仅开发环境）
       if (process.env.NODE_ENV === 'development') {
         console.log('🔧 开发环境：返回临时URL');
         return `data:${image.type};base64,${(await this.fileToBuffer(image)).toString('base64')}`;
       }
-      
+
       throw new Error(`图片上传失败: ${error instanceof Error ? error.message : '未知错误'}`);
     }
   }
@@ -174,4 +172,4 @@ export class CollageImageService {
   }
 }
 
-export const collageImageService = new CollageImageService(); 
+export const collageImageService = new CollageImageService();

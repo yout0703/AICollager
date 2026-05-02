@@ -54,13 +54,14 @@ export function LazyImage({
       }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    const container = containerRef.current;
+    if (container) {
+      observer.observe(container);
     }
 
     return () => {
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (container) {
+        observer.unobserve(container);
       }
     };
   }, [priority, loading]);
@@ -73,18 +74,6 @@ export function LazyImage({
   const handleImageError = () => {
     setImageError(true);
     onError?.();
-  };
-
-  const getBlurDataURL = () => {
-    // 生成低质量的base64占位图
-    return `data:image/svg+xml;base64,${btoa(`
-      <svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#f3f4f6"/>
-        <text x="50%" y="50%" font-family="system-ui" font-size="14" fill="#9ca3af" text-anchor="middle" dy=".3em">
-          ${alt || 'Loading...'}
-        </text>
-      </svg>
-    `)}`;
   };
 
   return (
@@ -145,7 +134,7 @@ export function LazyImage({
 
       {/* 渐变遮罩（可选） */}
       {imageLoaded && (
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
+        <div className="absolute inset-0 bg-black/10 opacity-0 hover:opacity-100 transition-opacity duration-300" />
       )}
     </div>
   );
@@ -204,4 +193,4 @@ export function CardImage({
   );
 }
 
-export default LazyImage; 
+export default LazyImage;

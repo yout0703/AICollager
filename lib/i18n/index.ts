@@ -1,4 +1,4 @@
-import { locales, defaultLocale } from "../config";
+import { locales } from "../config";
 
 export type Locale = (typeof locales)[number];
 
@@ -6,13 +6,6 @@ export type Locale = (typeof locales)[number];
 export type Dictionary = {
   [key: string]: string | Dictionary | string[];
 };
-
-// 获取嵌套属性的类型帮助函数
-type NestedKeyOf<T> = {
-  [K in keyof T & (string | number)]: T[K] extends object
-    ? `${K}.${NestedKeyOf<T[K]>}`
-    : K;
-}[keyof T & (string | number)];
 
 // 导入各个模块的翻译
 import { commonTranslations } from './modules/common';
@@ -27,19 +20,19 @@ import { ctaTranslations } from './modules/cta';
 function deepMerge(target: any, source: any): any {
   if (source === null || source === undefined) return target;
   if (target === null || target === undefined) return source;
-  
+
   // 如果source是基础类型，直接返回
   if (typeof source !== 'object' || Array.isArray(source)) {
     return source;
   }
-  
+
   // 如果target不是对象，用source覆盖
   if (typeof target !== 'object' || Array.isArray(target)) {
     return source;
   }
-  
+
   const result = { ...target };
-  
+
   for (const key in source) {
     if (source.hasOwnProperty(key)) {
       if (typeof source[key] === 'object' && !Array.isArray(source[key]) && source[key] !== null &&
@@ -50,7 +43,7 @@ function deepMerge(target: any, source: any): any {
       }
     }
   }
-  
+
   return result;
 }
 
@@ -65,7 +58,7 @@ const createDictionary = (locale: Locale): Dictionary => {
     (faqTranslations as any)[locale] || {},
     (ctaTranslations as any)[locale] || {}
   ];
-  
+
   return modules.reduce((acc, module) => deepMerge(acc, module), {});
 };
 
@@ -99,4 +92,19 @@ export const getTranslation = (dict: Dictionary, key: string): string => {
   }
 
   return typeof value === 'string' ? value : key;
-}; 
+};
+
+export const getTranslationArray = (dict: Dictionary, key: string): string[] => {
+  const keys = key.split('.');
+  let value: any = dict;
+
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = value[k];
+    } else {
+      return [];
+    }
+  }
+
+  return Array.isArray(value) ? value : [];
+};

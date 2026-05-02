@@ -23,7 +23,7 @@ lib/services/collage/
   - `validateUserAndLimits()` - 验证用户和限制
   - `consumeUserCredits()` - 扣除用户积分
 
-### 2. CollageImageService  
+### 2. CollageImageService
 - **职责**: 图片处理相关操作
 - **主要方法**:
   - `analyzeImages()` - 上传并分析图片
@@ -34,7 +34,7 @@ lib/services/collage/
 - **职责**: 布局生成和视觉元素推荐
 - **主要方法**:
   - `generateLayout()` - 生成AI布局建议
-  - `recommendIcons()` - 推荐Icon元素
+  - `recommendIcons()` - 当前返回空数组；Icon 功能已从公开产品路径移除
   - `generateFinalCollageData()` - 生成最终拼图数据
   - 各种私有布局生成方法
 
@@ -59,7 +59,7 @@ lib/services/collage/
 
 为了保持向后兼容，在 `index.ts` 中提供了一个包装的 `CollageService` 类，它整合了生成和CRUD功能，API接口保持不变。
 
-原来的 `lib/services/collageService.ts` 现在只是一个重新导出的包装器。
+旧的 `lib/services/collageService.ts` 兼容入口已移除，新代码统一从 `@/lib/services/collage` 引入。
 
 ## 优势
 
@@ -113,7 +113,7 @@ const collage = await collageCrudService.getCollageById(id, userId);
 // 统一使用驼峰命名
 interface Collage {
   userId: string;         // ✅ 不是 user_id
-  sessionId: string;      // ✅ 不是 session_id  
+  sessionId: string;      // ✅ 不是 session_id
   canvasConfig: object;   // ✅ 不是 canvas_config
   createdAt: Date;        // ✅ 不是 created_at
 }
@@ -125,7 +125,7 @@ interface Collage {
 Controller Layer
       ↓
 Service Layer (这里)
-      ↓  
+      ↓
 Repository Layer
       ↓
 Database Layer
@@ -140,7 +140,7 @@ Database Layer
 - 使用频率限制
 - 权限检查
 
-### 2. CollageImageService  
+### 2. CollageImageService
 **职责**：图片处理和存储
 - 图片上传到 R2 存储
 - 图片压缩和优化
@@ -203,7 +203,7 @@ export type Collage = DbCollage;
 每个服务都有明确的错误处理策略：
 - **ValidationService**: 抛出验证错误
 - **ImageService**: 处理上传和处理错误
-- **LayoutService**: 处理 AI 服务错误  
+- **LayoutService**: 处理 AI 服务错误
 - **CrudService**: 处理数据库错误
 - **GenerationService**: 统一错误处理和回滚
 

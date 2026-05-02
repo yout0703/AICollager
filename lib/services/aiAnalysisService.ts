@@ -38,15 +38,11 @@ import {
   generateLayoutSuggestionPrompt,
   generateColorSchemePrompt,
   getRandomDesignStyle,
-  getRandomCreativityHint,
   PROMPT_TEMPLATE_VERSION
 } from '@/lib/prompts/templates';
 
 // 导入 Schema 验证
-import { 
-  validateImageAnalysis, 
-  validateLayoutSuggestion, 
-  validateColorScheme,
+import {
   safeValidateImageAnalysis,
   safeValidateLayoutSuggestion,
   safeValidateColorScheme
@@ -55,7 +51,6 @@ import {
 // 导入 Prompt 配置
 import {
   DEBUG_CONFIG,
-  AI_MODEL_CONFIG,
   getPromptConfigSummary
 } from '@/lib/prompts/config';
 
@@ -72,10 +67,10 @@ class FallbackManager {
         { color: '辅色调', percentage: 30, hex: '#CCCCCC' },
         { color: '强调色', percentage: 30, hex: '#4A90E2' }
       ],
-      style: { 
-        type: 'photo', 
-        mood: 'neutral', 
-        composition: 'balanced' 
+      style: {
+        type: 'photo',
+        mood: 'neutral',
+        composition: 'balanced'
       },
       themes: ['通用'],
       keywords: ['图片', '内容'],
@@ -85,7 +80,7 @@ class FallbackManager {
 
   static createDefaultLayout(imageCount: number, aspectRatio: string = '1:1'): LayoutSuggestion {
     const maskShapes = ['circle', 'rounded-rect', 'hexagon', 'diamond'];
-    
+
     return {
       layout_type: 'mask_collage',
       aspect_ratio: aspectRatio,
@@ -100,22 +95,22 @@ class FallbackManager {
         const gridSize = Math.ceil(Math.sqrt(imageCount));
         const row = Math.floor(index / gridSize);
         const col = index % gridSize;
-        
+
         const canvasSize = 800;
         const cellSize = (canvasSize - 40) / gridSize;
         const margin = 20;
-        
+
         return {
           imageIndex: index,
           z_index: 1,
           mask_region: {
             shape: shape,
             clip_path: shape === 'circle' ? 'circle(40%)' : 'inset(5% round 10px)',
-            position: { 
-              x: margin + col * cellSize, 
-              y: margin + row * cellSize, 
-              width: cellSize - 10, 
-              height: cellSize - 10 
+            position: {
+              x: margin + col * cellSize,
+              y: margin + row * cellSize,
+              width: cellSize - 10,
+              height: cellSize - 10
             }
           },
           image_transform: {
@@ -155,7 +150,7 @@ class FallbackManager {
  */
 export class AIAnalysisService {
   private static instance: AIAnalysisService;
-  
+
   private constructor() {
     // 输出 Prompt 管理系统信息
     if (DEBUG_CONFIG.VERBOSE_LOGGING) {
@@ -165,7 +160,7 @@ export class AIAnalysisService {
       console.log('⚙️ 配置摘要:', config);
     }
   }
-  
+
   static getInstance(): AIAnalysisService {
     if (!AIAnalysisService.instance) {
       AIAnalysisService.instance = new AIAnalysisService();
@@ -188,11 +183,10 @@ export class AIAnalysisService {
     response_time: number;
   }> {
     const startTime = Date.now();
-    let cached = false;
-    
+
     try {
       const config = getAIConfig();
-      
+
       // 生成缓存键
       const cacheKey = generateCacheKey({
         images: images.map(img => ({
@@ -201,13 +195,12 @@ export class AIAnalysisService {
         })),
         type: 'image_analysis'
       });
-      
+
       // 检查缓存
       const cachedResult = await findAIAnalysisCache(cacheKey, 'image_analysis');
       if (cachedResult) {
-        cached = true;
         const responseTime = Date.now() - startTime;
-        
+
         // 记录使用统计
         await recordAIRequest({
           operationType: 'image_analysis',
@@ -216,7 +209,7 @@ export class AIAnalysisService {
           success: true,
           metadata: { cached: true }
         });
-        
+
         return {
           success: true,
           results: (cachedResult.analysisResult as any).results,
@@ -224,20 +217,20 @@ export class AIAnalysisService {
           response_time: responseTime
         };
       }
-      
+
       // 调用 Gemini API
       const results: ImageAnalysisResult[] = [];
                 const prompt = generateImageAnalysisPrompt();
-      
+
       for (const image of images) {
         try {
           const imageData = typeof image.data === 'string' ? image.data : image.data.toString('base64');
-          
+
           const geminiResponse = await geminiService.analyzeSingleImage({
             data: imageData,
             mimeType: image.mimeType
           }, prompt);
-          
+
           if (geminiResponse.success) {
             // 增强JSON解析逻辑 + Schema验证
             const parseAnalysisResponse = (text: string): ImageAnalysisResult | null => {
@@ -247,7 +240,7 @@ export class AIAnalysisService {
                 /\{[\s\S]*\}/,
                 /(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/
               ];
-              
+
               for (const regex of extractors) {
                 const matches = text.match(regex);
                 if (matches) {
@@ -255,7 +248,7 @@ export class AIAnalysisService {
                   try {
                     const parsed = JSON.parse(jsonStr);
                     if (parsed && typeof parsed === 'object') {
-                      
+
                       // 使用 Zod Schema 验证
                       const validation = safeValidateImageAnalysis(parsed);
                       if (validation.success) {
@@ -265,7 +258,7 @@ export class AIAnalysisService {
                         return validation.data;
                       } else {
                         console.warn('❌ 图片分析 Schema 验证失败:', validation.error.issues);
-                        
+
                         // 降级处理：确保必要字段存在
                         const fallback = {
                           description: parsed.description || '图片分析',
@@ -276,7 +269,7 @@ export class AIAnalysisService {
                           keywords: parsed.keywords || ['内容'],
                           confidence_score: parsed.confidence_score || 0.7
                         };
-                        
+
                         if (DEBUG_CONFIG.VERBOSE_LOGGING) {
                           console.log('🔄 使用降级分析结果');
                         }
@@ -291,7 +284,7 @@ export class AIAnalysisService {
               }
               return null;
             };
-            
+
             const parsedResult = parseAnalysisResponse(geminiResponse.text);
             if (parsedResult) {
               results.push(parsedResult);
@@ -302,16 +295,16 @@ export class AIAnalysisService {
           } else {
             throw new Error(geminiResponse.error || 'Gemini API调用失败');
           }
-          
+
         } catch (imageError) {
           console.warn(`单张图片分析失败，使用降级分析:`, imageError);
           // 单张图片失败时使用降级分析
           results.push(FallbackManager.createFallbackAnalysis([image])[0]);
         }
       }
-      
+
       const responseTime = Date.now() - startTime;
-      
+
       // 缓存结果
       try {
         await createAIAnalysisCache({
@@ -327,7 +320,7 @@ export class AIAnalysisService {
       } catch (cacheError) {
         console.warn('⚠️  图片分析缓存创建失败，但不影响主功能:', cacheError);
       }
-      
+
       // 记录使用统计
       await recordAIRequest({
         operationType: 'image_analysis',
@@ -337,37 +330,37 @@ export class AIAnalysisService {
         estimatedCost: parseFloat((images.length * 0.01).toFixed(4)),
         metadata: { cached: false }
       });
-      
+
       return {
         success: true,
         results,
         cached: false,
         response_time: responseTime
       };
-      
+
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       console.warn('图片分析完全失败，使用降级方案:', error);
-      
+
       // 完全失败时返回降级分析结果
       const fallbackResults = FallbackManager.createFallbackAnalysis(images);
-      
+
       const config = getAIConfig();
-      
+
       // 记录失败统计，但返回成功（因为有降级方案）
       await recordAIRequest({
         operationType: 'image_analysis',
         aiModel: config.models.primary,
         processingTimeMs: responseTime,
         success: true, // 改为true，因为有降级方案
-        metadata: { 
-          cached: false, 
+        metadata: {
+          cached: false,
           fallback: true,
-          error: error instanceof Error ? error.message : '未知错误' 
+          error: error instanceof Error ? error.message : '未知错误'
         }
       });
-      
+
       return {
         success: true, // 改为true
         results: fallbackResults,
@@ -395,11 +388,10 @@ export class AIAnalysisService {
     response_time: number;
   }> {
     const startTime = Date.now();
-    let cached = false;
-    
+
     try {
       const config = getAIConfig();
-      
+
       // 生成缓存键
       const stableHash = JSON.stringify({
         images: params.images,
@@ -407,18 +399,18 @@ export class AIAnalysisService {
         type: 'layout_suggestion'
       });
       const randomSeed = Math.abs(Buffer.from(stableHash).reduce((a, b) => a + b, 0)) % 10000 + Date.now() % 1000;
-      
+
       const cacheKey = generateCacheKey({
         images: params.images,
         preferences: params.preferences,
         type: 'layout_suggestion',
         randomSeed: randomSeed
       });
-      
+
       // 多样性缓存策略：降低缓存命中率
       const shouldUseCache = Math.random() > 0.3;
       let cachedResult = null;
-      
+
       if (shouldUseCache) {
         try {
           cachedResult = await findAIAnalysisCache(cacheKey, 'layout_suggestion');
@@ -427,11 +419,10 @@ export class AIAnalysisService {
           cachedResult = null;
         }
       }
-      
+
       if (cachedResult) {
-        cached = true;
         const responseTime = Date.now() - startTime;
-        
+
         await recordAIRequest({
           operationType: 'layout_suggestion',
           aiModel: config.models.primary,
@@ -439,7 +430,7 @@ export class AIAnalysisService {
           success: true,
           metadata: { cached: true }
         });
-        
+
         return {
           success: true,
           suggestion: (cachedResult.analysisResult as any).suggestion,
@@ -447,41 +438,41 @@ export class AIAnalysisService {
           response_time: responseTime
         };
       }
-      
+
       try {
         // 生成提示词
         const randomStyle = getRandomDesignStyle();
-        
+
         const prompt = generateLayoutSuggestionPrompt({
           images: params.images,
           aspectRatio: params.preferences?.aspect_ratio || '1:1',
           style: randomStyle,
           imageCount: params.images.length
         });
-        
+
         // 调用 Gemini API
         console.log('🤖 发送给Gemini的prompt长度:', prompt.length);
         console.log('📝 Prompt内容预览:', prompt.substring(0, 200) + '...');
-        
+
         const geminiResponse = await geminiService.generateText({ prompt });
-        
+
         console.log('📊 Gemini API 响应状态:', {
           success: geminiResponse.success,
           textLength: geminiResponse.text.length,
           processingTime: geminiResponse.processingTime,
           error: geminiResponse.error
         });
-        
+
         if (!geminiResponse.success) {
           throw new Error(geminiResponse.error || 'Gemini API调用失败');
         }
-        
+
         if (!geminiResponse.text || geminiResponse.text.trim().length === 0) {
           throw new Error('Gemini返回了空响应，可能是API配额不足或模型配置错误');
         }
-        
+
         let suggestion: LayoutSuggestion;
-        
+
         // 增强AI响应解析逻辑 + Schema验证
         const parseAIResponse = (text: string): LayoutSuggestion | null => {
           // 尝试多种JSON提取方法
@@ -495,7 +486,7 @@ export class AIAnalysisService {
             // 更宽松的匹配
             /(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/g
           ];
-          
+
           for (const regex of extractors) {
             const matches = text.match(regex);
             if (matches) {
@@ -503,7 +494,7 @@ export class AIAnalysisService {
               try {
                 const parsed = JSON.parse(jsonStr);
                 if (parsed && typeof parsed === 'object') {
-                  
+
                   // 使用 Zod Schema 验证
                   const validation = safeValidateLayoutSuggestion(parsed);
                   if (validation.success) {
@@ -513,7 +504,7 @@ export class AIAnalysisService {
                     return validation.data;
                   } else {
                     console.warn('❌ 布局建议 Schema 验证失败:', validation.error.issues);
-                    
+
                     // 降级处理：返回原始解析结果（后续会有数据清理）
                     if (DEBUG_CONFIG.VERBOSE_LOGGING) {
                       console.log('🔄 使用降级布局解析');
@@ -529,24 +520,24 @@ export class AIAnalysisService {
           }
           return null;
         };
-        
+
         const parsedSuggestion = parseAIResponse(geminiResponse.text);
-        
+
         if (parsedSuggestion) {
           suggestion = parsedSuggestion;
-          
+
           // 优化suggestion数据，确保必要字段存在
           suggestion.layout_type = suggestion.layout_type || 'mask_collage';
           suggestion.aspect_ratio = suggestion.aspect_ratio || params.preferences?.aspect_ratio || '1:1';
           suggestion.mask_strategy = suggestion.mask_strategy || '智能布局';
           suggestion.confidence_score = suggestion.confidence_score || 0.7;
           suggestion.reasoning = suggestion.reasoning || '基于AI智能分析生成的布局';
-          
+
           if (suggestion.suggestions) {
             suggestion.suggestions = suggestion.suggestions.map((sugg, index) => {
               const maskRegion = (sugg as any).mask_region || {};
               const imageTransform = (sugg as any).image_transform || {};
-              
+
               return {
                 ...sugg,
                 imageIndex: sugg.imageIndex !== undefined ? sugg.imageIndex : index,
@@ -573,9 +564,9 @@ export class AIAnalysisService {
           console.error('AI响应解析失败，原始响应:', geminiResponse.text.substring(0, 500));
           throw new Error(`无法解析AI响应。响应长度: ${geminiResponse.text.length}, 前100字符: ${geminiResponse.text.substring(0, 100)}`);
         }
-        
+
         const responseTime = Date.now() - startTime;
-        
+
         // 缓存结果
         try {
           await createAIAnalysisCache({
@@ -590,7 +581,7 @@ export class AIAnalysisService {
         } catch (cacheError) {
           console.warn('⚠️  布局建议缓存创建失败，但不影响主功能:', cacheError);
         }
-        
+
         // 记录使用统计
         await recordAIRequest({
           operationType: 'layout_suggestion',
@@ -600,37 +591,37 @@ export class AIAnalysisService {
           estimatedCost: parseFloat((0.005).toFixed(4)),
           metadata: { cached: false }
         });
-        
+
         return {
           success: true,
           suggestion,
           cached: false,
           response_time: responseTime
         };
-        
+
       } catch (aiError) {
         console.warn('AI布局生成失败，使用默认布局:', aiError);
-        
+
         // AI失败时使用默认布局
         const defaultSuggestion = FallbackManager.createDefaultLayout(
-          params.images.length, 
+          params.images.length,
           params.preferences?.aspect_ratio
         );
-        
+
         const responseTime = Date.now() - startTime;
-        
+
         await recordAIRequest({
           operationType: 'layout_suggestion',
           aiModel: config.models.primary,
           processingTimeMs: responseTime,
           success: true,
-          metadata: { 
-            cached: false, 
+          metadata: {
+            cached: false,
             fallback: true,
-            error: aiError instanceof Error ? aiError.message : '未知错误' 
+            error: aiError instanceof Error ? aiError.message : '未知错误'
           }
         });
-        
+
         return {
           success: true,
           suggestion: defaultSuggestion,
@@ -639,29 +630,29 @@ export class AIAnalysisService {
           response_time: responseTime
         };
       }
-      
+
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       console.warn('布局建议功能完全失败，使用降级方案:', error);
-      
+
       // 完全失败时使用默认布局
       const fallbackSuggestion = FallbackManager.createDefaultLayout(
-        params.images.length, 
+        params.images.length,
         params.preferences?.aspect_ratio
       );
-      
+
       const config = getAIConfig();
-      
+
       await recordAIRequest({
         operationType: 'layout_suggestion',
         aiModel: config.models.primary,
         processingTimeMs: responseTime,
         success: true,
-        metadata: { 
-          cached: false, 
+        metadata: {
+          cached: false,
           fallback: true,
-          error: error instanceof Error ? error.message : '未知错误' 
+          error: error instanceof Error ? error.message : '未知错误'
         }
       });
 
@@ -689,17 +680,16 @@ export class AIAnalysisService {
     response_time: number;
   }> {
     const startTime = Date.now();
-    let cached = false;
-    
+
     try {
       const config = getAIConfig();
-      
+
       // 提取图片颜色信息
       const allColors = params.images.flatMap(img => img.colors);
       const dominantColors = allColors
         .sort((a, b) => b.percentage - a.percentage)
         .slice(0, 10);
-      
+
       // 生成缓存键
       const cacheKey = generateCacheKey({
         colors: dominantColors,
@@ -707,13 +697,12 @@ export class AIAnalysisService {
         mood: params.mood,
         type: 'color_scheme'
       });
-      
+
       // 检查缓存
       const cachedResult = await findAIAnalysisCache(cacheKey, 'icon_recommendation');
       if (cachedResult) {
-        cached = true;
         const responseTime = Date.now() - startTime;
-        
+
         await recordAIRequest({
           operationType: 'icon_recommendation',
           aiModel: config.models.primary,
@@ -721,7 +710,7 @@ export class AIAnalysisService {
           success: true,
           metadata: { cached: true }
         });
-        
+
         return {
           success: true,
           colorScheme: (cachedResult.analysisResult as any).colorScheme,
@@ -729,18 +718,18 @@ export class AIAnalysisService {
           response_time: responseTime
         };
       }
-      
+
       try {
         // 调用 Gemini API
         const prompt = generateColorSchemePrompt(dominantColors, params.style, params.mood);
         const geminiResponse = await geminiService.generateText({ prompt });
-        
+
         if (!geminiResponse.success) {
           throw new Error(geminiResponse.error || 'Gemini API调用失败');
         }
-        
+
         let colorScheme: ColorScheme;
-        
+
         // 增强配色方案响应解析 + Schema验证
         const parseColorResponse = (text: string): ColorScheme | null => {
           const extractors = [
@@ -749,7 +738,7 @@ export class AIAnalysisService {
             /\{[\s\S]*\}/,
             /(\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\})/
           ];
-          
+
           for (const regex of extractors) {
             const matches = text.match(regex);
             if (matches) {
@@ -757,7 +746,7 @@ export class AIAnalysisService {
               try {
                 const parsed = JSON.parse(jsonStr);
                 if (parsed && typeof parsed === 'object') {
-                  
+
                   // 使用 Zod Schema 验证
                   const validation = safeValidateColorScheme(parsed);
                   if (validation.success) {
@@ -767,7 +756,7 @@ export class AIAnalysisService {
                     return validation.data;
                   } else {
                     console.warn('❌ 配色方案 Schema 验证失败:', validation.error.issues);
-                    
+
                     // 降级处理：确保配色方案必要字段存在
                     const fallback = {
                       primary_colors: parsed.primary_colors || ['#3B82F6'],
@@ -779,7 +768,7 @@ export class AIAnalysisService {
                       mood: parsed.mood || '平衡',
                       confidence_score: parsed.confidence_score || 0.7
                     };
-                    
+
                     if (DEBUG_CONFIG.VERBOSE_LOGGING) {
                       console.log('🔄 使用降级配色方案');
                     }
@@ -794,7 +783,7 @@ export class AIAnalysisService {
           }
           return null;
         };
-        
+
         const parsedColorScheme = parseColorResponse(geminiResponse.text);
         if (parsedColorScheme) {
           colorScheme = parsedColorScheme;
@@ -802,9 +791,9 @@ export class AIAnalysisService {
           console.warn('配色方案响应解析失败，原始响应:', geminiResponse.text.substring(0, 200));
           throw new Error(`无法解析配色方案响应。响应长度: ${geminiResponse.text.length}`);
         }
-        
+
         const responseTime = Date.now() - startTime;
-        
+
         // 缓存结果
         try {
           await createAIAnalysisCache({
@@ -819,7 +808,7 @@ export class AIAnalysisService {
         } catch (cacheError) {
           console.warn('⚠️  配色方案缓存创建失败，但不影响主功能:', cacheError);
         }
-        
+
         // 记录使用统计
         await recordAIRequest({
           operationType: 'icon_recommendation',
@@ -829,17 +818,17 @@ export class AIAnalysisService {
           estimatedCost: parseFloat((0.003).toFixed(4)),
           metadata: { cached: false }
         });
-        
+
         return {
           success: true,
           colorScheme,
           cached: false,
           response_time: responseTime
         };
-        
+
       } catch (aiError) {
         console.warn('AI配色生成失败，使用默认配色:', aiError);
-        
+
         // AI失败时创建基于图片主色的默认配色
         const primaryColor = dominantColors[0]?.hex || '#3B82F6';
         const defaultColorScheme = {
@@ -852,21 +841,21 @@ export class AIAnalysisService {
           mood: '平衡',
           confidence_score: 0.5
         };
-        
+
         const responseTime = Date.now() - startTime;
-        
+
         await recordAIRequest({
           operationType: 'icon_recommendation',
           aiModel: config.models.primary,
           processingTimeMs: responseTime,
           success: true,
-          metadata: { 
+          metadata: {
             cached: false,
             fallback: true,
-            error: aiError instanceof Error ? aiError.message : '未知错误' 
+            error: aiError instanceof Error ? aiError.message : '未知错误'
           }
         });
-        
+
         return {
           success: true,
           colorScheme: defaultColorScheme,
@@ -875,29 +864,29 @@ export class AIAnalysisService {
           response_time: responseTime
         };
       }
-      
+
     } catch (error) {
       const responseTime = Date.now() - startTime;
-      
+
       console.warn('配色方案功能完全失败，使用降级方案:', error);
-      
+
       // 完全失败时使用默认配色
       const fallbackColorScheme = FallbackManager.createDefaultColorScheme();
-      
+
       const config = getAIConfig();
-      
+
       await recordAIRequest({
         operationType: 'icon_recommendation',
         aiModel: config.models.primary,
         processingTimeMs: responseTime,
         success: true,
-        metadata: { 
-          cached: false, 
+        metadata: {
+          cached: false,
           fallback: true,
-          error: error instanceof Error ? error.message : '未知错误' 
+          error: error instanceof Error ? error.message : '未知错误'
         }
       });
-      
+
       return {
         success: true,
         colorScheme: fallbackColorScheme,
@@ -936,17 +925,17 @@ export class AIAnalysisService {
   }> {
     const totalStartTime = Date.now();
     const warnings: ProcessingError[] = [];
-    
+
     let imageAnalysis: ImageAnalysisResult[] | undefined;
     let layoutSuggestion: LayoutSuggestion | undefined;
     let colorScheme: ColorScheme | undefined;
-    
+
     // 第一阶段：图片分析（最重要，必须成功）
     const analysisStartTime = Date.now();
     try {
       const analysisResult = await this.analyzeImages(images);
       imageAnalysis = analysisResult.results;
-      
+
       if (analysisResult.error) {
         warnings.push({
           stage: 'analysis',
@@ -964,7 +953,7 @@ export class AIAnalysisService {
       });
     }
     const analysisTime = Date.now() - analysisStartTime;
-    
+
     // 第二阶段：布局建议（重要，但可降级）
     const layoutStartTime = Date.now();
     try {
@@ -974,7 +963,7 @@ export class AIAnalysisService {
           preferences
         });
         layoutSuggestion = layoutResult.suggestion;
-        
+
         if (layoutResult.error) {
           warnings.push({
             stage: 'layout',
@@ -996,7 +985,7 @@ export class AIAnalysisService {
       });
     }
     const layoutTime = Date.now() - layoutStartTime;
-    
+
     // 第三阶段：配色方案（可选，可降级）
     const colorStartTime = Date.now();
     try {
@@ -1007,7 +996,7 @@ export class AIAnalysisService {
           mood: preferences?.mood
         });
         colorScheme = colorResult.colorScheme;
-        
+
         if (colorResult.error) {
           warnings.push({
             stage: 'color',
@@ -1026,18 +1015,18 @@ export class AIAnalysisService {
       });
     }
     const colorTime = Date.now() - colorStartTime;
-    
+
     // 统计缓存使用情况
     const cachedOperations: string[] = [];
-    
-    const totalSuccess = imageAnalysis !== undefined && 
-                        layoutSuggestion !== undefined && 
+
+    const totalSuccess = imageAnalysis !== undefined &&
+                        layoutSuggestion !== undefined &&
                         colorScheme !== undefined;
-    
+
     return {
       success: totalSuccess,
       imageAnalysis,
-      layoutSuggestion, 
+      layoutSuggestion,
       colorScheme,
       warnings: warnings.length > 0 ? warnings : undefined,
       performance: {
@@ -1055,7 +1044,7 @@ export class AIAnalysisService {
 export const aiAnalysisService = AIAnalysisService.getInstance();
 
 // 便捷函数导出
-export const analyzeImages = (images: Array<{data: Buffer | string; mimeType: string; filename?: string}>) => 
+export const analyzeImages = (images: Array<{data: Buffer | string; mimeType: string; filename?: string}>) =>
   aiAnalysisService.analyzeImages(images);
 
 export const suggestLayout = (params: Parameters<typeof aiAnalysisService.suggestLayout>[0]) =>
@@ -1064,5 +1053,5 @@ export const suggestLayout = (params: Parameters<typeof aiAnalysisService.sugges
 export const generateColorScheme = (params: Parameters<typeof aiAnalysisService.generateColorScheme>[0]) =>
   aiAnalysisService.generateColorScheme(params);
 
-export const performCompleteAnalysis = (images: Array<{data: Buffer | string; mimeType: string; filename?: string}>, preferences?: any) => 
-  aiAnalysisService.performCompleteAnalysis(images, preferences); 
+export const performCompleteAnalysis = (images: Array<{data: Buffer | string; mimeType: string; filename?: string}>, preferences?: any) =>
+  aiAnalysisService.performCompleteAnalysis(images, preferences);

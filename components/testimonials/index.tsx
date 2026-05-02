@@ -1,16 +1,16 @@
 import React from 'react';
-import { Dictionary, getTranslation } from "@/lib/i18n";
+import { Dictionary } from "@/lib/i18n";
 import { Star, Quote, Heart, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Section, SectionHeader, SectionInner } from "@/components/ui/section";
 
 interface TestimonialsProps {
   dict: Dictionary;
 }
 
-const Testimonials = ({ dict }: TestimonialsProps) => {
-  const t = (key: string): string => {
-    return getTranslation(dict, key);
-  };
-
+const Testimonials = ({}: TestimonialsProps) => {
   const testimonials = [
     {
       id: 1,
@@ -82,28 +82,22 @@ const Testimonials = ({ dict }: TestimonialsProps) => {
   ];
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 标题部分 */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 mb-6">
-            <Heart className="w-4 h-4 text-blue-600 mr-2" />
-            <span className="text-sm font-medium text-blue-700">
-              用户评价
-            </span>
-          </div>
-          
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            用户都在说
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}好话
-            </span>
+    <Section>
+      <SectionInner>
+        <SectionHeader>
+          <Badge variant="soft" className="mb-5 gap-2">
+            <Heart className="h-3.5 w-3.5" />
+            用户评价
+          </Badge>
+
+          <h2 className="text-3xl font-semibold tracking-normal text-foreground md:text-5xl">
+            用户都在说 <span className="text-primary">好话</span>
           </h2>
-          
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+
+          <p className="mt-5 text-lg leading-8 text-muted-foreground">
             来自真实用户的反馈，看看AI拼图如何改变了他们的创作体验
           </p>
-        </div>
+        </SectionHeader>
 
         {/* 统计数据 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
@@ -111,13 +105,13 @@ const Testimonials = ({ dict }: TestimonialsProps) => {
             const IconComponent = stat.icon;
             return (
               <div key={index} className="text-center">
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl mb-4">
-                  <IconComponent className="w-6 h-6 text-white" />
+                <div className="inline-flex items-center justify-center w-10 h-10 bg-primary/10 rounded-md mb-4">
+                  <IconComponent className="w-5 h-5 text-primary" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                <div className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
                   {stat.number}
                 </div>
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-muted-foreground">
                   {stat.label}
                 </div>
               </div>
@@ -127,34 +121,31 @@ const Testimonials = ({ dict }: TestimonialsProps) => {
 
         {/* 评价网格 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
-            <div
+          {testimonials.map((testimonial) => (
+            <Card
               key={testimonial.id}
-              className="group relative bg-gradient-to-br from-white to-gray-50 rounded-2xl p-8 border border-gray-100 hover:border-gray-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+              className="relative"
             >
+              <CardContent className="p-8">
               {/* 引用图标 */}
-              <div className="absolute top-6 right-6 w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center opacity-20 group-hover:opacity-30 transition-opacity">
-                <Quote className="w-4 h-4 text-white" />
+              <div className="absolute top-6 right-6 w-8 h-8 bg-primary/10 rounded-md flex items-center justify-center">
+                <Quote className="w-4 h-4 text-primary" />
               </div>
 
               {/* 评分 */}
               <div className="flex items-center mb-4">
                 {[...Array(testimonial.rating)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                  <Star key={i} className="w-4 h-4 text-accent fill-current" />
                 ))}
               </div>
 
               {/* 评价内容 */}
-              <p className="text-gray-700 mb-6 leading-relaxed">
+              <p className="text-muted-foreground mb-6 leading-relaxed">
                 &ldquo;{testimonial.content}&rdquo;
               </p>
 
               {/* 亮点标签 */}
-              <div className="inline-flex items-center px-3 py-1 rounded-full bg-gradient-to-r from-green-100 to-emerald-100 border border-green-200 mb-6">
-                <span className="text-xs font-medium text-green-700">
-                  {testimonial.highlight}
-                </span>
-              </div>
+              <Badge variant="accent" className="mb-6">{testimonial.highlight}</Badge>
 
               {/* 用户信息 */}
               <div className="flex items-center">
@@ -164,50 +155,51 @@ const Testimonials = ({ dict }: TestimonialsProps) => {
                   className="w-12 h-12 rounded-full object-cover mr-4"
                 />
                 <div>
-                  <div className="font-semibold text-gray-900">
+                  <div className="font-semibold text-foreground">
                     {testimonial.name}
                   </div>
-                  <div className="text-sm text-gray-500">
+                  <div className="text-sm text-muted-foreground">
                     {testimonial.role}
                   </div>
                 </div>
               </div>
 
               {/* 效果对比 */}
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="text-xs text-gray-500 mb-1">效果对比</div>
-                <div className="text-sm font-medium text-blue-600">
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="text-xs text-muted-foreground mb-1">效果对比</div>
+                <div className="text-sm font-medium text-primary">
                   {testimonial.beforeAfter}
                 </div>
               </div>
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
 
         {/* 底部CTA */}
         <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+          <div className="bg-secondary/60 rounded-lg p-8 border border-border">
+            <h3 className="text-2xl font-semibold text-foreground mb-4">
               加入50,000+满意用户的行列
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="text-muted-foreground mb-6">
               开始你的AI拼图创作之旅，体验前所未有的简单和智能
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
+              <Button>
                 <Sparkles className="w-5 h-5 mr-2" />
                 立即免费体验
-              </button>
-              <button className="inline-flex items-center justify-center bg-white hover:bg-gray-50 text-gray-900 font-semibold px-8 py-3 rounded-xl border border-gray-200 transition-all duration-300 shadow-md hover:shadow-lg">
+              </Button>
+              <Button variant="outline">
                 <Heart className="w-5 h-5 mr-2" />
                 查看更多评价
-              </button>
+              </Button>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </SectionInner>
+    </Section>
   );
 };
 
-export default Testimonials; 
+export default Testimonials;

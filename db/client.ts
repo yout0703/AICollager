@@ -1,15 +1,15 @@
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-serverless'
 import postgres from 'postgres'
-import { Pool, neonConfig } from '@neondatabase/serverless'
+import { Pool } from '@neondatabase/serverless'
 import * as schema from './schema'
 
 // 根据环境选择连接方式
 function createDbClient() {
   // 尝试从多个环境变量获取连接字符串
-  const connectionString = 
-    process.env.DATABASE_URL || 
-    process.env.POSTGRES_URL || 
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
     process.env.NEXT_PUBLIC_SUPABASE_URL
 
   if (!connectionString) {
@@ -24,26 +24,25 @@ function createDbClient() {
         connect_timeout: 10,
         prepare: false,
       })
-      return drizzle(client, { 
+      return drizzle(client, {
         schema,
         casing: 'snake_case'
       })
     }
-    
+
     throw new Error('数据库连接字符串未配置。请设置 DATABASE_URL、POSTGRES_URL 或 Supabase 环境变量')
   }
 
   // 检查是否为 Neon serverless 环境 (生产环境或 serverless 部署)
-  const isServerless = process.env.NODE_ENV === 'production' || 
-                      process.env.VERCEL || 
+  const isServerless = process.env.NODE_ENV === 'production' ||
+                      process.env.VERCEL ||
                       connectionString.includes('neon.tech') ||
                       connectionString.includes('supabase.co')
 
   if (isServerless) {
     // 生产环境或 Vercel 部署使用 Neon Serverless
-    neonConfig.fetchConnectionCache = true
     const client = new Pool({ connectionString })
-    return drizzleNeon(client, { 
+    return drizzleNeon(client, {
       schema,
       casing: 'snake_case'
     })
@@ -55,7 +54,7 @@ function createDbClient() {
       connect_timeout: 10,       // 连接超时10秒
       prepare: false,            // 禁用预编译语句 (适合 serverless)
     })
-    return drizzle(client, { 
+    return drizzle(client, {
       schema,
       casing: 'snake_case'
     })
@@ -66,4 +65,4 @@ function createDbClient() {
 export const db = createDbClient()
 
 // 导出类型
-export type Database = typeof db 
+export type Database = typeof db

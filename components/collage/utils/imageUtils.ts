@@ -1,5 +1,68 @@
 // 图片处理工具函数
-import { ImageTransform, DEFAULT_IMAGE_TRANSFORM, MaskShape } from "../constants";
+import {
+  ImageTransform,
+  DEFAULT_IMAGE_TRANSFORM,
+  MaskShape,
+  normalizeImageTransform,
+} from "../constants";
+
+export const getImageDrawRect = (
+  imgWidth: number,
+  imgHeight: number,
+  cellWidth: number,
+  cellHeight: number,
+  transform: ImageTransform = DEFAULT_IMAGE_TRANSFORM
+) => {
+  const normalized = normalizeImageTransform(transform);
+  const scale = Math.abs(normalized.scale) || 1;
+  const fitMode = normalized.fitMode ?? "cover";
+
+  if (fitMode === "stretch") {
+    const drawWidth = cellWidth * scale;
+    const drawHeight = cellHeight * scale;
+
+    return {
+      drawWidth,
+      drawHeight,
+      drawX: (cellWidth - drawWidth) * normalized.offsetX,
+      drawY: (cellHeight - drawHeight) * normalized.offsetY
+    };
+  }
+
+  const imgRatio = imgWidth / imgHeight;
+  const cellRatio = cellWidth / cellHeight;
+
+  let baseWidth: number;
+  let baseHeight: number;
+
+  if (fitMode === "contain") {
+    if (imgRatio > cellRatio) {
+      baseWidth = cellWidth;
+      baseHeight = baseWidth / imgRatio;
+    } else {
+      baseHeight = cellHeight;
+      baseWidth = baseHeight * imgRatio;
+    }
+  } else {
+    if (imgRatio > cellRatio) {
+      baseHeight = cellHeight;
+      baseWidth = baseHeight * imgRatio;
+    } else {
+      baseWidth = cellWidth;
+      baseHeight = baseWidth / imgRatio;
+    }
+  }
+
+  const drawWidth = baseWidth * scale;
+  const drawHeight = baseHeight * scale;
+
+  return {
+    drawWidth,
+    drawHeight,
+    drawX: (cellWidth - drawWidth) * normalized.offsetX,
+    drawY: (cellHeight - drawHeight) * normalized.offsetY
+  };
+};
 
 /**
  * 从文件加载图片
@@ -14,54 +77,17 @@ export const loadImageFromFile = (file: File): Promise<HTMLImageElement> => {
       img.onload = () => {
         resolve(img);
       };
-      img.onerror = (error) => {
+      img.onerror = () => {
         reject(new Error('图片加载失败'));
       };
       img.src = e.target?.result as string;
       // 对于 DataURL 不需要设置 crossOrigin
     };
-    reader.onerror = (error) => {
+    reader.onerror = () => {
       reject(new Error('文件读取失败'));
     };
     reader.readAsDataURL(file);
   });
-};
-
-/**
- * 应用图像变换
- * @param ctx 画布上下文
- * @param x 单元格X坐标
- * @param y 单元格Y坐标
- * @param width 单元格宽度
- * @param height 单元格高度
- * @param transform 图像变换参数
- */
-export const applyTransform = (
-  ctx: CanvasRenderingContext2D,
-  x: number, 
-  y: number, 
-  width: number, 
-  height: number,
-  transform: ImageTransform = DEFAULT_IMAGE_TRANSFORM
-) => {
-  // 计算中心点
-  const centerX = x + width * transform.offsetX;
-  const centerY = y + height * transform.offsetY;
-  
-  // 移动到中心点
-  ctx.translate(centerX, centerY);
-  
-  // 应用旋转
-  ctx.rotate(transform.rotation);
-  
-  // 应用缩放
-  ctx.scale(transform.scale, transform.scale);
-  
-  // 返回中心点偏移量，以便后续绘制时使用
-  return {
-    offsetX: -width / 2,
-    offsetY: -height / 2,
-  };
 };
 
 /**
@@ -84,16 +110,16 @@ export const applyMaskShape = (
   position?: number
 ) => {
   if (!maskShape) return;
-  
+
   // 保存当前状态
   ctx.save();
-  
+
   // 开始新路径
   ctx.beginPath();
-  
+
   // 检查是否有针对特定单元格的蒙版
   const cellMask = position !== undefined && maskShape.cellMasks?.[position];
-  
+
   if (cellMask) {
     // 单元格特定蒙版
     switch (cellMask.type) {
@@ -104,14 +130,14 @@ export const applyMaskShape = (
         const rectHeight = (cellMask.height || 1) * height;
         ctx.rect(rectX, rectY, rectWidth, rectHeight);
         break;
-        
+
       case 'circular':
         const centerX = x + width / 2;
         const centerY = y + height / 2;
         const radius = (cellMask.radius || 0.5) * Math.min(width, height);
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         break;
-        
+
       case 'path':
         if (cellMask.svgPath) {
           const path = new Path2D(cellMask.svgPath);
@@ -128,14 +154,14 @@ export const applyMaskShape = (
       case 'rectangular':
         ctx.rect(x, y, width, height);
         break;
-        
+
       case 'circular':
         const centerX = x + width / 2;
         const centerY = y + height / 2;
         const radius = Math.min(width, height) / 2;
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         break;
-        
+
       case 'path':
         if (maskShape.svgPath) {
           const path = new Path2D(maskShape.svgPath);
@@ -145,7 +171,7 @@ export const applyMaskShape = (
           ctx.fill(path);
         }
         break;
-        
+
       case 'custom':
         if (maskShape.drawFunction) {
           // 使用自定义绘制函数
@@ -154,7 +180,7 @@ export const applyMaskShape = (
         break;
     }
   }
-  
+
   // 将路径设为裁剪区域
   ctx.clip();
 }
@@ -184,50 +210,35 @@ export const drawImageToCanvas = (
 ) => {
   // 保存当前状态
   ctx.save();
-  
+
   // 应用单元格裁剪 - 确保图片不会绘制到单元格外部
   ctx.beginPath();
   ctx.rect(x, y, cellWidth, cellHeight);
   ctx.clip();
-  
+
   // 如果有蒙版形状，应用它
   if (maskShape) {
     applyMaskShape(ctx, x, y, cellWidth, cellHeight, maskShape, position);
   }
-  
-  // 应用变换并获取偏移量
-  const { offsetX, offsetY } = applyTransform(ctx, x, y, cellWidth, cellHeight, transform);
-  
-  // 计算绘制尺寸
-  const imgWidth = img.width;
-  const imgHeight = img.height;
-  
-  // 根据是否保持长宽比计算绘制尺寸
-  let drawWidth, drawHeight;
-  
-  if (transform.keepAspectRatio) {
-    // 保持长宽比的情况
-    const imgRatio = imgWidth / imgHeight;
-    const cellRatio = cellWidth / cellHeight;
-    
-    if (imgRatio > cellRatio) {
-      // 图像更宽，以高度为基准
-      drawHeight = cellHeight;
-      drawWidth = drawHeight * imgRatio;
-    } else {
-      // 图像更高，以宽度为基准
-      drawWidth = cellWidth;
-      drawHeight = drawWidth / imgRatio;
-    }
-  } else {
-    // 不保持长宽比，直接使用单元格尺寸
-    drawWidth = cellWidth;
-    drawHeight = cellHeight;
+
+  const { drawWidth, drawHeight, drawX, drawY } = getImageDrawRect(
+    img.width,
+    img.height,
+    cellWidth,
+    cellHeight,
+    transform
+  );
+
+  const centerX = x + drawX + drawWidth / 2;
+  const centerY = y + drawY + drawHeight / 2;
+
+  ctx.translate(centerX, centerY);
+  ctx.rotate(transform.rotation);
+  if (transform.scale < 0) {
+    ctx.scale(-1, 1);
   }
-  
-  // 绘制图片
-  ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
-  
+  ctx.drawImage(img, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+
   // 恢复状态
   ctx.restore();
 };
@@ -249,14 +260,14 @@ export const drawSimpleImage = (
   ctx.beginPath();
   ctx.rect(x, y, width, height);
   ctx.clip();
-  
+
   if (keepAspectRatio) {
     // 保持原始比例
     const imgRatio = img.width / img.height;
     const cellRatio = width / height;
-    
+
     let drawWidth, drawHeight, offsetX = 0, offsetY = 0;
-    
+
     if (imgRatio > cellRatio) {
       // 图像更宽
       drawHeight = height;
@@ -268,13 +279,13 @@ export const drawSimpleImage = (
       drawHeight = drawWidth / imgRatio;
       offsetY = (height - drawHeight) / 2;
     }
-    
+
     ctx.drawImage(img, x + offsetX, y + offsetY, drawWidth, drawHeight);
   } else {
     // 拉伸填充
     ctx.drawImage(img, x, y, width, height);
   }
-  
+
   ctx.restore();
 };
 
@@ -289,7 +300,7 @@ export const createImageFromUrl = (url: string): Promise<HTMLImageElement> => {
     img.onload = () => {
       resolve(img);
     };
-    img.onerror = (error) => {
+    img.onerror = () => {
       reject(new Error('图片加载失败'));
     };
     // 对于 DataURL 不需要设置 crossOrigin
@@ -298,4 +309,4 @@ export const createImageFromUrl = (url: string): Promise<HTMLImageElement> => {
     }
     img.src = url;
   });
-}; 
+};

@@ -6,18 +6,15 @@ import { EditorProvider } from '@/contexts/EditorContext';
 import Canvas from '@/components/editor/Canvas';
 import Toolbar from '@/components/editor/Toolbar';
 import ElementPanel from '@/components/editor/ElementPanel';
-import LayerPanel from '@/components/editor/LayerPanel';
 import { Button } from '@/components/ui/button';
-import { 
-  PanelLeft, 
+import {
+  PanelLeft,
   PanelRight,
   Settings,
-  Layers,
   Upload,
   Loader2,
   ArrowLeft,
   Scissors, // 遮罩图标
-  Move, // 移动图标
   RotateCw // 旋转图标
 } from 'lucide-react';
 import { CollageElement, CanvasConfig, ImageElement } from '@/types/collage';
@@ -36,7 +33,7 @@ const TabsComponent = ({ children, defaultValue, className = '' }: {
   className?: string;
 }) => {
   const [activeTab, setActiveTab] = useState(defaultValue);
-  
+
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab }}>
       <div className={className} data-active-tab={activeTab}>
@@ -60,14 +57,14 @@ const TabsTrigger = ({ value, children }: {
 }) => {
   const context = React.useContext(TabsContext);
   if (!context) throw new Error('TabsTrigger must be used within TabsComponent');
-  
+
   const { activeTab, setActiveTab } = context;
-  
+
   return (
     <button
       className={`px-2 py-1 text-xs font-medium rounded transition-colors flex items-center ${
-        activeTab === value 
-          ? 'bg-white shadow-sm text-gray-900' 
+        activeTab === value
+          ? 'bg-white shadow-sm text-gray-900'
           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
       }`}
       onClick={() => setActiveTab(value)}
@@ -83,9 +80,9 @@ const TabsContent = ({ value, children }: {
 }) => {
   const context = React.useContext(TabsContext);
   if (!context) throw new Error('TabsContent must be used within TabsComponent');
-  
+
   const { activeTab } = context;
-  
+
   return (
     <div className={`${activeTab === value ? 'block' : 'hidden'}`}>
       {children}
@@ -96,15 +93,15 @@ const TabsContent = ({ value, children }: {
 // 遮罩区域面板组件
 const MaskRegionPanel = () => {
   const { state, updateElement, selectElement } = useEditor();
-  
+
   // 获取遮罩元素
   const maskElements = state.elements.filter(el => el.maskRegion);
-  
+
   // 处理显示/隐藏切换
   const handleVisibilityToggle = useCallback((elementId: string, newVisibility: boolean) => {
     updateElement(elementId, { isVisible: newVisibility });
   }, [updateElement]);
-  
+
   // 重置图片位置到遮罩中心
   const handleResetPosition = useCallback((elementId: string) => {
     updateElement(elementId, {
@@ -116,7 +113,7 @@ const MaskRegionPanel = () => {
       }
     });
   }, [updateElement]);
-  
+
   // 调整图片缩放
   const handleScaleChange = useCallback((elementId: string, newScale: number) => {
     const element = state.elements.find(el => el.id === elementId);
@@ -129,7 +126,7 @@ const MaskRegionPanel = () => {
       });
     }
   }, [updateElement, state.elements]);
-  
+
   return (
     <div className="p-3">
       <div className="mb-3">
@@ -138,7 +135,7 @@ const MaskRegionPanel = () => {
           洞的位置固定，拖动调整图片在洞内的位置
         </p>
       </div>
-      
+
       {maskElements.length === 0 ? (
         <div className="text-center text-gray-500">
           <Scissors size={24} className="mx-auto mb-2 opacity-50" />
@@ -153,9 +150,9 @@ const MaskRegionPanel = () => {
               <div
                 key={element.id}
                 className={`p-3 rounded border transition-colors cursor-pointer ${
-                  isSelected 
-                    ? 'bg-blue-50 border-blue-300' 
-                    : 'bg-gray-50 border-gray-200 hover:border-blue-300'
+                  isSelected
+                    ? 'bg-primary/10 border-primary/30'
+                    : 'bg-secondary border-border hover:border-primary/30'
                 }`}
                 onClick={() => selectElement(element.id)}
               >
@@ -174,12 +171,12 @@ const MaskRegionPanel = () => {
                         e.stopPropagation();
                         handleVisibilityToggle(element.id, e.target.checked);
                       }}
-                      className="w-3 h-3 text-blue-600"
+                      className="w-3 h-3 text-primary"
                       title="显示/隐藏"
                     />
                   </div>
                 </div>
-                
+
                 {element.type === 'image' && element.imageTransform && (
                   <div className="space-y-2">
                     {/* 位置信息 */}
@@ -191,7 +188,7 @@ const MaskRegionPanel = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* 缩放控制 */}
                     <div className="space-y-1">
                       <div className="flex items-center justify-between">
@@ -213,7 +210,7 @@ const MaskRegionPanel = () => {
                         className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
-                    
+
                     {/* 操作按钮 */}
                     <div className="flex items-center space-x-1 pt-1">
                       <Button
@@ -237,7 +234,7 @@ const MaskRegionPanel = () => {
           })}
         </div>
       )}
-      
+
       <div className="mt-4 pt-3 border-t border-gray-200">
         <h4 className="text-xs font-medium text-gray-900 mb-2">操作提示</h4>
         <div className="text-xs text-gray-600 space-y-1">
@@ -252,12 +249,12 @@ const MaskRegionPanel = () => {
 };
 
 // 内部编辑器组件，可以访问EditorContext
-function EditorContent({ 
-  onSave, 
-  onGoBack 
-}: { 
-  onSave: () => void; 
-  onGoBack: () => void; 
+function EditorContent({
+  onSave,
+  onGoBack
+}: {
+  onSave: () => void;
+  onGoBack: () => void;
 }) {
   const { state } = useEditor();
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
@@ -267,17 +264,17 @@ function EditorContent({
   const handleExport = useCallback(async () => {
     try {
       console.log('导出拼图...');
-      
+
       // 使用我们的导出工具
       const dataURL = await exportCanvasToImage(state.canvas, state.elements, {
         format: 'png',
         quality: 0.9,
         scale: 2 // 2倍分辨率
       });
-      
+
       const filename = generateExportFilename({ format: 'png', quality: 0.9, scale: 2 });
       downloadImageDataURL(dataURL, filename);
-      
+
     } catch (error) {
       console.error('导出失败:', error);
       alert('导出失败，请重试');
@@ -290,7 +287,7 @@ function EditorContent({
     input.type = 'file';
     input.accept = 'image/*';
     input.multiple = true;
-    
+
     input.onchange = (e) => {
       const files = (e.target as HTMLInputElement).files;
       if (files) {
@@ -299,7 +296,7 @@ function EditorContent({
         alert('遮罩模式下需要为每张图片指定遮罩区域，功能开发中...');
       }
     };
-    
+
     input.click();
   }, []);
 
@@ -317,19 +314,19 @@ function EditorContent({
             <ArrowLeft size={14} className="mr-1" />
             返回
           </Button>
-          
+
           <h1 className="text-sm font-semibold text-gray-900">
             遮罩拼图编辑器
           </h1>
-          
+
           {/* 模式指示器 */}
-          <div className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs flex items-center">
+          <div className="ml-2 px-2 py-0.5 bg-primary/10 text-primary rounded text-xs flex items-center">
             <Scissors size={10} className="mr-1" />
             遮罩模式
           </div>
-          
+
           <div className="flex-1" />
-          
+
           {/* 面板切换按钮 - 更小更紧凑 */}
           <div className="flex items-center space-x-1">
             <Button
@@ -429,14 +426,14 @@ function EditorContent({
               <div className="flex-1 overflow-auto min-h-0">
                 <TabsContent value="properties">
                   <ElementPanel />
-                  
+
                   {/* 遮罩模式提示信息 */}
-                  <div className="mt-4 mx-3 p-3 bg-blue-50 border border-blue-200 rounded">
+                  <div className="mt-4 mx-3 p-3 bg-primary/10 border border-primary/20 rounded">
                     <div className="flex items-center mb-2">
-                      <Scissors size={14} className="text-blue-600 mr-2" />
-                      <h4 className="text-xs font-medium text-blue-900">遮罩模式</h4>
+                      <Scissors size={14} className="text-primary mr-2" />
+                      <h4 className="text-xs font-medium text-foreground">遮罩模式</h4>
                     </div>
-                    <ul className="text-xs text-blue-800 space-y-1">
+                    <ul className="text-xs text-muted-foreground space-y-1">
                       <li>• 图片被限制在遮罩边界内</li>
                       <li>• 无图层重叠概念</li>
                       <li>• 可在遮罩内移动、旋转、缩放</li>
@@ -456,7 +453,7 @@ function EditorContent({
 export default function EditorPage() {
   const params = useParams();
   const router = useRouter();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [collageData, setCollageData] = useState<{
     canvas_config: CanvasConfig;
@@ -471,11 +468,11 @@ export default function EditorPage() {
       setIsLoading(true);
       try {
         console.log('🔍 加载拼图数据:', collageId);
-        
+
         // 如果是特殊的测试ID，创建遮罩模式的测试数据
         if (collageId === 'mask-test') {
           console.log('✨ 创建遮罩拼图测试数据');
-          
+
           const testMaskData = {
             canvas_config: {
               width: 800,
@@ -496,7 +493,7 @@ export default function EditorPage() {
                 zIndex: 1,
                 transform: {
                   x: 100,
-                  y: 100, 
+                  y: 100,
                   width: 200,
                   height: 200,
                   rotation: 0,
@@ -578,18 +575,18 @@ export default function EditorPage() {
               } as ImageElement
             ]
           };
-          
+
           setCollageData(testMaskData);
           setIsLoading(false);
           return;
         }
-        
+
         // 调用API加载拼图数据
         const response = await fetch(`/api/collage/${collageId}`);
-        
+
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          
+
           // 处理不同的HTTP状态码
           if (response.status === 401) {
             // 需要登录
@@ -607,24 +604,24 @@ export default function EditorPage() {
             router.push('/gallery');
             return;
           }
-          
+
           throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (!data.success) {
           throw new Error(data.error || '获取拼图数据失败');
         }
-        
+
         console.log('✅ 拼图数据加载成功:', data.collage);
-        
+
         // 设置拼图数据 - 使用统一的字段名
         setCollageData({
           canvas_config: data.collage.canvas_config,
           elements: data.collage.elements || []
         });
-        
+
       } catch (error) {
         console.error('❌ 加载拼图数据失败:', error);
         alert(error instanceof Error ? error.message : '加载拼图数据失败');
@@ -636,20 +633,20 @@ export default function EditorPage() {
     if (collageId) {
       loadCollageData();
     }
-  }, [collageId]);
+  }, [collageId, router]);
 
   // 保存拼图
   const handleSave = useCallback(async () => {
     try {
       console.log('💾 保存拼图修改...');
-      
+
       // TODO: 这里需要获取EditorContext中的当前状态
       // 目前EditorProvider在组件外部，无法直接访问状态
       // 需要将保存逻辑移到EditorContent内部，或者通过回调传递状态
-      
+
       console.log('⚠️  保存功能需要重构：需要访问编辑器当前状态');
       alert('保存功能正在完善中。当前的编辑修改会在内存中保持，导出功能可正常使用。');
-      
+
       // 未来的保存逻辑应该是：
       // const response = await fetch(`/api/collage/${collageId}`, {
       //   method: 'PUT',
@@ -659,12 +656,12 @@ export default function EditorPage() {
       //     elements: currentElements           // 从EditorContext获取
       //   })
       // });
-      
+
     } catch (error) {
       console.error('❌ 保存失败:', error);
       alert('保存失败，请重试');
     }
-  }, [collageId]);
+  }, []);
 
   // 返回画廊
   const handleGoBack = useCallback(() => {
@@ -675,7 +672,7 @@ export default function EditorPage() {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="flex flex-col items-center space-y-3">
-          <Loader2 size={32} className="animate-spin text-blue-500" />
+          <Loader2 size={32} className="animate-spin text-primary" />
           <p className="text-sm text-gray-600">加载编辑器中...</p>
         </div>
       </div>
@@ -704,4 +701,4 @@ export default function EditorPage() {
       />
     </EditorProvider>
   );
-} 
+}

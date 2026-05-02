@@ -6,7 +6,7 @@ interface LoadingSpinnerProps {
   variant?: 'spinner' | 'dots' | 'pulse' | 'ai';
   className?: string;
   text?: string;
-  color?: 'blue' | 'gray' | 'green' | 'purple';
+  color?: 'primary' | 'muted' | 'accent';
 }
 
 export function LoadingSpinner({
@@ -14,7 +14,7 @@ export function LoadingSpinner({
   variant = 'spinner',
   className = '',
   text,
-  color = 'blue'
+  color = 'primary'
 }: LoadingSpinnerProps) {
   const getSizeClasses = () => {
     switch (size) {
@@ -28,11 +28,10 @@ export function LoadingSpinner({
 
   const getColorClasses = () => {
     switch (color) {
-      case 'blue': return 'text-blue-600';
-      case 'gray': return 'text-gray-600';
-      case 'green': return 'text-green-600';
-      case 'purple': return 'text-purple-600';
-      default: return 'text-blue-600';
+      case 'primary': return 'text-primary';
+      case 'muted': return 'text-muted-foreground';
+      case 'accent': return 'text-accent';
+      default: return 'text-primary';
     }
   };
 
@@ -65,10 +64,9 @@ export function LoadingSpinner({
                   ${size === 'md' ? 'w-1.5 h-1.5' : ''}
                   ${size === 'lg' ? 'w-2 h-2' : ''}
                   ${size === 'xl' ? 'w-3 h-3' : ''}
-                  ${color === 'blue' ? 'bg-blue-600' : ''}
-                  ${color === 'gray' ? 'bg-gray-600' : ''}
-                  ${color === 'green' ? 'bg-green-600' : ''}
-                  ${color === 'purple' ? 'bg-purple-600' : ''}
+                  ${color === 'primary' ? 'bg-primary' : ''}
+                  ${color === 'muted' ? 'bg-muted-foreground' : ''}
+                  ${color === 'accent' ? 'bg-accent' : ''}
                   animate-pulse
                 `}
                 style={{
@@ -84,10 +82,9 @@ export function LoadingSpinner({
         return (
           <div className={`
             ${getSizeClasses()} rounded-full
-            ${color === 'blue' ? 'bg-blue-600' : ''}
-            ${color === 'gray' ? 'bg-gray-600' : ''}
-            ${color === 'green' ? 'bg-green-600' : ''}
-            ${color === 'purple' ? 'bg-purple-600' : ''}
+            ${color === 'primary' ? 'bg-primary' : ''}
+            ${color === 'muted' ? 'bg-muted-foreground' : ''}
+            ${color === 'accent' ? 'bg-accent' : ''}
             animate-pulse
           `} />
         );
@@ -131,7 +128,7 @@ export function AIProcessingSpinner({ text = "AI 正在分析图片..." }: { tex
     <LoadingSpinner
       variant="ai"
       size="lg"
-      color="purple"
+      color="primary"
       text={text}
       className="py-8"
     />
@@ -142,8 +139,8 @@ export function SimpleSpinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' | 'xl
   return <LoadingSpinner variant="spinner" size={size} />;
 }
 
-export function DotSpinner({ color = 'blue' }: { color?: 'blue' | 'gray' | 'green' | 'purple' }) {
+export function DotSpinner({ color = 'primary' }: { color?: 'primary' | 'muted' | 'accent' }) {
   return <LoadingSpinner variant="dots" color={color} />;
 }
 
-export default LoadingSpinner; 
+export default LoadingSpinner;

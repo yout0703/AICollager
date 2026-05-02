@@ -34,12 +34,12 @@ export async function createCollageImage(data: {
       aiAnalysis: data.aiAnalysis || {},
       metadata: data.metadata || {}
     }
-    
+
     const [image] = await db
       .insert(collageImages)
       .values(newImage)
       .returning()
-    
+
     return image
   } catch (error) {
     console.error('创建拼图图片失败:', error)
@@ -55,7 +55,7 @@ export async function findCollageImageById(uuid: string): Promise<DbCollageImage
       .from(collageImages)
       .where(eq(collageImages.uuid, uuid))
       .limit(1)
-    
+
     return image || null
   } catch (error) {
     console.error('查找拼图图片失败:', error)
@@ -79,7 +79,7 @@ export async function findCollageImagesByCollageId(collageId: string): Promise<D
 
 // 更新拼图图片
 export async function updateCollageImage(
-  uuid: string, 
+  uuid: string,
   data: Partial<DbCollageImage>
 ): Promise<DbCollageImage | null> {
   try {
@@ -88,7 +88,7 @@ export async function updateCollageImage(
       .set(data as any)
       .where(eq(collageImages.uuid, uuid))
       .returning()
-    
+
     return image || null
   } catch (error) {
     console.error('更新拼图图片失败:', error)
@@ -102,7 +102,7 @@ export async function deleteCollageImage(uuid: string): Promise<boolean> {
     await db
       .delete(collageImages)
       .where(eq(collageImages.uuid, uuid))
-    
+
     return true
   } catch (error) {
     console.error('删除拼图图片失败:', error)
@@ -132,19 +132,19 @@ export const collageImageModel = {
       metadata: (data.metadata as Record<string, any>) || {}
     })
   },
-  
+
   async findById(uuid: string): Promise<DbCollageImage | null> {
     return await findCollageImageById(uuid)
   },
-  
+
   async findByCollageId(collageId: string): Promise<DbCollageImage[]> {
     return await findCollageImagesByCollageId(collageId)
   },
-  
+
   async update(uuid: string, data: Partial<DbCollageImage>): Promise<DbCollageImage | null> {
     return await updateCollageImage(uuid, data)
   },
-  
+
   async delete(uuid: string): Promise<boolean> {
     return await deleteCollageImage(uuid)
   }
@@ -158,7 +158,7 @@ export class CollageImageRepository {
       imageIndex: 0,
       originalUrl: data.imageUrl
     })
-    
+
     return {
       id: dbImage.id,
       uuid: dbImage.uuid,
@@ -180,7 +180,7 @@ export class CollageImageRepository {
   }
 
   static async update(uuid: string, data: any): Promise<any | null> {
-    const dbImage = await updateCollageImage(uuid, {})
+    const dbImage = await updateCollageImage(uuid, data)
     return dbImage ? { id: dbImage.id, uuid: dbImage.uuid } : null
   }
 
@@ -190,4 +190,4 @@ export class CollageImageRepository {
 }
 
 // 导出兼容的函数
-export const getCollageImages = CollageImageRepository.findByCollageId 
+export const getCollageImages = CollageImageRepository.findByCollageId

@@ -28,10 +28,10 @@
 ### 2.2 设置令牌权限
 1. 选择 "Custom token" 模板
 2. 配置以下权限：
-   - **Permissions**: 
+   - **Permissions**:
      - `Cloudflare R2:Edit` (用于上传、删除文件)
      - `Cloudflare R2:Read` (用于读取文件)
-   - **Account Resources**: 
+   - **Account Resources**:
      - Include: `All accounts` 或选择特定账户
    - **Zone Resources**: 留空即可
 
@@ -71,7 +71,7 @@ Cloudflare 为每个 R2 存储桶提供免费的 R2.dev 子域名：
 ```env
 # Cloudflare R2 配置
 R2_ACCOUNT_ID="your-account-id"
-R2_ACCESS_KEY_ID="your-access-key-id" 
+R2_ACCESS_KEY_ID="your-access-key-id"
 R2_SECRET_ACCESS_KEY="your-secret-access-key"
 R2_BUCKET_NAME="aicollager-images"
 
@@ -86,32 +86,9 @@ R2_PUBLIC_URL="https://cdn.yourdomain.com"
 ***REMOVED***_PUBLIC_URL=""
 ```
 
-## 5. 测试配置
+## 5. 验证配置
 
-### 5.1 使用测试 API
-项目提供了测试 API 来验证 R2 配置：
-
-```bash
-curl http://localhost:3000/api/test-r2
-```
-
-成功响应示例：
-```json
-{
-  "success": true,
-  "message": "R2 配置验证成功",
-  "config": {
-    "hasAccountId": true,
-    "hasAccessKey": true,
-    "hasSecretKey": true,
-    "hasBucketName": true,
-    "hasPublicUrl": true,
-    "endpoint": "https://your-account-id.r2.cloudflarestorage.com",
-    "bucketName": "aicollager-images",
-    "publicUrl": "https://cdn.yourdomain.com"
-  }
-}
-```
+R2 测试 API 已从公开路由中移除。请通过本地上传流程验证配置是否正确，或在服务端临时脚本中调用 `validateR2Config()` 检查必需环境变量。
 
 ### 5.2 测试文件上传
 您可以在项目中上传一张测试图片来验证完整的上传流程。
@@ -122,7 +99,7 @@ curl http://localhost:3000/api/test-r2
 - **存储**: $0.015/GB/月
 - **Class A 操作** (上传): $4.50/百万次请求
 - **Class B 操作** (下载): $0.36/百万次请求
-- **免费额度**: 
+- **免费额度**:
   - 10 GB 存储/月
   - 1,000,000 Class A 操作/月
   - 10,000,000 Class B 操作/月
@@ -206,4 +183,4 @@ R2_PUBLIC_URL="https://your-domain.com"
 
 ---
 
-完成以上配置后，您的 AICollager 项目就可以使用 Cloudflare R2 作为图片存储服务了！ 
+完成以上配置后，您的 AICollager 项目就可以使用 Cloudflare R2 作为图片存储服务了！

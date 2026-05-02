@@ -30,7 +30,7 @@ export function useBreakpoint(): BreakpointSize {
   useEffect(() => {
     const updateBreakpoint = () => {
       const width = window.innerWidth;
-      
+
       if (width >= breakpoints['2xl']) {
         setBreakpoint('2xl');
       } else if (width >= breakpoints.xl) {
@@ -93,24 +93,24 @@ export function ResponsiveWrapper({
         <div className="mobile-nav-container">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200 lg:hidden"
+            className="fixed top-4 left-4 z-50 p-2 bg-background rounded-lg shadow-sm border border-border lg:hidden"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6 text-gray-600" />
+              <X className="w-6 h-6 text-muted-foreground" />
             ) : (
-              <Menu className="w-6 h-6 text-gray-600" />
+              <Menu className="w-6 h-6 text-muted-foreground" />
             )}
           </button>
 
           {/* 移动端菜单 */}
           {isMobileMenuOpen && (
             <div className="fixed inset-0 z-40 lg:hidden">
-              <div 
+              <div
                 className="fixed inset-0 bg-black bg-opacity-50"
                 onClick={() => setIsMobileMenuOpen(false)}
               />
-              <div className="fixed left-0 top-0 h-full w-64 bg-white shadow-xl transform transition-transform">
+              <div className="fixed left-0 top-0 h-full w-64 bg-background shadow-sm border-r border-border transform transition-transform">
                 <div className="pt-16 p-4">
                   {mobileNavContent}
                 </div>
@@ -260,15 +260,15 @@ export function ResponsiveButton({
   const getVariantStyles = () => {
     switch (variant) {
       case 'primary':
-        return 'bg-blue-600 hover:bg-blue-700 text-white border-transparent';
+        return 'bg-primary hover:bg-primary/90 text-primary-foreground border-transparent';
       case 'secondary':
-        return 'bg-gray-600 hover:bg-gray-700 text-white border-transparent';
+        return 'bg-secondary hover:bg-secondary/80 text-secondary-foreground border-transparent';
       case 'outline':
-        return 'bg-transparent hover:bg-gray-50 text-gray-900 border-gray-300';
+        return 'bg-transparent hover:bg-secondary text-foreground border-border';
       case 'ghost':
-        return 'bg-transparent hover:bg-gray-100 text-gray-700 border-transparent';
+        return 'bg-transparent hover:bg-secondary text-foreground border-transparent';
       default:
-        return 'bg-blue-600 hover:bg-blue-700 text-white border-transparent';
+        return 'bg-primary hover:bg-primary/90 text-primary-foreground border-transparent';
     }
   };
 
@@ -303,4 +303,4 @@ export function ResponsiveButton({
   );
 }
 
-export default ResponsiveWrapper; 
+export default ResponsiveWrapper;

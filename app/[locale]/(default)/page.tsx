@@ -2,7 +2,6 @@ import { getDictionary, Locale } from "@/lib/i18n";
 import Hero from "@/components/hero";
 import Features from "@/components/features";
 import HowItWorks from "@/components/how-it-works";
-import Testimonials from "@/components/testimonials";
 import Pricing from "@/components/pricing-preview";
 import FAQ from "@/components/faq";
 import CTA from "@/components/cta";
@@ -24,7 +23,7 @@ export default async function HomePage({
       <Features dict={dict} />
 
       {/* How It Works - 使用步骤 */}
-      <HowItWorks dict={dict} />
+      <HowItWorks locale={locale} dict={dict} />
 
       {/* Testimonials - 社会证明 */}
       {/* <Testimonials dict={dict} /> */}
@@ -39,4 +38,4 @@ export default async function HomePage({
       <CTA locale={locale} dict={dict} />
     </div>
   );
-} 
+}

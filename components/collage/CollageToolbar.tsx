@@ -1,10 +1,16 @@
 "use client";
 
+import { Download, Image as ImageIcon, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 interface CollageToolbarProps {
   onUploadClick: () => void;
   onDownloadClick: () => void;
   isDownloading: boolean;
   hasImages: boolean;
+  imageCount: number;
+  placedCount: number;
+  aspectRatioName: string;
   translateFn: (key: string) => string;
 }
 
@@ -13,34 +19,60 @@ export default function CollageToolbar({
   onDownloadClick,
   isDownloading,
   hasImages,
+  imageCount,
+  placedCount,
+  aspectRatioName,
   translateFn
 }: CollageToolbarProps) {
   return (
-    <div className="my-3 flex flex-row justify-between gap-3">
-      <button
-        className="bg-primary text-white px-3 py-1.5 rounded-lg font-medium flex items-center gap-1 text-sm"
-        onClick={onUploadClick}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-        </svg>
-        {translateFn('uploadButton')}
-      </button>
-      
-      <button 
-        className={`px-4 py-1.5 rounded-lg font-medium flex items-center gap-1 text-sm ${
-          isDownloading || !hasImages
-            ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-            : 'bg-blue-500 text-white hover:bg-blue-600'
-        }`}
-        onClick={onDownloadClick}
-        disabled={isDownloading || !hasImages}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-        </svg>
-        {translateFn('downloadButton')}
-      </button>
+    <div className="mb-5 rounded-lg border border-border bg-card p-4 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-sm font-medium text-primary">
+            <ImageIcon className="h-4 w-4" />
+            {translateFn('collageWorkspace.status')}
+          </div>
+          <h1 className="mt-1 text-2xl font-semibold tracking-normal text-foreground sm:text-3xl">
+            {translateFn('collageButton')}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            {translateFn('collageWorkspace.subtitle')}
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span className="rounded-md border border-border bg-secondary/60 px-2.5 py-1">
+              {imageCount} {translateFn('collageWorkspace.photos')}
+            </span>
+            <span className="rounded-md border border-border bg-secondary/60 px-2.5 py-1">
+              {placedCount} {translateFn('collageWorkspace.placed')}
+            </span>
+            <span className="rounded-md border border-border bg-secondary/60 px-2.5 py-1">
+              {aspectRatioName} {translateFn('collageWorkspace.canvas')}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={onUploadClick}
+          >
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">{translateFn('uploadButton')}</span>
+            <span className="sm:hidden">{translateFn('collageWorkspace.uploadMobile')}</span>
+          </Button>
+
+          <Button
+            className="gap-2"
+            onClick={onDownloadClick}
+            disabled={isDownloading || !hasImages}
+          >
+            <Download className="h-4 w-4" />
+            <span className="hidden sm:inline">{translateFn('downloadButton')}</span>
+            <span className="sm:hidden">{translateFn('collageWorkspace.downloadMobile')}</span>
+          </Button>
+        </div>
+      </div>
     </div>
   );
-} 
+}

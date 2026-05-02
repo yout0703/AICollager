@@ -3,22 +3,19 @@
 
 // 画布背景类型
 export interface CanvasBackground {
-  type: 'color' | 'solid' | 'gradient' | 'image';
-  color?: string;
+  type: 'color' | 'gradient' | 'image';
+  color?: string; // 当type为'color'时使用
   gradient?: {
-    type: 'linear' | 'radial';
+    type?: 'linear' | 'radial';
     colors: string[];
     direction?: string;
-  };
-  image?: {
-    url: string;
-    fit: 'cover' | 'contain' | 'fill';
-  };
+  }; // 当type为'gradient'时使用
+  source?: string; // 当type为'image'时使用，背景图URL
 }
 
 // 画布配置
 export interface Canvas {
-  units: 'px' | 'mm' | 'in';
+  units: 'px'; // 强制为 'px'
   width: number;
   height: number;
   background: CanvasBackground;
@@ -58,6 +55,7 @@ export interface FontStyle {
   weight: string | number;
   align: 'left' | 'center' | 'right';
   lineHeight: number;
+  url?: string | null; // Web字体的URL，可选
 }
 
 // 基础元素样式
@@ -76,7 +74,7 @@ export interface ImageElementStyle extends BaseElementStyle {
 // 文字元素样式
 export interface TextElementStyle extends BaseElementStyle {
   font: FontStyle;
-  color: string;
+  color: string | null; // 文字的十六进制颜色，可以为null
 }
 
 // 基础元素接口
@@ -169,4 +167,4 @@ export interface UCMEditorProps {
   model: UCMModel;
   onChange: (model: UCMModel) => void;
   readOnly?: boolean;
-} 
+}

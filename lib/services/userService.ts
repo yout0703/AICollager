@@ -1,12 +1,11 @@
 import { User, CreateUserRequest, UserSession } from "@/types/user";
-import { User as DbUser, NewUser, UserSession as DbUserSession } from "@/db/schema/users";
+import { User as DbUser, NewUser } from "@/db/schema/users";
 import {
   findUserByEmail,
   findUserByClerkId,
   findUserByUuid,
   createUser,
   updateUser,
-  updateUserLastLogin,
   getUserStats
 } from "@/lib/repositories/user";
 import {
@@ -17,7 +16,7 @@ import {
   findSessionsByUserId
 } from "@/lib/repositories/session";
 import { addUserCredits } from "@/lib/repositories/credits";
-import { completeInvitation, markInvitationRewardGiven } from "@/lib/repositories/invitation";
+import { completeInvitation } from "@/lib/repositories/invitation";
 
 
 // 生成唯一邀请码
@@ -61,16 +60,16 @@ export async function registerUser(userData: CreateUserRequest): Promise<{
 
     const dbUser = await createUser(newUserData);
     const user = transformDbUserToUser(dbUser);
-    
+
     let invitationReward = 0;
-    
+
     // 2. 处理邀请奖励
     if (userData.invitedByCode) {
       const invitationResult = await completeInvitation(userData.invitedByCode, user.uuid);
-      
+
       if (invitationResult.success && invitationResult.invitation) {
         const invitation = invitationResult.invitation;
-        
+
         // 给被邀请人发放奖励
         const inviteeRewardResult = await addUserCredits(
           user.uuid,
@@ -81,11 +80,11 @@ export async function registerUser(userData: CreateUserRequest): Promise<{
           'invitation',
           invitation.uuid
         );
-        
+
         if (inviteeRewardResult.success) {
           invitationReward = invitation.inviteeReward;
         }
-        
+
         // 给邀请人发放奖励
         await addUserCredits(
           invitation.inviterId,
@@ -96,15 +95,15 @@ export async function registerUser(userData: CreateUserRequest): Promise<{
           'invitation',
           invitation.uuid
         );
-        
+
         // 标记奖励已发放 - 注意：markInvitationRewardGiven 实际上是 completeInvitation 的别名
         // 在之前的 completeInvitation 调用中已经完成了奖励发放，这里不需要再次调用
         // await markInvitationRewardGiven(userData.invited_by_code);
       }
     }
-    
+
     return { user, invitationReward };
-    
+
   } catch (error) {
     console.error('User registration failed:', error);
     throw new Error('用户注册失败');
@@ -115,7 +114,7 @@ export async function registerUser(userData: CreateUserRequest): Promise<{
 export async function getUserInfo(identifier: string, type: 'uuid' | 'email' | 'clerk_id' = 'uuid'): Promise<User | null> {
   try {
     let dbUser: DbUser | null = null;
-    
+
     switch (type) {
       case 'email':
         dbUser = await findUserByEmail(identifier);
@@ -127,9 +126,9 @@ export async function getUserInfo(identifier: string, type: 'uuid' | 'email' | '
         dbUser = await findUserByUuid(identifier);
         break;
     }
-    
+
     return dbUser ? transformDbUserToUser(dbUser) : null;
-    
+
   } catch (error) {
     console.error('Get user info failed:', error);
     return null;
@@ -141,7 +140,7 @@ export async function updateUserInfo(uuid: string, updates: Partial<User>): Prom
   try {
     // 转换业务模型字段到数据库模型字段
     const dbUpdates: Partial<DbUser> = {};
-    
+
     if (updates.username !== undefined) dbUpdates.username = updates.username || null;
     if (updates.displayName !== undefined) dbUpdates.displayName = updates.displayName || null;
     if (updates.avatarUrl !== undefined) dbUpdates.avatarUrl = updates.avatarUrl || null;
@@ -152,7 +151,7 @@ export async function updateUserInfo(uuid: string, updates: Partial<User>): Prom
 
     const dbUser = await updateUser(uuid, dbUpdates);
     return dbUser ? transformDbUserToUser(dbUser) : null;
-    
+
   } catch (error) {
     console.error('Update user info failed:', error);
     return null;
@@ -167,14 +166,14 @@ export async function initializeUserSettings(uuid: string, settings: {
 }): Promise<boolean> {
   try {
     const dbSettings: Partial<DbUser> = {};
-    
+
     if (settings.language) dbSettings.language = settings.language;
     if (settings.timezone) dbSettings.timezone = settings.timezone;
     if (settings.emailNotifications !== undefined) dbSettings.emailNotifications = settings.emailNotifications;
 
     const updatedUser = await updateUser(uuid, dbSettings);
     return !!updatedUser;
-    
+
   } catch (error) {
     console.error('Initialize user settings failed:', error);
     return false;
@@ -198,21 +197,21 @@ export async function checkUserDailyAILimit(uuid: string): Promise<{
         message: '用户不存在'
       };
     }
-    
+
     const today = new Date().toISOString().split('T')[0];
     const dailyLimit = 20; // 每日限制
-    
+
     // 检查是否是今天的使用次数
     const userLastDate = dbUser.lastAiUsageDate?.toISOString().split('T')[0];
     const currentUsage = userLastDate === today ? dbUser.dailyAiUsage : 0;
-    
+
     return {
       canUse: currentUsage < dailyLimit,
       currentUsage,
       dailyLimit,
       message: currentUsage >= dailyLimit ? '今日AI使用次数已达上限' : undefined
     };
-    
+
   } catch (error) {
     console.error('Check user daily AI limit failed:', error);
     return {
@@ -229,7 +228,7 @@ export async function incrementUserDailyAIUsage(uuid: string): Promise<boolean> 
   try {
     const stats = await getUserStats(uuid);
     return !!stats;
-    
+
   } catch (error) {
     console.error('Increment user AI usage failed:', error);
     return false;
@@ -247,7 +246,7 @@ export async function getOrCreateUserSession(sessionId: string, userData?: {
   try {
     // 先尝试查找现有会话
     let session = await findBySessionId(sessionId);
-    
+
     if (!session) {
       // 创建新会话
       session = await createSession({
@@ -260,7 +259,7 @@ export async function getOrCreateUserSession(sessionId: string, userData?: {
       // 更新活动时间
       await updateActivity(sessionId);
     }
-    
+
     // 转换会话数据格式
     if (session) {
       return {
@@ -275,9 +274,9 @@ export async function getOrCreateUserSession(sessionId: string, userData?: {
         expiresAt: session.expiresAt.toISOString()
       };
     }
-    
+
     return null;
-    
+
   } catch (error) {
     console.error('Get or create user session failed:', error);
     return null;
@@ -294,7 +293,7 @@ export async function checkSessionTrialLimit(sessionId: string): Promise<{
   try {
     const session = await findBySessionId(sessionId);
     const trialLimit = 3; // 未登录用户试用3次
-    
+
     if (!session) {
       return {
         canUse: true,
@@ -302,16 +301,16 @@ export async function checkSessionTrialLimit(sessionId: string): Promise<{
         trialLimit,
       };
     }
-    
+
     const currentUsage = session.trialUsageCount;
-    
+
     return {
       canUse: currentUsage < trialLimit,
       currentUsage,
       trialLimit,
       message: currentUsage >= trialLimit ? '试用次数已用完，请注册账户' : undefined
     };
-    
+
   } catch (error) {
     console.error('Check session trial limit failed:', error);
     return {
@@ -328,7 +327,7 @@ export async function incrementSessionTrialUsageCount(sessionId: string): Promis
   try {
     const result = await incrementTrialUsage(sessionId);
     return result.success;
-    
+
   } catch (error) {
     console.error('Increment session trial usage failed:', error);
     return false;
@@ -344,9 +343,9 @@ export async function bindUserSession(sessionId: string, userId: string): Promis
       console.error('Cannot bind session: user not found');
       return false;
     }
-    
+
     return await updateActivity(sessionId);
-    
+
   } catch (error) {
     console.error('Bind user session failed:', error);
     return false;
@@ -361,10 +360,10 @@ export async function getUserActiveSessions(userId: string): Promise<UserSession
     if (!user) {
       return [];
     }
-    
+
     // 使用findSessionsByUserId查找用户的所有会话
     const sessions = await findSessionsByUserId(user.uuid);
-    
+
     // 转换会话数据格式
     return sessions.map(session => ({
       id: session.id,
@@ -377,7 +376,7 @@ export async function getUserActiveSessions(userId: string): Promise<UserSession
       createdAt: session.createdAt.toISOString(),
       expiresAt: session.expiresAt.toISOString()
     }));
-    
+
   } catch (error) {
     console.error('Get user active sessions failed:', error);
     return [];
@@ -389,7 +388,7 @@ export async function checkUserExists(email: string): Promise<boolean> {
   try {
     const user = await findUserByEmail(email);
     return !!user;
-    
+
   } catch (error) {
     console.error('Check user exists failed:', error);
     return false;
@@ -403,13 +402,13 @@ export async function checkUserPermission(clerkId: string, permission: 'admin' |
     if (!dbUser) {
       return false;
     }
-    
+
     // 临时管理员邮箱列表（后续可以改为从配置文件或数据库读取）
     const adminEmails = [
       'admin@aicollager.com',
       'linglin@example.com' // 可以根据实际需要添加
     ];
-    
+
     // 基于邮箱检查权限
     if (permission === 'admin') {
       return adminEmails.includes(dbUser.email.toLowerCase());
@@ -418,11 +417,11 @@ export async function checkUserPermission(clerkId: string, permission: 'admin' |
     } else {
       return true; // 所有用户都有基本权限
     }
-    
+
   } catch (error) {
     console.error('Check user permission failed:', error);
     return false;
   }
 }
 
- 
+

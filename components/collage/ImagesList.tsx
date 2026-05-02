@@ -1,6 +1,9 @@
 "use client";
 
 import { CollageImage } from "./constants";
+import { Button } from "@/components/ui/button";
+import { Check, Plus, Trash2, Upload } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ImagesListProps {
   images: CollageImage[];
@@ -8,6 +11,7 @@ interface ImagesListProps {
   onDragEnd: () => void;
   onRemoveImage: (id: string) => void;
   onAddToPreview: (image: CollageImage) => void;
+  onUploadClick: () => void;
   translateFn?: (key: string) => string;
 }
 
@@ -17,6 +21,7 @@ export default function ImagesList({
   onDragEnd,
   onRemoveImage,
   onAddToPreview,
+  onUploadClick,
   translateFn = (key: string) => key
 }: ImagesListProps) {
   // 获取翻译文本
@@ -25,20 +30,49 @@ export default function ImagesList({
   };
 
   return (
-    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-3">
-      <h3 className="text-sm font-medium mb-1">{t("uploadedImages")}</h3>
-      <p className="text-xs text-gray-500 mb-2">{t("dragOrClickInstructions")}</p>
-      
+    <section className="space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">{t("collageWorkspace.sourceImages")}</h3>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {t("collageWorkspace.sourceImagesDescription")}
+          </p>
+        </div>
+        <span className="rounded-md border border-border bg-secondary/60 px-2 py-1 text-xs text-muted-foreground">
+          {images.length}
+        </span>
+      </div>
+
       {images.length === 0 ? (
-        <div className="flex items-center justify-center h-32 border-2 border-dashed border-gray-300 rounded-md">
-          <p className="text-sm text-gray-500">{t("pleaseUploadImages")}</p>
+        <div className="rounded-lg border border-dashed border-border bg-secondary/40 p-4 text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-background text-primary">
+            <Upload className="h-5 w-5" />
+          </div>
+          <h4 className="text-sm font-semibold text-foreground">
+            {t("collageWorkspace.uploadEmptyTitle")}
+          </h4>
+          <p className="mx-auto mt-1 max-w-[220px] text-xs leading-5 text-muted-foreground">
+            {t("collageWorkspace.uploadEmptyDescription")}
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            className="mt-4 gap-2"
+            onClick={onUploadClick}
+          >
+            <Upload className="h-4 w-4" />
+            {t("collageWorkspace.uploadEmptyAction")}
+          </Button>
         </div>
       ) : (
-        <div className="flex flex-wrap gap-2 max-h-[300px] overflow-y-auto p-1">
+        <div className="grid max-h-[260px] grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5 lg:grid-cols-4">
           {images.map(image => (
-            <div 
+            <div
               key={image.id}
-              className="relative w-16 h-16 border rounded-md overflow-hidden group"
+              className={cn(
+                "group relative aspect-square overflow-hidden rounded-md border bg-secondary",
+                image.position !== undefined ? "border-primary/60" : "border-border"
+              )}
               draggable
               onDragStart={() => onDragStart(image)}
               onDragEnd={onDragEnd}
@@ -50,26 +84,31 @@ export default function ImagesList({
                 style={{ objectPosition: 'center' }}
                 crossOrigin={image.url.startsWith('data:') ? undefined : "anonymous"}
               />
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex flex-col justify-between">
+              {image.position !== undefined && (
+                <div className="absolute left-1 top-1 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                  <Check className="inline h-3 w-3" />
+                </div>
+              )}
+              <div className="absolute inset-0 flex flex-col justify-between bg-black/0 transition-colors group-hover:bg-black/35">
                 <button
-                  className="absolute top-0 right-0 bg-red-500 text-white rounded-bl-md p-1"
+                  className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-destructive group-hover:opacity-100"
                   onClick={() => onRemoveImage(image.id)}
+                  title={t("removeImage")}
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                  </svg>
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
                 <button
-                  className="absolute bottom-0 left-0 right-0 bg-blue-500 text-white text-xs py-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute inset-x-1 bottom-1 flex items-center justify-center gap-1 rounded bg-background/95 px-2 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-sm transition-opacity hover:text-primary group-hover:opacity-100"
                   onClick={() => onAddToPreview(image)}
                 >
-                  {t("addToPreview")}
+                  <Plus className="h-3 w-3" />
+                  {image.position !== undefined ? t("collageWorkspace.inCanvas") : t("collageWorkspace.addImage")}
                 </button>
               </div>
             </div>
           ))}
         </div>
       )}
-    </div>
+    </section>
   );
-} 
+}

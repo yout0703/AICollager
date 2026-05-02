@@ -1,5 +1,4 @@
 import { suggestLayout } from '@/lib/services/aiAnalysisService';
-import { IconService } from '@/lib/services/iconService';
 import { CollageElement, ImageElement, IconElement, CanvasConfig } from '@/types/collage';
 import type { ImageAnalysisResult } from './collageImageService';
 
@@ -19,22 +18,22 @@ export class CollageLayoutService {
       hasAnalyses: imageAnalyses.map(img => !!img.analysis),
       preferences: preferences
     });
-    
+
     const layoutParams = {
       images: imageAnalyses.map(img => img.analysis),
       preferences
     };
-    
+
     console.log('🤖 发送给Gemini的布局参数:', {
       imageAnalysesCount: layoutParams.images.length,
       validAnalyses: layoutParams.images.filter(img => img).length,
       preferences: layoutParams.preferences
     });
-    
+
     const layoutStartTime = Date.now();
     const result = await suggestLayout(layoutParams);
     const layoutTime = Date.now() - layoutStartTime;
-    
+
     console.log('📊 Gemini布局结果:', {
       success: result.success,
       layoutTime: `${layoutTime}ms`,
@@ -48,7 +47,7 @@ export class CollageLayoutService {
         reasoning: result.suggestion.reasoning
       } : null
     });
-    
+
     return result;
   }
 
@@ -56,16 +55,9 @@ export class CollageLayoutService {
    * 推荐Icon元素
    */
   async recommendIcons(imageAnalyses: ImageAnalysisResult[], theme?: string): Promise<any[]> {
-    // 基于图片分析结果和主题推荐Icon
-    const keywords = imageAnalyses.flatMap(img => img.analysis?.keywords || []);
-    
-    const result = await IconService.recommendIcons({
-      context: keywords.join(', '),
-      theme: theme,
-      limit: 10
-    });
-    
-    return result.success ? result.recommendations || [] : [];
+    void imageAnalyses;
+    void theme;
+    return [];
   }
 
   /**
@@ -86,7 +78,7 @@ export class CollageLayoutService {
       iconCount: iconRecommendations.length,
       imageCount: imageAnalyses.length
     });
-    
+
     // 1. 设置画布配置
     const canvas_config: CanvasConfig = {
       width: 800,
@@ -101,8 +93,8 @@ export class CollageLayoutService {
     // 2. 计算有效绘制区域
     const effectiveWidth = canvas_config.width - (canvas_config.padding * 2);
     const effectiveHeight = canvas_config.height - (canvas_config.padding * 2);
-    console.log('📏 有效绘制区域:', { 
-      effectiveWidth, 
+    console.log('📏 有效绘制区域:', {
+      effectiveWidth,
       effectiveHeight,
       startX: canvas_config.padding,
       startY: canvas_config.padding
@@ -110,7 +102,7 @@ export class CollageLayoutService {
 
     // 3. 生成图片元素
     const elements: CollageElement[] = [];
-    
+
     if (layoutResult.success && layoutResult.suggestion) {
       const suggestion = layoutResult.suggestion;
       console.log('🤖 AI布局建议详情:', {
@@ -119,11 +111,11 @@ export class CollageLayoutService {
         suggestionsCount: suggestion.suggestions?.length,
         reasoning: suggestion.reasoning
       });
-      
+
       // 由于现在只支持mask_collage模式，直接处理遮罩拼图
       if (suggestion.layout_type === 'mask_collage' && suggestion.suggestions) {
         console.log('🎭 使用AI遮罩拼图布局生成元素...');
-        
+
         // 遮罩拼图处理（当有suggestions时）
         this.generateGenericAIElements(suggestion, imageAnalyses, canvas_config, effectiveWidth, effectiveHeight, elements);
       } else {
@@ -140,27 +132,27 @@ export class CollageLayoutService {
     // 4. 添加推荐的Icon元素
     if (iconRecommendations && iconRecommendations.length > 0) {
       console.log(`🎭 添加 ${iconRecommendations.length} 个推荐Icon (最多3个)`);
-      
+
       iconRecommendations.slice(0, 3).forEach((icon, index) => { // 最多添加3个icon
         // 计算Icon位置（放在角落，但要避开图片区域）
         const iconSize = 40;
         const iconMargin = 15; // 距离边缘的距离
-        
+
         const positions = [
           { x: iconMargin, y: iconMargin }, // 左上
           { x: canvas_config.width - iconSize - iconMargin, y: iconMargin }, // 右上
           { x: iconMargin, y: canvas_config.height - iconSize - iconMargin } // 左下
         ];
-        
+
         const position = positions[index] || positions[0];
-        
+
         console.log(`🎭 生成Icon元素 ${index + 1}:`, {
           iconId: icon.iconId,
           iconName: icon.iconName,
           position: position,
           size: iconSize
         });
-        
+
         elements.push({
           id: `icon-${index}`,
           type: 'icon',
@@ -203,20 +195,20 @@ export class CollageLayoutService {
         position: { x: e.transform.x, y: e.transform.y, width: e.transform.width, height: e.transform.height }
       }))
     });
-    
+
     // 添加详细的元素位置信息日志
     console.log('📐 详细元素位置信息:');
     elements.forEach((element, index) => {
       console.log(`  ${index + 1}. ${element.id} (${element.type}):`, {
         x: Math.round(element.transform.x),
-        y: Math.round(element.transform.y), 
+        y: Math.round(element.transform.y),
         width: Math.round(element.transform.width),
         height: Math.round(element.transform.height),
         rotation: element.transform.rotation,
         zIndex: element.zIndex
       });
     });
-    
+
     return {
       canvas_config,
       elements
@@ -230,7 +222,7 @@ export class CollageLayoutService {
     suggestion.suggestions.forEach((imgSuggestion: any, index: number) => {
       if (index < imageAnalyses.length) {
         const imageAnalysis = imageAnalyses[imgSuggestion.imageIndex || index];
-        
+
         // 检查是否为遮罩模式
         if (imgSuggestion.mask_region && imgSuggestion.image_transform) {
           // 遮罩模式处理
@@ -239,7 +231,7 @@ export class CollageLayoutService {
             maskRegion: imgSuggestion.mask_region,
             imageTransform: imgSuggestion.image_transform
           });
-          
+
           const element = {
             id: `image-${index}`,
             type: 'image',
@@ -279,7 +271,7 @@ export class CollageLayoutService {
               anchor: { x: 0.5, y: 0.5 }
             }
           } as ImageElement;
-          
+
           elements.push(element);
         } else if (imgSuggestion.position) {
           // 传统模式处理（向后兼容）
@@ -287,14 +279,14 @@ export class CollageLayoutService {
           const actualY = canvas_config.padding + (imgSuggestion.position.y / 100) * effectiveHeight;
           const actualWidth = (imgSuggestion.position.width / 100) * effectiveWidth;
           const actualHeight = (imgSuggestion.position.height / 100) * effectiveHeight;
-          
+
           console.log(`📋 生成传统AI图片元素 ${index + 1}:`, {
             layoutType: suggestion.layout_type,
             position: { x: actualX, y: actualY, width: actualWidth, height: actualHeight },
             rotation: imgSuggestion.rotation,
             clipPath: imgSuggestion.clip_path
           });
-          
+
           // 为传统模式创建默认的遮罩区域和图片变换
           const defaultMaskRegion = {
             id: `mask-${index}`,
@@ -307,14 +299,14 @@ export class CollageLayoutService {
               height: actualHeight
             }
           };
-          
+
           const defaultImageTransform = {
             position: { x: 0, y: 0 },
             scale: 1,
             rotation: imgSuggestion.rotation || 0,
             anchor: { x: 0.5, y: 0.5 }
           };
-          
+
           const element = {
             id: `image-${index}`,
             type: 'image' as const,
@@ -343,7 +335,7 @@ export class CollageLayoutService {
             maskRegion: defaultMaskRegion,
             imageTransform: defaultImageTransform
           } as ImageElement;
-          
+
           elements.push(element);
         } else {
           console.warn(`⚠️  图片建议 ${index + 1} 缺少位置信息:`, imgSuggestion);
@@ -359,26 +351,26 @@ export class CollageLayoutService {
     const cols = Math.ceil(Math.sqrt(imageAnalyses.length));
     const rows = Math.ceil(imageAnalyses.length / cols);
     const gridGap = 10;
-    
+
     const totalHorizontalGaps = (cols - 1) * gridGap;
     const totalVerticalGaps = (rows - 1) * gridGap;
-    
+
     const cellWidth = (effectiveWidth - totalHorizontalGaps) / cols;
     const cellHeight = (effectiveHeight - totalVerticalGaps) / rows;
-    
+
     console.log('🚨 紧急默认布局参数:', {
       gridSize: `${rows}x${cols}`,
       cellSize: `${cellWidth}x${cellHeight}`,
       gridGap
     });
-    
+
     imageAnalyses.forEach((imageAnalysis, index) => {
       const row = Math.floor(index / cols);
       const col = index % cols;
-      
+
       const x = canvas_config.padding + col * (cellWidth + gridGap);
       const y = canvas_config.padding + row * (cellHeight + gridGap);
-      
+
       // 为默认布局创建遮罩区域和图片变换
       const defaultMaskRegion = {
         id: `mask-${index}`,
@@ -386,14 +378,14 @@ export class CollageLayoutService {
         clipPath: 'none',
         position: { x, y, width: cellWidth, height: cellHeight }
       };
-      
+
       const defaultImageTransform = {
         position: { x: 0, y: 0 },
         scale: 1,
         rotation: 0,
         anchor: { x: 0.5, y: 0.5 }
       };
-      
+
       elements.push({
         id: `image-${index}`,
         type: 'image',
@@ -426,4 +418,4 @@ export class CollageLayoutService {
   }
 }
 
-export const collageLayoutService = new CollageLayoutService(); 
+export const collageLayoutService = new CollageLayoutService();

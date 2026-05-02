@@ -1,7 +1,10 @@
 "use client";
 
-import { RefObject, useState } from "react";
-import { CollageImage, DEFAULT_IMAGE_TRANSFORM, ImageTransform, Layout, getCollageGridClass, getCollageGridStyle, AspectRatio } from "./constants";
+import { RefObject, useEffect, useState } from "react";
+import { ImageIcon, X } from "lucide-react";
+import { AspectRatio, CollageImage, ImageTransform, Layout, getCollageGridClass, getCollageGridStyle, normalizeImageTransform } from "./constants";
+import { getImageDrawRect } from "./utils/imageUtils";
+import { cn } from "@/lib/utils";
 
 interface CollagePreviewProps {
   images: CollageImage[];
@@ -13,6 +16,7 @@ interface CollagePreviewProps {
   onRemoveImage: (id: string) => void;
   onUpdateImageTransform: (id: string, transform: ImageTransform) => void;
   onImageClick?: (id: string) => void;
+  selectedImageId?: string | null;
   translateFn: (key: string) => string;
   collageRef: RefObject<HTMLDivElement>;
 }
@@ -21,10 +25,10 @@ interface CollagePreviewProps {
 const getMaskStyle = (layout: Layout, position: number) => {
   const { maskShape } = layout;
   if (!maskShape) return {};
-  
+
   // 检查是否有针对特定单元格的蒙版
   const cellMask = position !== undefined && maskShape.cellMasks?.[position];
-  
+
   // 单元格特定蒙版
   if (cellMask) {
     switch (cellMask.type) {
@@ -36,13 +40,13 @@ const getMaskStyle = (layout: Layout, position: number) => {
         return {
           clipPath: `inset(${y}% ${100-width-x}% ${100-height-y}% ${x}%)`
         };
-        
+
       case 'circular':
         const radius = (cellMask.radius || 0.5) * 100;
         return {
           clipPath: `circle(${radius}% at center)`
         };
-        
+
       case 'path':
         if (cellMask.svgPath) {
           return {
@@ -56,12 +60,12 @@ const getMaskStyle = (layout: Layout, position: number) => {
     switch (maskShape.type) {
       case 'rectangular':
         return {};
-        
+
       case 'circular':
         return {
           clipPath: 'circle(50% at center)'
         };
-        
+
       case 'path':
         if (maskShape.svgPath) {
           return {
@@ -71,7 +75,7 @@ const getMaskStyle = (layout: Layout, position: number) => {
         break;
     }
   }
-  
+
   return {};
 };
 
@@ -80,37 +84,37 @@ const getCellGridArea = (layoutId: string, position: number): React.CSSPropertie
   if (layoutId === "layout-6") {
     return { gridArea: position === 0 ? 'a' : position === 1 ? 'b' : 'c' };
   }
-  
+
   if (layoutId === "layout-7") {
     const areas = ['a', 'b', 'c', 'd', 'e'];
     return { gridArea: areas[position] || '' };
   }
-  
+
   if (layoutId === "layout-8") {
     const areas = ['a', 'b', 'c', 'd'];
     return { gridArea: areas[position] || '' };
   }
-  
+
   if (layoutId === "layout-9") {
     const areas = ['a', 'b', 'c'];
     return { gridArea: areas[position] || '' };
   }
-  
+
   if (layoutId === "layout-10") {
     const areas = ['a', 'b', 'c', 'd'];
     return { gridArea: areas[position] || '' };
   }
-  
+
   if (layoutId === "layout-11") {
     const areas = ['a', 'b', 'c', 'd'];
     return { gridArea: areas[position] || '' };
   }
-  
+
   if (layoutId === "layout-12") {
     const areas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'];
     return { gridArea: areas[position] || '' };
   }
-  
+
   return {};
 };
 
@@ -122,253 +126,281 @@ export default function CollagePreview({
   onDragOver,
   onDrop,
   onRemoveImage,
-  onUpdateImageTransform,
+  onUpdateImageTransform: _onUpdateImageTransform,
   onImageClick,
+  selectedImageId,
   translateFn,
   collageRef
 }: CollagePreviewProps) {
   // 精确模式状态
   const [exactMode, setExactMode] = useState(false);
-  // 当前选中的图片
-  const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
-  
+  const [imageSizes, setImageSizes] = useState<Record<string, { width: number; height: number }>>({});
+  const [cellSizes, setCellSizes] = useState<Record<number, { width: number; height: number }>>({});
+
+  useEffect(() => {
+    const measureCells = () => {
+      const collageElement = collageRef.current;
+      if (!collageElement) return;
+
+      const nextSizes: Record<number, { width: number; height: number }> = {};
+      collageElement.querySelectorAll<HTMLElement>("[data-position]").forEach((cell) => {
+        const position = Number(cell.dataset.position);
+        const rect = cell.getBoundingClientRect();
+        if (!Number.isNaN(position) && rect.width > 0 && rect.height > 0) {
+          nextSizes[position] = {
+            width: rect.width,
+            height: rect.height
+          };
+        }
+      });
+
+      setCellSizes((prev) => {
+        const prevKeys = Object.keys(prev);
+        const nextKeys = Object.keys(nextSizes);
+        const hasChanged =
+          prevKeys.length !== nextKeys.length ||
+          nextKeys.some((key) => {
+            const position = Number(key);
+            const prevSize = prev[position];
+            const nextSize = nextSizes[position];
+            return (
+              !prevSize ||
+              Math.abs(prevSize.width - nextSize.width) > 0.5 ||
+              Math.abs(prevSize.height - nextSize.height) > 0.5
+            );
+          });
+
+        return hasChanged ? nextSizes : prev;
+      });
+    };
+
+    measureCells();
+
+    if (typeof ResizeObserver === "undefined" || !collageRef.current) {
+      window.addEventListener("resize", measureCells);
+      return () => window.removeEventListener("resize", measureCells);
+    }
+
+    const observer = new ResizeObserver(measureCells);
+    observer.observe(collageRef.current);
+
+    return () => observer.disconnect();
+  }, [collageRef, selectedAspectRatio.ratio, selectedLayout.id]);
+
   // 处理图片选择
   const handleImageSelect = (id: string) => {
-    setSelectedImageId(prev => prev === id ? null : id);
-    // 如果提供了外部点击回调，则调用它
     if (onImageClick) {
       onImageClick(id);
     }
   };
-  
-  // 处理缩放变化
-  const handleScaleChange = (id: string, newScale: number) => {
-    const image = images.find(img => img.id === id);
-    if (!image) return;
-    
-    const currentTransform = image.transform || DEFAULT_IMAGE_TRANSFORM;
-    onUpdateImageTransform(id, {
-      ...currentTransform,
-      scale: newScale
-    });
+
+  const getPreviewImageStyle = (
+    image: CollageImage,
+    transform: ImageTransform | undefined,
+    position: number
+  ): React.CSSProperties => {
+    const currentTransform = normalizeImageTransform(transform);
+    const imageSize = imageSizes[image.id];
+    const cellSize = cellSizes[position];
+
+    if (imageSize && cellSize) {
+      const { drawWidth, drawHeight, drawX, drawY } = getImageDrawRect(
+        imageSize.width,
+        imageSize.height,
+        cellSize.width,
+        cellSize.height,
+        currentTransform
+      );
+
+      return {
+        left: `${drawX}px`,
+        top: `${drawY}px`,
+        width: `${drawWidth}px`,
+        height: `${drawHeight}px`,
+        objectFit: "fill",
+        transform: `rotate(${currentTransform.rotation}rad)`,
+        transformOrigin: "center"
+      };
+    }
+
+    if (!imageSize) {
+      return {
+        inset: 0,
+        width: "100%",
+        height: "100%",
+        objectFit: currentTransform.fitMode === "stretch"
+          ? "fill"
+          : currentTransform.fitMode === "contain"
+            ? "contain"
+            : "cover",
+        objectPosition: `${currentTransform.offsetX * 100}% ${currentTransform.offsetY * 100}%`,
+        transform: `scale(${currentTransform.scale}) rotate(${currentTransform.rotation}rad)`,
+        transformOrigin: "center"
+      };
+    }
+
+    const imgRatio = imageSize.width / imageSize.height;
+    const cellRatio = (selectedAspectRatio.ratio * selectedLayout.rows) / selectedLayout.cols;
+    const scale = Math.abs(currentTransform.scale) || 1;
+    const fitMode = currentTransform.fitMode ?? "cover";
+    const widthPercent = fitMode === "stretch"
+      ? 100 * scale
+      : fitMode === "contain"
+        ? (imgRatio > cellRatio ? 100 : (imgRatio / cellRatio) * 100) * scale
+        : (imgRatio > cellRatio ? (imgRatio / cellRatio) * 100 : 100) * scale;
+    const heightPercent = fitMode === "stretch"
+      ? 100 * scale
+      : fitMode === "contain"
+        ? (imgRatio > cellRatio ? (cellRatio / imgRatio) * 100 : 100) * scale
+        : (imgRatio > cellRatio ? 100 : (cellRatio / imgRatio) * 100) * scale;
+
+    return {
+      left: `${(100 - widthPercent) * currentTransform.offsetX}%`,
+      top: `${(100 - heightPercent) * currentTransform.offsetY}%`,
+      width: `${widthPercent}%`,
+      height: `${heightPercent}%`,
+      objectFit: "fill",
+      transform: `rotate(${currentTransform.rotation}rad)`,
+      transformOrigin: "center"
+    };
   };
-  
-  // 处理保持比例切换
-  const handleKeepAspectRatioToggle = (id: string) => {
-    const image = images.find(img => img.id === id);
-    if (!image) return;
-    
-    const currentTransform = image.transform || DEFAULT_IMAGE_TRANSFORM;
-    onUpdateImageTransform(id, {
-      ...currentTransform,
-      keepAspectRatio: !currentTransform.keepAspectRatio
-    });
-  };
-  
-  // 处理重置变换
-  const handleResetTransform = (id: string) => {
-    const image = images.find(img => img.id === id);
-    if (!image) return;
-    
-    onUpdateImageTransform(id, { ...DEFAULT_IMAGE_TRANSFORM });
-  };
-  
+
   return (
-    <div className="h-full p-4 border border-gray-200 rounded-lg bg-white">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="text-sm font-medium">{translateFn('previewArea')}</h3>
-        <div className="flex flex-col items-end">
-          <div className="flex items-center">
-            <span className="text-xs text-gray-500 mr-2">{exactMode ? translateFn('exactMode') : translateFn('beautyMode')}</span>
-            <button 
-              className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${exactMode ? 'bg-blue-600' : 'bg-gray-200'}`}
+    <div className="h-full rounded-lg border border-border bg-card p-4 shadow-sm sm:p-5">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-foreground">{translateFn('previewArea')}</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground">
+            {translateFn('collageWorkspace.previewDescription')}
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-secondary/50 px-3 py-2 sm:justify-end">
+          <span className="text-xs font-medium text-muted-foreground">
+            {exactMode ? translateFn('exactMode') : translateFn('beautyMode')}
+          </span>
+            <button
+              className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${exactMode ? 'bg-primary' : 'bg-secondary'}`}
               onClick={() => setExactMode(!exactMode)}
               aria-pressed={exactMode}
               title={exactMode ? translateFn('switchToBeautyMode') : translateFn('switchToExactMode')}
             >
-              <span 
-                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${exactMode ? 'translate-x-5' : 'translate-x-0'}`} 
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background ring-0 transition duration-200 ease-in-out ${exactMode ? 'translate-x-5' : 'translate-x-0'}`}
               />
             </button>
-          </div>
-          <p className="text-xs text-gray-400 mt-1 text-right">{translateFn('exactModeDescription')}</p>
         </div>
       </div>
-      
-      <div 
-        className="relative mx-auto" 
-        style={{ 
-          paddingBottom: `${(1 / selectedAspectRatio.ratio) * 100}%`, 
-          maxWidth: "90%" 
+
+      <div
+        className="relative mx-auto rounded-lg bg-secondary/60 p-3 sm:p-4"
+        style={{
+          maxWidth: selectedAspectRatio.ratio < 0.7 ? "430px" : selectedAspectRatio.ratio > 1.4 ? "680px" : "560px"
         }}
       >
-        <div 
-          ref={collageRef}
-          className={`${getCollageGridClass(selectedLayout)} absolute inset-0 shadow-md`}
-          style={{ 
-            width: '100%',
-            height: '100%',
-            gap: '8px',
-            ...getCollageGridStyle(selectedLayout)
-          }}
+        <div
+          className="relative"
+          style={{ paddingBottom: `${(1 / selectedAspectRatio.ratio) * 100}%` }}
         >
-          {Array.from({ length: selectedLayout.cols * selectedLayout.rows }).map((_, i) => {
-            const image = images.find(img => img.position === i);
-            const cellClass = selectedLayout.custom && selectedLayout.id === "layout-6" 
-              ? `cell-${i}`
-              : '';
-            
-            const isSelected = image && selectedImageId === image.id;
-              
-            return (
-              <div
-                key={`cell-${i}`}
-                className={`w-full h-full border flex items-center justify-center overflow-hidden ${cellClass} ${
-                  draggedOver === i 
-                    ? 'bg-blue-100 border-blue-300 border-2' 
-                    : isSelected
-                      ? 'border-blue-500 border-2'
-                      : image 
-                        ? 'border-gray-300' 
-                        : 'border-gray-200 bg-gray-50'
-                }`}
-                style={{
-                  ...(selectedLayout.custom 
-                    ? getCellGridArea(selectedLayout.id, i) 
-                    : {}),
-                }}
-                onDragOver={(e) => onDragOver(e, i)}
-                onDrop={() => onDrop(i)}
-                data-position={i}
-              >
-                {image ? (
-                  <div 
-                    className="relative w-full h-full overflow-hidden"
-                    style={getMaskStyle(selectedLayout, i)}
-                  >
-                    <img
-                      src={image.url}
-                      alt={translateFn("collageImage")}
-                      className={`w-full h-full ${
-                        exactMode 
-                          ? 'object-fill' 
-                          : (image.transform?.keepAspectRatio !== false) 
-                            ? 'object-cover' 
-                            : 'object-fill'
-                      } cursor-pointer`}
-                      onClick={() => handleImageSelect(image.id)}
-                      draggable={false}
-                      crossOrigin={image.url.startsWith('data:') ? undefined : "anonymous"}
-                      style={{
-                        transform: exactMode 
-                          ? 'none' 
-                          : `scale(${image.transform?.scale || 1})`,
-                        transformOrigin: 'center',
-                        maxWidth: '100%',
-                        maxHeight: '100%'
-                      }}
-                    />
-                    <button
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity z-10"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveImage(image.id);
-                      }}
-                      title={translateFn("removeImage")}
+          <div
+            ref={collageRef}
+            className={`${getCollageGridClass(selectedLayout)} absolute inset-0 rounded-md`}
+            style={{
+              width: '100%',
+              height: '100%',
+              gap: '0px',
+              ...getCollageGridStyle(selectedLayout)
+            }}
+          >
+            {Array.from({ length: selectedLayout.cols * selectedLayout.rows }).map((_, i) => {
+              const image = images.find(img => img.position === i);
+              const cellClass = selectedLayout.custom && selectedLayout.id === "layout-6"
+                ? `cell-${i}`
+                : '';
+
+              const isSelected = image && selectedImageId === image.id;
+              const transform = image?.transform;
+
+              return (
+                <div
+                  key={`cell-${i}`}
+                  className={cn(
+                    "flex h-full w-full items-center justify-center overflow-hidden transition-colors",
+                    cellClass,
+                    draggedOver === i && "border-primary bg-primary/10 ring-2 ring-primary/20",
+                    isSelected && "border-primary ring-2 ring-primary/25",
+                    !draggedOver && !isSelected && image && "border-0 bg-background",
+                    !draggedOver && !isSelected && !image && "border border-dashed border-border bg-background/70"
+                  )}
+                  style={{
+                    ...(selectedLayout.custom
+                      ? getCellGridArea(selectedLayout.id, i)
+                      : {}),
+                  }}
+                  onDragOver={(e) => onDragOver(e, i)}
+                  onDrop={() => onDrop(i)}
+                  data-position={i}
+                >
+                  {image ? (
+                    <div
+                      className="group relative h-full w-full overflow-hidden"
+                      style={getMaskStyle(selectedLayout, i)}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-center p-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-xs text-gray-400">{translateFn('dragImages')}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      
-      {/* 选中图片的控制面板 */}
-      {selectedImageId && (
-        <div className="mt-3 p-2 border border-gray-200 rounded-md bg-gray-50">
-          <h4 className="text-xs font-medium mb-2">{translateFn('imageControls')}</h4>
-          
-          {(() => {
-            const selectedImage = images.find(img => img.id === selectedImageId);
-            if (!selectedImage) return null;
-            
-            const transform = selectedImage.transform || DEFAULT_IMAGE_TRANSFORM;
-            
-            return (
-              <div className="space-y-2">
-                {/* 缩放控制 */}
-                <div className="flex items-center">
-                  <span className="text-xs text-gray-500 w-16">{translateFn('scale')}</span>
-                  <input 
-                    type="range" 
-                    min="0.5" 
-                    max="2" 
-                    step="0.1" 
-                    value={transform.scale} 
-                    onChange={(e) => handleScaleChange(selectedImageId, parseFloat(e.target.value))}
-                    className="flex-1" 
-                  />
-                  <span className="text-xs ml-2 w-8">{transform.scale.toFixed(1)}</span>
+                      <img
+                        src={image.url}
+                        alt={translateFn("collageImage")}
+                        className="absolute max-w-none cursor-pointer"
+                        onClick={() => handleImageSelect(image.id)}
+                        onLoad={(event) => {
+                          const target = event.currentTarget;
+                          setImageSizes(prev => {
+                            const existing = prev[image.id];
+                            if (existing?.width === target.naturalWidth && existing?.height === target.naturalHeight) {
+                              return prev;
+                            }
+                            return {
+                              ...prev,
+                              [image.id]: {
+                                width: target.naturalWidth,
+                                height: target.naturalHeight
+                              }
+                            };
+                          });
+                        }}
+                        draggable={false}
+                        crossOrigin={image.url.startsWith('data:') ? undefined : "anonymous"}
+                        style={getPreviewImageStyle(image, transform, i)}
+                      />
+                      <button
+                        className="absolute right-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full bg-background/90 text-muted-foreground opacity-0 shadow-sm transition-opacity hover:text-destructive group-hover:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onRemoveImage(image.id);
+                        }}
+                        title={translateFn("removeImage")}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-2 text-center">
+                      <ImageIcon className="mb-2 h-6 w-6 text-muted-foreground/70" />
+                      <p className="text-[11px] leading-4 text-muted-foreground">
+                        {draggedOver === i ? translateFn('collageWorkspace.dropHint') : translateFn('collageWorkspace.emptyCellHint')}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                
-                {/* 保持比例切换 */}
-                <div className="flex items-center">
-                  <span className="text-xs text-gray-500 w-16">{translateFn('keepRatio')}</span>
-                  <button 
-                    className={`relative inline-flex h-5 w-10 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${transform.keepAspectRatio ? 'bg-blue-600' : 'bg-gray-200'}`}
-                    onClick={() => handleKeepAspectRatioToggle(selectedImageId)}
-                    aria-pressed={transform.keepAspectRatio}
-                  >
-                    <span 
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${transform.keepAspectRatio ? 'translate-x-5' : 'translate-x-0'}`} 
-                    />
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
-          
-          {/* 重置按钮 */}
-          <div className="flex justify-end mt-2">
-            <button 
-              className="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 px-2 rounded"
-              onClick={() => handleResetTransform(selectedImageId)}
-              title={translateFn("resetTransform")}
-            >
-              {translateFn("resetTransform")}
-            </button>
+              );
+            })}
           </div>
         </div>
-      )}
-      
-      <p className="mt-3 text-center text-xs text-gray-500">
+      </div>
+
+      <div className="mt-4 rounded-md border border-border bg-secondary/40 px-3 py-2 text-center text-xs leading-5 text-muted-foreground">
         {translateFn('previewInstructions')}
-      </p>
-      
-      <div className="mt-2 text-center text-xs text-gray-400">
-        <span className="inline-flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2h-1V9a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          {selectedImageId 
-            ? translateFn('clickImageToEditInfo')
-            : exactMode 
-              ? translateFn('exactModeInfo') 
-              : translateFn('aspectRatioInfo')}
-        </span>
+        <span className="mx-2 text-border">/</span>
+        {translateFn('collageWorkspace.exactModeHelp')}
       </div>
     </div>
   );
-} 
+}

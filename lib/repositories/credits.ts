@@ -1,7 +1,6 @@
 import { db } from '@/db/client'
 import { creditTransactions, invitations, type CreditTransaction, type NewCreditTransaction, type Invitation, type NewInvitation } from '@/db/schema/credits'
-import { eq, and, lt, desc, sql, count, inArray } from 'drizzle-orm'
-import { createHash } from 'crypto'
+import { eq, desc, sql } from 'drizzle-orm'
 
 // Credits 相关函数
 export async function createCreditTransaction(data: Partial<CreditTransaction>): Promise<CreditTransaction> {
@@ -24,7 +23,7 @@ export async function createCreditTransaction(data: Partial<CreditTransaction>):
     return result
   }
 
-  export async function getUserCreditTransactions(userId: string, options?: any): Promise<CreditTransaction[]> {
+  export async function getUserCreditTransactions(userId: string, _options?: any): Promise<CreditTransaction[]> {
     return await db
       .select()
       .from(creditTransactions)
@@ -38,27 +37,27 @@ export async function getUserCreditsBalance(userId: string): Promise<number> {
     .from(creditTransactions)
     .where(eq(creditTransactions.userId, userId))
     .limit(1)
-    
+
   return result?.balance || 0
 }
 
-export async function deductUserCredits(userId: string, amount: number, reason?: string): Promise<{ success: boolean; newBalance: number }> {
+export async function deductUserCredits(userId: string, amount: number, _reason?: string): Promise<{ success: boolean; newBalance: number }> {
   const [result] = await db
     .update(creditTransactions)
     .set({ amount: sql<number>`${creditTransactions.amount} - ${amount}` })
     .where(eq(creditTransactions.userId, userId))
     .returning()
-    
+
   return { success: !!result, newBalance: result?.balanceAfter || 0 }
 }
 
-export async function addUserCredits(userId: string, amount: number, type?: string, reason?: string, description?: string, source?: string, referenceId?: string): Promise<{ success: boolean; newBalance: number }> {
+export async function addUserCredits(userId: string, amount: number, _type?: string, _reason?: string, _description?: string, _source?: string, _referenceId?: string): Promise<{ success: boolean; newBalance: number }> {
   const [result] = await db
     .update(creditTransactions)
     .set({ amount: sql<number>`${creditTransactions.amount} + ${amount}` })
     .where(eq(creditTransactions.userId, userId))
     .returning()
-    
+
   return { success: !!result, newBalance: result?.balanceAfter || 0 }
 }
 
@@ -80,7 +79,7 @@ export async function createInvitation(data: Partial<Invitation>): Promise<Invit
     .insert(invitations)
     .values(newInvitation)
     .returning()
-    
+
   return result
 }
 
@@ -90,21 +89,21 @@ export async function findInvitationByCode(inviteCode: string): Promise<Invitati
     .from(invitations)
     .where(eq(invitations.inviteCode, inviteCode))
     .limit(1)
-    
+
   return result || null
 }
 
 export async function completeInvitation(inviteCode: string, inviteeId: string): Promise<{ success: boolean; invitation?: Invitation }> {
   const [result] = await db
     .update(invitations)
-    .set({ 
-      status: 'completed', 
-      registeredAt: new Date(), 
-      inviteeId: inviteeId 
+    .set({
+      status: 'completed',
+      registeredAt: new Date(),
+      inviteeId: inviteeId
     })
     .where(eq(invitations.inviteCode, inviteCode))
     .returning()
-    
+
   return { success: !!result, invitation: result || undefined }
 }
 
@@ -116,7 +115,7 @@ export async function getUserInvitations(userId: string): Promise<Invitation[]> 
     .orderBy(desc(invitations.createdAt))
 }
 
-export async function getUserInvitationStats(userId: string): Promise<{
+export async function getUserInvitationStats(_userId: string): Promise<{
   totalInvitations: number;
   completedInvitations: number;
   totalRewardsEarned: number;
@@ -132,4 +131,4 @@ export async function getUserInvitationStats(userId: string): Promise<{
 export async function cleanupExpiredInvitations(): Promise<number> {
   console.warn('cleanupExpiredInvitations not implemented yet')
   return 0
-} 
+}

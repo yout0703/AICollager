@@ -39,7 +39,7 @@ export function MultiLanguageExample({ locale }: MultiLanguageExampleProps) {
       <div className="max-w-4xl mx-auto">
         {/* 消息提示 */}
         {message && (
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm text-center">
+          <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg text-primary text-sm text-center">
             {message}
           </div>
         )}
@@ -78,7 +78,7 @@ export function MultiLanguageExample({ locale }: MultiLanguageExampleProps) {
               <p className="text-sm text-gray-600">
                 {getTranslation(dict, 'ai.costNotice')}
               </p>
-              <ResponsiveButton 
+              <ResponsiveButton
                 onClick={handleAction}
                 className="w-full"
               >
@@ -99,7 +99,7 @@ export function MultiLanguageExample({ locale }: MultiLanguageExampleProps) {
                 className="w-full h-32 rounded-lg"
                 aspectRatio="16/9"
               />
-              <ResponsiveButton 
+              <ResponsiveButton
                 onClick={() => window.open('/editor/test', '_blank')}
                 variant="outline"
                 className="w-full"
@@ -115,15 +115,15 @@ export function MultiLanguageExample({ locale }: MultiLanguageExampleProps) {
           <ResponsiveButton onClick={handleAction}>
             {getTranslation(dict, 'editor.save')}
           </ResponsiveButton>
-          
-          <ResponsiveButton 
+
+          <ResponsiveButton
             onClick={handleError}
             variant="outline"
           >
             {getTranslation(dict, 'ui.retry')}
           </ResponsiveButton>
-          
-          <ResponsiveButton 
+
+          <ResponsiveButton
             onClick={handleInvite}
             variant="secondary"
           >
@@ -151,23 +151,23 @@ export function MultiLanguageExample({ locale }: MultiLanguageExampleProps) {
 
         {/* 状态示例 */}
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 text-center">
-            <div className="text-blue-600 font-medium">
+          <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 text-center">
+            <div className="text-primary font-medium">
               {getTranslation(dict, 'loading')}
             </div>
           </div>
-          <div className="p-4 bg-green-50 rounded-lg border border-green-200 text-center">
-            <div className="text-green-600 font-medium">
+          <div className="p-4 bg-accent/10 rounded-lg border border-accent/20 text-center">
+            <div className="text-accent font-medium">
               {getTranslation(dict, 'editor.saveSuccess')}
             </div>
           </div>
-          <div className="p-4 bg-yellow-50 rounded-lg border border-yellow-200 text-center">
-            <div className="text-yellow-600 font-medium">
+          <div className="p-4 bg-primary/10 rounded-lg border border-primary/20 text-center">
+            <div className="text-primary font-medium">
               {getTranslation(dict, 'processing')}
             </div>
           </div>
-          <div className="p-4 bg-red-50 rounded-lg border border-red-200 text-center">
-            <div className="text-red-600 font-medium">
+          <div className="p-4 bg-destructive/10 rounded-lg border border-destructive/20 text-center">
+            <div className="text-destructive font-medium">
               {getTranslation(dict, 'errors.networkError')}
             </div>
           </div>
@@ -184,13 +184,13 @@ export function MultiLanguageExample({ locale }: MultiLanguageExampleProps) {
                 <h5 className="text-lg font-semibold text-gray-900 mb-2">
                   {getTranslation(dict, `pricing.${plan}.title`)}
                 </h5>
-                <div className="text-2xl font-bold text-blue-600 mb-2">
+                <div className="text-2xl font-bold text-primary mb-2">
                   {getTranslation(dict, `pricing.${plan}.price`)}
                 </div>
                 <p className="text-sm text-gray-600 mb-4">
                   {getTranslation(dict, `pricing.${plan}.description`)}
                 </p>
-                <ResponsiveButton 
+                <ResponsiveButton
                   variant={plan === 'pro' ? 'primary' : 'outline'}
                   className="w-full"
                 >
@@ -212,4 +212,4 @@ export function MultiLanguageExample({ locale }: MultiLanguageExampleProps) {
   );
 }
 
-export default MultiLanguageExample; 
+export default MultiLanguageExample;

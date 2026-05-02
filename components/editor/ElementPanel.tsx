@@ -4,10 +4,10 @@ import React, { useCallback } from 'react';
 import { useEditor } from '@/contexts/EditorContext';
 import { CollageElement, ImageElement } from '@/types/collage';
 import { Button } from '@/components/ui/button';
-import { 
-  RotateCw, 
-  RotateCcw, 
-  FlipHorizontal, 
+import {
+  RotateCw,
+  RotateCcw,
+  FlipHorizontal,
   FlipVertical,
   Lock,
   Unlock,
@@ -25,7 +25,7 @@ interface ElementPanelProps {
 
 // 简单的Label组件
 const Label = ({ htmlFor, children, className = '' }: { htmlFor?: string; children: React.ReactNode; className?: string }) => (
-  <label htmlFor={htmlFor} className={`block text-xs font-medium text-gray-700 ${className}`}>
+  <label htmlFor={htmlFor} className={`block text-xs font-medium text-foreground ${className}`}>
     {children}
   </label>
 );
@@ -34,7 +34,7 @@ const Label = ({ htmlFor, children, className = '' }: { htmlFor?: string; childr
 const Input = ({ className = '', type = 'text', ...props }: React.InputHTMLAttributes<HTMLInputElement>) => (
   <input
     type={type}
-    className={`mt-0.5 block w-full px-2 py-1 text-xs border border-gray-300 rounded shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${className}`}
+    className={`mt-0.5 block w-full px-2 py-1 text-xs border border-input bg-background rounded focus:outline-none focus:ring-primary focus:border-primary ${className}`}
     {...props}
   />
 );
@@ -55,24 +55,21 @@ const Slider = ({ value, onValueChange, min = 0, max = 100, step = 1, className 
     step={step}
     value={value[0]}
     onChange={(e) => onValueChange([parseFloat(e.target.value)])}
-    className={`w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer ${className}`}
+    className={`w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer ${className}`}
   />
 );
 
 // 简单的Separator组件
 const Separator = ({ className = '' }: { className?: string }) => (
-  <hr className={`border-t border-gray-100 my-2 ${className}`} />
+  <hr className={`border-t border-border my-2 ${className}`} />
 );
 
 export default function ElementPanel({ className = '' }: ElementPanelProps) {
-  const { selectedElement, updateElement, deleteElement, copyElement, state } = useEditor();
-  
-  // 检查当前元素是否为图片元素
-  const isImageElement = selectedElement && selectedElement.type === 'image';
-  
+  const { selectedElement, updateElement, deleteElement, copyElement } = useEditor();
+
   // 检查当前元素是否为遮罩图片元素
-  const isMaskElement = selectedElement && 
-    selectedElement.type === 'image' && 
+  const isMaskElement = selectedElement &&
+    selectedElement.type === 'image' &&
     (selectedElement as ImageElement).maskRegion;
 
   // 更新元素属性的通用函数
@@ -81,7 +78,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
 
     const pathParts = path.split('.');
     const updatedElement: Partial<CollageElement> = {};
-    
+
     // 构建嵌套对象
     if (pathParts.length === 1) {
       (updatedElement as any)[pathParts[0]] = value;
@@ -106,7 +103,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
   // 遮罩模式下的图片变换控制
   const handleMaskImageTransform = useCallback((property: string, value: any) => {
     if (!selectedElement || !isMaskElement) return;
-    
+
     const currentTransform = (selectedElement as ImageElement).imageTransform || {
       position: { x: 0, y: 0 },
       scale: 1,
@@ -115,7 +112,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
     };
 
     const newTransform = { ...currentTransform };
-    
+
     if (property === 'position.x') {
       newTransform.position.x = value;
     } else if (property === 'position.y') {
@@ -132,7 +129,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
   // 重置遮罩内图片位置
   const handleResetMaskImagePosition = useCallback(() => {
     if (!selectedElement || !isMaskElement) return;
-    
+
     updateElement(selectedElement.id, {
       imageTransform: {
         position: { x: 0, y: 0 },
@@ -205,7 +202,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
         <div className="text-xs text-gray-600 space-y-0.5">
           <p>类型: {selectedElement.type}</p>
           <p className="truncate">ID: {selectedElement.id.slice(0, 20)}...</p>
-          {isMaskElement && <p className="text-blue-600">遮罩图片元素</p>}
+          {isMaskElement && <p className="text-primary">遮罩图片元素</p>}
         </div>
       </div>
 
@@ -216,12 +213,12 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
         <h3 className="font-medium text-xs mb-2">
           {isMaskElement ? '遮罩区域' : '位置和尺寸'}
         </h3>
-        
+
         {isMaskElement ? (
           // 遮罩信息显示
-          <div className="p-2 bg-blue-50 rounded border border-blue-200 mb-3">
-            <h4 className="text-xs font-medium text-blue-900 mb-1">遮罩信息</h4>
-            <div className="text-xs text-blue-800 space-y-0.5">
+          <div className="p-2 bg-primary/10 rounded border border-primary/20 mb-3">
+            <h4 className="text-xs font-medium text-foreground mb-1">遮罩信息</h4>
+            <div className="text-xs text-muted-foreground space-y-0.5">
               <p>形状: {(selectedElement as ImageElement).maskRegion?.shape === 'circle' ? '圆形' : '矩形'}</p>
               <p>位置: {(selectedElement as ImageElement).maskRegion?.position.x}, {(selectedElement as ImageElement).maskRegion?.position.y}</p>
               <p>尺寸: {(selectedElement as ImageElement).maskRegion?.position.width} × {(selectedElement as ImageElement).maskRegion?.position.height}</p>
@@ -239,7 +236,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                 onChange={(e) => updateElementProperty('transform.x', parseInt(e.target.value) || 0)}
               />
             </div>
-            
+
             <div>
               <Label htmlFor="y-position">Y 位置</Label>
               <Input
@@ -249,7 +246,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                 onChange={(e) => updateElementProperty('transform.y', parseInt(e.target.value) || 0)}
               />
             </div>
-            
+
             <div>
               <Label htmlFor="width">宽度</Label>
               <Input
@@ -259,7 +256,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                 onChange={(e) => updateElementProperty('transform.width', parseInt(e.target.value) || 1)}
               />
             </div>
-            
+
             <div>
               <Label htmlFor="height">高度</Label>
               <Input
@@ -280,10 +277,10 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
         <>
           <div>
             <h3 className="font-medium text-xs mb-2 flex items-center">
-              <Scissors size={14} className="mr-1 text-blue-600" />
+              <Scissors size={14} className="mr-1 text-primary" />
               遮罩内图片变换
             </h3>
-            
+
             <div className="grid grid-cols-2 gap-2 mb-3">
               <div>
                 <Label htmlFor="mask-x-position">图片 X 偏移</Label>
@@ -294,7 +291,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                   onChange={(e) => handleMaskImageTransform('position.x', parseInt(e.target.value) || 0)}
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="mask-y-position">图片 Y 偏移</Label>
                 <Input
@@ -353,7 +350,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
       {!isMaskElement && (
         <div>
           <h3 className="font-medium text-xs mb-3">变换</h3>
-          
+
           {/* 旋转 */}
           <div className="mb-3">
             <Label>旋转</Label>
@@ -440,7 +437,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
       {/* 样式控制 */}
       <div>
         <h3 className="font-medium text-xs mb-3">样式</h3>
-        
+
         {/* 透明度 */}
         <div className="mb-3">
           <Label>透明度 ({Math.round(selectedElement.style.opacity * 100)}%)</Label>
@@ -485,7 +482,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
           <Separator />
           <div>
             <h3 className="font-medium text-xs mb-3">文字属性</h3>
-            
+
             <div className="space-y-3">
               <div>
                 <Label htmlFor="font-size">字体大小</Label>
@@ -497,7 +494,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                   className="mt-1"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="font-family">字体家族</Label>
                 <Input
@@ -507,7 +504,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                   className="mt-1"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="text-color">文字颜色</Label>
                 <Input
@@ -528,7 +525,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
           <Separator />
           <div>
             <h3 className="font-medium text-xs mb-3">图标属性</h3>
-            
+
             <div className="space-y-3">
               <div>
                 <Label htmlFor="icon-size">图标大小</Label>
@@ -540,7 +537,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                   className="mt-1"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="icon-color">图标颜色</Label>
                 <Input
@@ -561,7 +558,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
           <Separator />
           <div>
             <h3 className="font-medium text-xs mb-3">形状属性</h3>
-            
+
             <div className="space-y-3">
               <div>
                 <Label htmlFor="fill-color">填充颜色</Label>
@@ -573,7 +570,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                   className="mt-1"
                 />
               </div>
-              
+
               {selectedElement.strokeColor && (
                 <>
                   <div>
@@ -586,7 +583,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
                       className="mt-1"
                     />
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="stroke-width">边框宽度</Label>
                     <Input
@@ -609,7 +606,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
       {/* 操作按钮 */}
       <div>
         <h3 className="font-medium text-xs mb-3">操作</h3>
-        
+
         <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
@@ -620,7 +617,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
             {selectedElement.isLocked ? <Lock size={16} /> : <Unlock size={16} />}
             <span className="ml-1">{selectedElement.isLocked ? '解锁' : '锁定'}</span>
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -630,7 +627,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
             {selectedElement.isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
             <span className="ml-1">{selectedElement.isVisible ? '隐藏' : '显示'}</span>
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -640,7 +637,7 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
             <Copy size={16} />
             <span className="ml-1">复制</span>
           </Button>
-          
+
           <Button
             variant="destructive"
             size="sm"
@@ -654,4 +651,4 @@ export default function ElementPanel({ className = '' }: ElementPanelProps) {
       </div>
     </div>
   );
-} 
+}

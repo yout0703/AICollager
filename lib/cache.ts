@@ -54,7 +54,7 @@ class Cache<T = any> {
   // 获取缓存
   get(key: string): T | null {
     const item = this.cache.get(key);
-    
+
     if (!item) {
       return null;
     }
@@ -112,7 +112,7 @@ class Cache<T = any> {
     try {
       const storage = this.storage === 'localStorage' ? localStorage : sessionStorage;
       const cacheData = storage.getItem(`cache-${this.constructor.name}`);
-      
+
       if (cacheData) {
         const parsed = JSON.parse(cacheData);
         this.cache = new Map(parsed);
@@ -180,7 +180,7 @@ export function withCache<T extends any[], R>(
 
     descriptor.value = async function (...args: T): Promise<R> {
       const cacheKey = keyGenerator(...args);
-      
+
       // 尝试从缓存获取
       const cached = cache.get(cacheKey);
       if (cached !== null) {
@@ -190,7 +190,7 @@ export function withCache<T extends any[], R>(
       // 调用原方法并缓存结果
       const result = await originalMethod.apply(this, args);
       cache.set(cacheKey, result, ttl);
-      
+
       return result;
     };
 
@@ -227,7 +227,7 @@ export function useCache<T>(
       // 从网络获取
       setLoading(true);
       setError(null);
-      
+
       try {
         const result = await fetcher();
         cache.set(key, result, ttl);
@@ -240,7 +240,7 @@ export function useCache<T>(
     };
 
     loadData();
-  }, [key, enabled]);
+  }, [key, enabled, cache, fetcher, ttl]);
 
   const invalidate = () => {
     cache.delete(key);
@@ -275,11 +275,8 @@ export function preloadImages(urls: string[]): Promise<void[]> {
 // 清理过期缓存
 export function cleanupExpiredCache(): void {
   const caches = [imageCache, apiCache, userCache];
-  
+
   caches.forEach(cache => {
-    // 获取所有键并检查是否过期
-    const keysToDelete: string[] = [];
-    
     // 这里需要通过内部方法访问，实际使用中可能需要暴露迭代方法
     cache.clear(); // 简单的清理方式
   });
@@ -291,4 +288,4 @@ if (typeof window !== 'undefined') {
   setInterval(cleanupExpiredCache, 10 * 60 * 1000);
 }
 
-export default Cache; 
+export default Cache;

@@ -1,6 +1,6 @@
-import { checkUserAILimit, checkSessionTrialLimit, consumeAIUsage, consumeTrialUsage } from '@/lib/services/dailyLimitService';
-import { consumeCredits, checkCreditsAvailable } from '@/lib/services/creditService';
-import { getUserInfo, incrementSessionTrialUsageCount, checkSessionTrialLimit as checkSessionLimit, getOrCreateUserSession } from '@/lib/services/userService';
+import { checkUserAILimit } from '@/lib/services/dailyLimitService';
+import { consumeCredits } from '@/lib/services/creditService';
+import { getUserInfo, checkSessionTrialLimit as checkSessionLimit } from '@/lib/services/userService';
 import { AI_CONFIG } from '@/lib/ai-config';
 
 export interface ValidationResult {
@@ -73,4 +73,4 @@ export class CollageValidationService {
   }
 }
 
-export const collageValidationService = new CollageValidationService(); 
+export const collageValidationService = new CollageValidationService();

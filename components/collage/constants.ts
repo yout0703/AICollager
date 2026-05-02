@@ -53,7 +53,7 @@ export const DEFAULT_LAYOUTS = [
     id: "layout-7",
     name: "左3右1",
     description: "左侧3个小格，右侧1个大格",
-    cols: 4, 
+    cols: 4,
     rows: 3,
     template: "grid-special-2",
     custom: true,
@@ -111,7 +111,7 @@ export interface CollageImage {
   file?: File;
   url: string;
   position?: number; // 在布局中的位置
-  
+
   // 图像变换属性
   transform?: ImageTransform;
 }
@@ -178,20 +178,25 @@ export const DEFAULT_ASPECT_RATIOS: AspectRatio[] = [
   }
 ];
 
+export type ImageFitMode = "cover" | "contain" | "stretch";
+
 // 图像变换属性
 export interface ImageTransform {
   // 在单元格内的相对位置 (0-1范围)
   offsetX: number;
   offsetY: number;
-  
+
   // 缩放比例
   scale: number;
-  
+
   // 旋转角度 (弧度)
   rotation: number;
-  
+
   // 是否保持原始比例
   keepAspectRatio: boolean;
+
+  // 图片在格子里的适配方式
+  fitMode?: ImageFitMode;
 }
 
 // 默认图像变换值
@@ -200,7 +205,37 @@ export const DEFAULT_IMAGE_TRANSFORM: ImageTransform = {
   offsetY: 0.5,  // 居中
   scale: 1,      // 原始大小
   rotation: 0,   // 不旋转
-  keepAspectRatio: true // 保持原始比例
+  keepAspectRatio: true, // 保持原始比例
+  fitMode: "cover" // 默认铺满格子并裁切
+};
+
+export const normalizeImageTransform = (
+  transform?: ImageTransform
+): ImageTransform => {
+  const next: ImageTransform = {
+    ...DEFAULT_IMAGE_TRANSFORM,
+    ...transform,
+  };
+
+  if (!transform?.fitMode) {
+    return {
+      ...next,
+      keepAspectRatio: true,
+      fitMode: "cover",
+    };
+  }
+
+  if (next.fitMode !== "stretch") {
+    return {
+      ...next,
+      keepAspectRatio: true,
+    };
+  }
+
+  return {
+    ...next,
+    keepAspectRatio: false,
+  };
 };
 
 export interface Layout {
@@ -211,10 +246,71 @@ export interface Layout {
   rows: number;
   template: string;
   custom?: boolean;
-  
+
   // 蒙版形状定义（可选）
   maskShape?: MaskShape;
 }
+
+export interface LayoutCellArea {
+  col: number;
+  row: number;
+  spanCols: number;
+  spanRows: number;
+}
+
+export const CUSTOM_LAYOUT_AREAS: Record<string, Record<number, LayoutCellArea>> = {
+  "layout-6": {
+    0: { col: 0, row: 0, spanCols: 2, spanRows: 2 },
+    1: { col: 2, row: 0, spanCols: 1, spanRows: 1 },
+    2: { col: 2, row: 1, spanCols: 1, spanRows: 1 },
+  },
+  "layout-7": {
+    0: { col: 0, row: 0, spanCols: 2, spanRows: 1 },
+    1: { col: 0, row: 1, spanCols: 1, spanRows: 1 },
+    2: { col: 1, row: 1, spanCols: 1, spanRows: 1 },
+    3: { col: 2, row: 0, spanCols: 2, spanRows: 3 },
+    4: { col: 0, row: 2, spanCols: 2, spanRows: 1 },
+  },
+  "layout-8": {
+    0: { col: 0, row: 0, spanCols: 3, spanRows: 2 },
+    1: { col: 0, row: 2, spanCols: 1, spanRows: 2 },
+    2: { col: 1, row: 2, spanCols: 1, spanRows: 2 },
+    3: { col: 2, row: 2, spanCols: 1, spanRows: 2 },
+  },
+  "layout-9": {
+    0: { col: 0, row: 0, spanCols: 2, spanRows: 2 },
+    1: { col: 0, row: 2, spanCols: 1, spanRows: 1 },
+    2: { col: 1, row: 2, spanCols: 1, spanRows: 1 },
+  },
+  "layout-10": {
+    0: { col: 0, row: 0, spanCols: 1, spanRows: 1 },
+    1: { col: 1, row: 0, spanCols: 1, spanRows: 1 },
+    2: { col: 2, row: 0, spanCols: 1, spanRows: 1 },
+    3: { col: 0, row: 1, spanCols: 3, spanRows: 1 },
+  },
+  "layout-11": {
+    0: { col: 0, row: 0, spanCols: 1, spanRows: 3 },
+    1: { col: 1, row: 0, spanCols: 1, spanRows: 1 },
+    2: { col: 1, row: 1, spanCols: 1, spanRows: 1 },
+    3: { col: 1, row: 2, spanCols: 1, spanRows: 1 },
+  },
+  "layout-12": {
+    0: { col: 0, row: 0, spanCols: 1, spanRows: 1 },
+    1: { col: 1, row: 0, spanCols: 1, spanRows: 1 },
+    2: { col: 2, row: 0, spanCols: 1, spanRows: 1 },
+    3: { col: 0, row: 1, spanCols: 1, spanRows: 1 },
+    4: { col: 1, row: 1, spanCols: 1, spanRows: 1 },
+    5: { col: 2, row: 1, spanCols: 1, spanRows: 1 },
+    6: { col: 0, row: 2, spanCols: 1, spanRows: 1 },
+    7: { col: 1, row: 2, spanCols: 1, spanRows: 1 },
+    8: { col: 2, row: 2, spanCols: 1, spanRows: 1 },
+  },
+};
+
+export const getLayoutCellCount = (layout: Layout): number => {
+  const areas = layout.custom ? CUSTOM_LAYOUT_AREAS[layout.id] : undefined;
+  return areas ? Object.keys(areas).length : layout.cols * layout.rows;
+};
 
 // 蒙版形状定义
 export interface CellMask {
@@ -231,14 +327,14 @@ export interface CellMask {
 export interface MaskShape {
   // 形状类型
   type: 'rectangular' | 'circular' | 'path' | 'custom';
-  
+
   // SVG路径定义（对于'path'类型）
   svgPath?: string;
-  
+
   // 自定义形状绘制函数（对于'custom'类型）
   // 用于在Canvas上定义任意形状
   drawFunction?: (ctx: CanvasRenderingContext2D, width: number, height: number) => void;
-  
+
   // 单元格形状定义，针对每个单元格的蒙版
   // 索引是单元格位置，值是该单元格的形状
   cellMasks?: Record<number, CellMask>;
@@ -250,43 +346,43 @@ export const getCollageGridStyle = (selectedLayout: Layout): React.CSSProperties
   if (selectedLayout.custom) {
     switch (selectedLayout.id) {
       case "layout-6":
-        return { 
+        return {
           gridTemplateAreas: "'a a b' 'a a c'",
           gridTemplateColumns: "repeat(3, 1fr)",
           gridTemplateRows: "repeat(2, 1fr)"
         };
       case "layout-7":
-        return { 
+        return {
           gridTemplateAreas: "'a a d d' 'b c d d' 'e e d d'",
           gridTemplateColumns: "repeat(4, 1fr)",
           gridTemplateRows: "repeat(3, 1fr)"
         };
       case "layout-8":
-        return { 
+        return {
           gridTemplateAreas: "'a a a' 'a a a' 'b c d' 'b c d'",
           gridTemplateColumns: "repeat(3, 1fr)",
           gridTemplateRows: "repeat(4, 1fr)"
         };
       case "layout-9":
-        return { 
+        return {
           gridTemplateAreas: "'a a' 'a a' 'b c'",
           gridTemplateColumns: "repeat(2, 1fr)",
           gridTemplateRows: "repeat(3, 1fr)"
         };
       case "layout-10":
-        return { 
+        return {
           gridTemplateAreas: "'a b c' 'd d d'",
           gridTemplateColumns: "repeat(3, 1fr)",
           gridTemplateRows: "repeat(2, 1fr)"
         };
       case "layout-11":
-        return { 
+        return {
           gridTemplateAreas: "'a b' 'a c' 'a d'",
           gridTemplateColumns: "repeat(2, 1fr)",
           gridTemplateRows: "repeat(3, 1fr)"
         };
       case "layout-12":
-        return { 
+        return {
           gridTemplateAreas: "'a b c' 'd e f' 'g h i'",
           gridTemplateColumns: "repeat(3, 1fr)",
           gridTemplateRows: "repeat(3, 1fr)"
@@ -295,7 +391,7 @@ export const getCollageGridStyle = (selectedLayout: Layout): React.CSSProperties
         return {};
     }
   }
-  
+
   return {};
 };
 
@@ -376,4 +472,4 @@ export const SHAPE_LAYOUTS: Layout[] = [
       }
     }
   }
-]; 
+];

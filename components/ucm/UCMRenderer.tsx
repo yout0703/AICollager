@@ -6,11 +6,11 @@ import type { UCMRendererProps, UCMElement, ImageElement, TextElement, ShapeElem
 // 渲染图片元素
 const renderImageElement = (element: ImageElement, scale: number = 1) => {
   const { position, dimensions, transform, style, source } = element;
-  
+
   // 直接使用 position 作为左上角位置
   const actualLeft = position.x * scale;
   const actualTop = position.y * scale;
-  
+
   const elementStyle: React.CSSProperties = {
     position: 'absolute',
     left: actualLeft,
@@ -18,8 +18,8 @@ const renderImageElement = (element: ImageElement, scale: number = 1) => {
     width: dimensions.width * scale,
     height: dimensions.height * scale,
     transform: `
-      rotate(${transform.rotation_degrees}deg) 
-      scale(${transform.scale}) 
+      rotate(${transform.rotation_degrees}deg)
+      scale(${transform.scale})
       ${transform.flip_horizontal ? 'scaleX(-1)' : ''}
       ${transform.flip_vertical ? 'scaleY(-1)' : ''}
     `,
@@ -34,10 +34,10 @@ const renderImageElement = (element: ImageElement, scale: number = 1) => {
 
   // 如果是占位符或图片加载失败，显示占位符样式
   if (source.startsWith('placeholder_') || source.includes('placeholder')) {
-    const placeholderText = source.startsWith('placeholder_') 
+    const placeholderText = source.startsWith('placeholder_')
       ? source.replace('placeholder_', '').replace('_', ' ')
       : '等待图片';
-    
+
     return (
       <div
         key={element.id}
@@ -78,11 +78,11 @@ const renderImageElement = (element: ImageElement, scale: number = 1) => {
 // 渲染文字元素
 const renderTextElement = (element: TextElement, scale: number = 1) => {
   const { position, dimensions, transform, style } = element;
-  
+
   // 直接使用 position 作为左上角位置
   const actualLeft = position.x * scale;
   const actualTop = position.y * scale;
-  
+
   const elementStyle: React.CSSProperties = {
     position: 'absolute',
     left: actualLeft,
@@ -90,8 +90,8 @@ const renderTextElement = (element: TextElement, scale: number = 1) => {
     width: dimensions.width * scale,
     height: dimensions.height * scale,
     transform: `
-      rotate(${transform.rotation_degrees}deg) 
-      scale(${transform.scale}) 
+      rotate(${transform.rotation_degrees}deg)
+      scale(${transform.scale})
       ${transform.flip_horizontal ? 'scaleX(-1)' : ''}
       ${transform.flip_vertical ? 'scaleY(-1)' : ''}
     `,
@@ -101,14 +101,14 @@ const renderTextElement = (element: TextElement, scale: number = 1) => {
     borderRadius: style.borderRadius ? `${style.borderRadius * scale}px` : undefined,
     border: style.border ? `${style.border.width * scale}px ${style.border.style || 'solid'} ${style.border.color}` : undefined,
     boxShadow: style.shadow ? `${style.shadow.offsetX * scale}px ${style.shadow.offsetY * scale}px ${style.shadow.blur * scale}px ${style.shadow.color}` : undefined,
-    
+
     // 文字样式
     fontFamily: style.font.family,
     fontSize: `${style.font.size * scale}px`,
     fontWeight: style.font.weight,
     textAlign: style.font.align,
     lineHeight: style.font.lineHeight,
-    color: style.color,
+    color: style.color || '#000000', // 如果color为null，使用默认黑色
     display: 'flex',
     alignItems: 'center',
     justifyContent: style.font.align === 'center' ? 'center' : style.font.align === 'right' ? 'flex-end' : 'flex-start',
@@ -127,11 +127,11 @@ const renderTextElement = (element: TextElement, scale: number = 1) => {
 // 渲染形状元素
 const renderShapeElement = (element: ShapeElement, scale: number = 1) => {
   const { position, dimensions, transform, style } = element;
-  
+
   // 直接使用 position 作为左上角位置
   const actualLeft = position.x * scale;
   const actualTop = position.y * scale;
-  
+
   const baseStyle: React.CSSProperties = {
     position: 'absolute',
     left: actualLeft,
@@ -139,8 +139,8 @@ const renderShapeElement = (element: ShapeElement, scale: number = 1) => {
     width: dimensions.width * scale,
     height: dimensions.height * scale,
     transform: `
-      rotate(${transform.rotation_degrees}deg) 
-      scale(${transform.scale}) 
+      rotate(${transform.rotation_degrees}deg)
+      scale(${transform.scale})
       ${transform.flip_horizontal ? 'scaleX(-1)' : ''}
       ${transform.flip_vertical ? 'scaleY(-1)' : ''}
     `,
@@ -148,8 +148,8 @@ const renderShapeElement = (element: ShapeElement, scale: number = 1) => {
     zIndex: element.zIndex,
     opacity: style.opacity,
     backgroundColor: style.fillColor,
-    border: style.strokeColor && style.strokeWidth ? 
-      `${style.strokeWidth * scale}px solid ${style.strokeColor}` : 
+    border: style.strokeColor && style.strokeWidth ?
+      `${style.strokeWidth * scale}px solid ${style.strokeColor}` :
       (style.border ? `${style.border.width * scale}px ${style.border.style || 'solid'} ${style.border.color}` : undefined),
     boxShadow: style.shadow ? `${style.shadow.offsetX * scale}px ${style.shadow.offsetY * scale}px ${style.shadow.blur * scale}px ${style.shadow.color}` : undefined,
   };
@@ -177,11 +177,11 @@ const renderShapeElement = (element: ShapeElement, scale: number = 1) => {
 // 渲染图标元素
 const renderIconElement = (element: IconElement, scale: number = 1) => {
   const { position, dimensions, transform, style } = element;
-  
+
   // 直接使用 position 作为左上角位置
   const actualLeft = position.x * scale;
   const actualTop = position.y * scale;
-  
+
   const elementStyle: React.CSSProperties = {
     position: 'absolute',
     left: actualLeft,
@@ -189,8 +189,8 @@ const renderIconElement = (element: IconElement, scale: number = 1) => {
     width: dimensions.width * scale,
     height: dimensions.height * scale,
     transform: `
-      rotate(${transform.rotation_degrees}deg) 
-      scale(${transform.scale}) 
+      rotate(${transform.rotation_degrees}deg)
+      scale(${transform.scale})
       ${transform.flip_horizontal ? 'scaleX(-1)' : ''}
       ${transform.flip_vertical ? 'scaleY(-1)' : ''}
     `,
@@ -200,7 +200,7 @@ const renderIconElement = (element: IconElement, scale: number = 1) => {
     borderRadius: style.borderRadius ? `${style.borderRadius * scale}px` : undefined,
     border: style.border ? `${style.border.width * scale}px ${style.border.style || 'solid'} ${style.border.color}` : undefined,
     boxShadow: style.shadow ? `${style.shadow.offsetX * scale}px ${style.shadow.offsetY * scale}px ${style.shadow.blur * scale}px ${style.shadow.color}` : undefined,
-    
+
     // 图标样式
     color: style.color,
     fontSize: `${style.size * scale}px`,
@@ -245,19 +245,45 @@ export const UCMRenderer: React.FC<UCMRendererProps> = ({
   onElementSelect
 }) => {
   const { canvas, elements } = model;
-  
+
   // 计算画布样式
   const canvasStyle: React.CSSProperties = {
     position: 'relative',
     width: canvas.width * scale,
     height: canvas.height * scale,
-    backgroundColor: (canvas.background.type === 'color' || canvas.background.type === 'solid') ? canvas.background.color : '#ffffff',
-    backgroundImage: canvas.background.type === 'gradient' && canvas.background.gradient ? 
-      `linear-gradient(${canvas.background.gradient.direction || '0deg'}, ${canvas.background.gradient.colors.join(', ')})` : 
-      undefined,
     overflow: 'hidden',
     cursor: interactive ? 'pointer' : 'default',
   };
+
+  // 处理背景样式
+  if (canvas.background) {
+    console.log('Canvas background:', canvas.background); // 调试信息
+    if (canvas.background.type === 'color') {
+      canvasStyle.backgroundColor = canvas.background.color || '#ffffff';
+    } else if (canvas.background.type === 'gradient') {
+      if (canvas.background.gradient) {
+        canvasStyle.background = `linear-gradient(${canvas.background.gradient.direction || '0deg'}, ${canvas.background.gradient.colors.join(', ')})`;
+      }
+    } else if (canvas.background.type === 'image') {
+      // 使用 source 字段作为图片背景URL
+      if (canvas.background.source) {
+        console.log('Setting background image to:', canvas.background.source); // 调试信息
+        canvasStyle.backgroundImage = `url("${canvas.background.source}")`;
+        canvasStyle.backgroundSize = 'cover';
+        canvasStyle.backgroundPosition = 'center';
+        canvasStyle.backgroundRepeat = 'no-repeat';
+      } else {
+        console.log('No background source found'); // 调试信息
+        // 如果没有图片URL，使用默认背景色
+        canvasStyle.backgroundColor = '#ffffff';
+      }
+    }
+  } else {
+    // 如果没有背景配置，使用默认背景色
+    canvasStyle.backgroundColor = '#ffffff';
+  }
+
+  console.log('Final canvas style:', canvasStyle); // 调试信息
 
   // 按 zIndex 排序元素
   const sortedElements = [...elements].sort((a, b) => a.zIndex - b.zIndex);
@@ -283,4 +309,4 @@ export const UCMRenderer: React.FC<UCMRendererProps> = ({
       ))}
     </div>
   );
-}; 
+};

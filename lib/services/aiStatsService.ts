@@ -3,13 +3,12 @@ import {
   recordAIRequest,
   getTodayAIStats,
   getAIUsageByUser,
-  getAIUsageStats,
   cleanupOldAIStats
 } from '@/lib/repositories/aiUsageStats';
 
 // AI统计服务
 export class AIStatsService {
-  
+
   // 记录AI请求统计
   static async recordRequest(params: {
     type: 'image_analysis' | 'layout_suggestion' | 'icon_recommendation';
@@ -34,7 +33,7 @@ export class AIStatsService {
       return false;
     }
   }
-  
+
   // 获取今日统计
   static async getTodayStatistics(): Promise<{
     success: boolean;
@@ -49,7 +48,7 @@ export class AIStatsService {
   }> {
     try {
       const todayStats = await getTodayAIStats();
-      
+
       if (!todayStats) {
         return {
           success: true,
@@ -62,15 +61,15 @@ export class AIStatsService {
           }
         };
       }
-      
-      const successRate = (todayStats.totalRequests || 0) > 0 
-        ? ((todayStats.successfulRequests || 0) / (todayStats.totalRequests || 1)) * 100 
+
+      const successRate = (todayStats.totalRequests || 0) > 0
+        ? ((todayStats.successfulRequests || 0) / (todayStats.totalRequests || 1)) * 100
         : 0;
-      
-      const cacheHitRate = (todayStats.totalRequests || 0) > 0 
-        ? ((todayStats.cachedRequests || 0) / (todayStats.totalRequests || 1)) * 100 
+
+      const cacheHitRate = (todayStats.totalRequests || 0) > 0
+        ? ((todayStats.cachedRequests || 0) / (todayStats.totalRequests || 1)) * 100
         : 0;
-      
+
       return {
         success: true,
         stats: todayStats,
@@ -82,7 +81,7 @@ export class AIStatsService {
           estimated_cost: Number(todayStats.estimatedCost || 0)
         }
       };
-      
+
     } catch (error) {
       console.error('Get today statistics failed:', error);
       return {
@@ -90,7 +89,7 @@ export class AIStatsService {
       };
     }
   }
-  
+
   // 获取历史统计
   static async getHistoryStatistics(params: {
     startDate: string;
@@ -114,7 +113,7 @@ export class AIStatsService {
   }> {
     try {
       const stats = await getAIUsageByUser(params.startDate, params.endDate);
-      
+
       if (stats.length === 0) {
         return {
           success: true,
@@ -133,7 +132,7 @@ export class AIStatsService {
           }
         };
       }
-      
+
       // 聚合统计
       const totalRequests = stats.reduce((sum, s) => sum + s.totalRequests, 0);
       const totalSuccessful = stats.reduce((sum, s) => sum + s.successfulRequests, 0);
@@ -141,15 +140,15 @@ export class AIStatsService {
       const totalCached = stats.reduce((sum, s) => sum + s.cachedRequests, 0);
       const totalCost = stats.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
       const avgResponseTime = stats.reduce((sum, s) => sum + Number(s.avgResponseTime), 0) / stats.length;
-      
+
       // 找到峰值日期
-      const peakDay = stats.reduce((peak, current) => 
+      const peakDay = stats.reduce((peak, current) =>
         current.totalRequests > peak.totalRequests ? current : peak
       );
-      
+
       const successRate = totalRequests > 0 ? (totalSuccessful / totalRequests) * 100 : 0;
       const cacheHitRate = totalRequests > 0 ? (totalCached / totalRequests) * 100 : 0;
-      
+
       return {
         success: true,
         stats,
@@ -166,7 +165,7 @@ export class AIStatsService {
           peak_requests: peakDay.totalRequests
         }
       };
-      
+
     } catch (error) {
       console.error('Get history statistics failed:', error);
       return {
@@ -174,7 +173,7 @@ export class AIStatsService {
       };
     }
   }
-  
+
   // 获取全局统计摘要
   static async getGlobalSummary(days: number = 30): Promise<{
     success: boolean;
@@ -198,9 +197,9 @@ export class AIStatsService {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
         .toISOString().split('T')[0];
-      
+
       const stats = await getAIUsageByUser(startDate, endDate);
-      
+
       if (stats.length === 0) {
         return {
           success: true,
@@ -221,7 +220,7 @@ export class AIStatsService {
           }
         };
       }
-      
+
       // 计算聚合数据
       const totalRequests = stats.reduce((sum, s) => sum + s.totalRequests, 0);
       const successfulRequests = stats.reduce((sum, s) => sum + s.successfulRequests, 0);
@@ -229,30 +228,30 @@ export class AIStatsService {
       const cachedRequests = stats.reduce((sum, s) => sum + s.cachedRequests, 0);
       const totalCost = stats.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
       const avgResponseTime = stats.reduce((sum, s) => sum + Number(s.avgResponseTime), 0) / stats.length;
-      
+
       // 找到峰值日期
-      const peakDay = stats.reduce((peak, current) => 
+      const peakDay = stats.reduce((peak, current) =>
         current.totalRequests > peak.totalRequests ? current : peak
       );
-      
+
       const success_rate = totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0;
       const cache_hit_rate = totalRequests > 0 ? (cachedRequests / totalRequests) * 100 : 0;
       const avgDailyRequests = totalRequests / Math.max(days, 1);
-      
+
       // 计算额外指标
-      const costPerRequest = totalRequests > 0 
-        ? totalCost / totalRequests 
+      const costPerRequest = totalRequests > 0
+        ? totalCost / totalRequests
         : 0;
-      
+
       // 效率分数（基于成功率、缓存命中率和响应时间）
       const successWeight = success_rate * 0.4;
       const cacheWeight = cache_hit_rate * 0.3;
-      const speedWeight = avgResponseTime > 0 
-        ? Math.max(0, (10000 - avgResponseTime) / 100) * 0.3 
+      const speedWeight = avgResponseTime > 0
+        ? Math.max(0, (10000 - avgResponseTime) / 100) * 0.3
         : 0;
-      
+
       const efficiencyScore = Math.min(100, successWeight + cacheWeight + speedWeight);
-      
+
       return {
         success: true,
         summary: {
@@ -271,7 +270,7 @@ export class AIStatsService {
           efficiencyScore: Math.round(efficiencyScore * 100) / 100
         }
       };
-      
+
     } catch (error) {
       console.error('Get global summary failed:', error);
       return {
@@ -279,7 +278,7 @@ export class AIStatsService {
       };
     }
   }
-  
+
   // 获取成本分析
   static async getCostAnalysis(days: number = 30): Promise<{
     success: boolean;
@@ -296,20 +295,20 @@ export class AIStatsService {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
         .toISOString().split('T')[0];
-      
+
       const historyResult = await this.getHistoryStatistics({
         startDate,
         endDate,
         statType: 'daily'
       });
-      
+
       if (!historyResult.success || !historyResult.stats) {
         return { success: false };
       }
-      
+
       const stats = historyResult.stats;
       const totalCost = stats.reduce((sum, s) => sum + Number(s.estimatedCost), 0);
-      
+
       // 按类型分组成本
       const costByType: Record<string, number> = {};
       stats.forEach(stat => {
@@ -322,45 +321,45 @@ export class AIStatsService {
           costByType['icon_recommendation'] = (costByType['icon_recommendation'] || 0) + (costPerType * stat.iconRecommendationCount);
         }
       });
-      
+
       const dailyAverage = totalCost / Math.max(days, 1);
       const projectedMonthly = dailyAverage * 30;
-      
+
       // 趋势分析（比较前半期和后半期）
       const midPoint = Math.floor(stats.length / 2);
       const firstHalfCost = stats.slice(0, midPoint).reduce((sum, s) => sum + Number(s.estimatedCost), 0);
       const secondHalfCost = stats.slice(midPoint).reduce((sum, s) => sum + Number(s.estimatedCost), 0);
-      
+
       let trend: 'increasing' | 'stable' | 'decreasing' = 'stable';
       const firstHalfAvg = firstHalfCost / Math.max(midPoint, 1);
       const secondHalfAvg = secondHalfCost / Math.max(stats.length - midPoint, 1);
-      
+
       if (secondHalfAvg > firstHalfAvg * 1.1) {
         trend = 'increasing';
       } else if (secondHalfAvg < firstHalfAvg * 0.9) {
         trend = 'decreasing';
       }
-      
+
       // 生成建议
       const recommendations: string[] = [];
-      
+
       if (trend === 'increasing') {
         recommendations.push('成本呈上升趋势，建议优化缓存策略');
       }
-      
+
       if (projectedMonthly > 100) {
         recommendations.push('月度成本较高，考虑设置更严格的使用限制');
       }
-      
+
       const cacheHitRate = historyResult.aggregated?.cache_hit_rate || 0;
       if (cacheHitRate < 50) {
         recommendations.push('缓存命中率较低，增加缓存时间可以降低成本');
       }
-      
+
       if (recommendations.length === 0) {
         recommendations.push('成本控制良好，继续保持当前策略');
       }
-      
+
       return {
         success: true,
         analysis: {
@@ -374,7 +373,7 @@ export class AIStatsService {
           recommendations
         }
       };
-      
+
     } catch (error) {
       console.error('Get cost analysis failed:', error);
       return {
@@ -382,7 +381,7 @@ export class AIStatsService {
       };
     }
   }
-  
+
   // 清理旧统计数据
   static async cleanupOldStatistics(keepDays: number = 90): Promise<{
     success: boolean;
@@ -405,7 +404,7 @@ export class AIStatsService {
       };
     }
   }
-  
+
   // 生成统计报告
   static async generateReport(params: {
     startDate: string;
@@ -431,39 +430,39 @@ export class AIStatsService {
         this.getGlobalSummary(30),
         this.getCostAnalysis(30)
       ]);
-      
+
       if (!historyResult.success) {
         return { success: false };
       }
-      
+
       const recommendations: string[] = [];
-      
+
       // 基于数据生成建议
       if (historyResult.aggregated) {
         const { success_rate, cache_hit_rate, avg_response_time } = historyResult.aggregated;
-        
+
         if (success_rate < 95) {
           recommendations.push(`成功率 ${success_rate}% 需要提升，检查AI服务稳定性`);
         }
-        
+
         if (cache_hit_rate < 60) {
           recommendations.push(`缓存命中率 ${cache_hit_rate}% 偏低，优化缓存策略`);
         }
-        
+
         if (avg_response_time > 5000) {
           recommendations.push(`平均响应时间 ${avg_response_time}ms 较慢，需要优化`);
         }
       }
-      
+
       // 添加成本建议
       if (costResult.success && costResult.analysis) {
         recommendations.push(...costResult.analysis.recommendations);
       }
-      
+
       if (recommendations.length === 0) {
         recommendations.push('系统运行良好，继续保持当前配置');
       }
-      
+
       return {
         success: true,
         report: {
@@ -475,7 +474,7 @@ export class AIStatsService {
           generatedAt: new Date().toISOString()
         }
       };
-      
+
     } catch (error) {
       console.error('Generate report failed:', error);
       return {
@@ -483,4 +482,4 @@ export class AIStatsService {
       };
     }
   }
-} 
+}

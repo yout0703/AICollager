@@ -14,16 +14,14 @@ import {
 
 import { SignOutButton } from "@clerk/nextjs";
 import { User } from "@/types/user";
-import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
+import Link from "next/link";
 
 interface Props {
   user: User;
 }
 
-export default function ({ user }: Props) {
-  const router = useRouter();
-
+export default function UserMenu({ user }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -44,7 +42,7 @@ export default function ({ user }: Props) {
         <DropdownMenuSeparator className="md:hidden" />
 
         <DropdownMenuCheckboxItem className="md:hidden">
-          <a href="/pricing">价格</a>
+          <Link href="/pricing">价格</Link>
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator className="md:hidden" />
 

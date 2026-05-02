@@ -15,7 +15,7 @@ export async function getUserBalance(userId: string): Promise<{
   try {
     const balance = await getUserCreditsBalance(userId);
     return { balance, success: true };
-    
+
   } catch (error) {
     console.error('Get user balance failed:', error);
     return { balance: 0, success: false };
@@ -37,22 +37,22 @@ export async function consumeCredits(params: {
 }> {
   try {
     const { userId, amount, purpose, relatedEntityId, metadata } = params;
-    
+
     // 根据用途生成标题和描述
     const titleMap = {
       collage: 'AI拼图生成',
       download: '高清图片下载',
       premium_template: '高级模板使用'
     };
-    
+
     const descriptionMap = {
       collage: '使用AI生成拼图',
       download: '下载高清拼图图片',
       premium_template: '使用高级拼图模板'
     };
-    
+
     const result = await deductUserCredits(userId, amount, purpose);
-    
+
     if (!result.success) {
       return {
         success: false,
@@ -60,7 +60,7 @@ export async function consumeCredits(params: {
         message: '积分余额不足'
       };
     }
-    
+
     // 创建积分交易记录
     const transaction = await createCreditTransaction({
       userId,
@@ -72,13 +72,13 @@ export async function consumeCredits(params: {
       relatedEntityId: relatedEntityId,
       metadata: metadata || {}
     });
-    
+
     return {
       success: true,
       newBalance: result.newBalance,
       transaction
     };
-    
+
   } catch (error) {
     console.error('Consume credits failed:', error);
     return {
@@ -104,7 +104,7 @@ export async function earnCredits(params: {
 }> {
   try {
     const { userId, amount, reason, relatedEntityId, metadata } = params;
-    
+
     // 根据原因生成标题和描述
     const titleMap = {
       invite: '邀请奖励',
@@ -112,14 +112,14 @@ export async function earnCredits(params: {
       admin_adjust: '系统调整',
       promotion: '活动奖励'
     };
-    
+
     const descriptionMap = {
       invite: '成功邀请好友获得奖励',
       register: '新用户注册奖励',
       admin_adjust: '管理员调整积分',
       promotion: '参与活动获得奖励'
     };
-    
+
     const result = await addUserCredits(
       userId,
       amount,
@@ -129,7 +129,7 @@ export async function earnCredits(params: {
       reason === 'invite' ? 'invitation' : reason,
       relatedEntityId
     );
-    
+
     // 创建积分交易记录
     const transaction = await createCreditTransaction({
       userId,
@@ -141,13 +141,13 @@ export async function earnCredits(params: {
       relatedEntityId: relatedEntityId,
       metadata: metadata || {}
     });
-    
+
     return {
       success: result.success,
       newBalance: result.newBalance,
       transaction
     };
-    
+
   } catch (error) {
     console.error('Earn credits failed:', error);
     return {
@@ -166,13 +166,13 @@ export async function checkCreditsAvailable(userId: string, requiredAmount: numb
 }> {
   try {
     const balance = await getUserCreditsBalance(userId);
-    
+
     return {
       available: balance >= requiredAmount,
       currentBalance: balance,
       shortfall: balance < requiredAmount ? requiredAmount - balance : undefined
     };
-    
+
   } catch (error) {
     console.error('Check credits available failed:', error);
     return {
@@ -185,7 +185,7 @@ export async function checkCreditsAvailable(userId: string, requiredAmount: numb
 
 // 获取用户积分流水
 export async function getUserTransactionHistory(
-  userId: string, 
+  userId: string,
   options: {
     limit?: number;
     offset?: number;
@@ -198,16 +198,18 @@ export async function getUserTransactionHistory(
 }> {
   try {
     const { limit = 20, offset = 0 } = options;
-    
+
     const transactions = await getUserCreditTransactions(userId);
-    
+
     // 如果需要过滤类型
-    const filteredTransactions = options.type 
+    const filteredTransactions = options.type
       ? transactions.filter(t => t.transactionType === options.type)
       : transactions;
-    
+
     // 转换类型格式
-    const formattedTransactions: CreditTransaction[] = filteredTransactions.map(t => ({
+    const pagedTransactions = filteredTransactions.slice(offset, offset + limit);
+
+    const formattedTransactions: CreditTransaction[] = pagedTransactions.map(t => ({
       id: t.id,
       uuid: t.uuid,
       userId: t.userId,
@@ -221,13 +223,13 @@ export async function getUserTransactionHistory(
       metadata: t.metadata as any,
       createdAt: new Date(t.createdAt)
     }));
-    
+
     return {
       transactions: formattedTransactions,
       total: filteredTransactions.length,
       success: true
     };
-    
+
   } catch (error) {
     console.error('Get user transaction history failed:', error);
     return {
@@ -251,15 +253,15 @@ export async function getUserCreditStats(userId: string): Promise<{
       getUserCreditsBalance(userId),
       getUserCreditTransactions(userId) // 获取较多记录用于统计
     ]);
-    
+
     const totalEarned = transactions
       .filter(t => t.transactionType === 'earned')
       .reduce((sum, t) => sum + t.amount, 0);
-    
+
     const totalSpent = Math.abs(transactions
       .filter(t => t.transactionType === 'spent')
       .reduce((sum, t) => sum + t.amount, 0));
-    
+
     return {
       currentBalance: balance,
       totalEarned,
@@ -267,7 +269,7 @@ export async function getUserCreditStats(userId: string): Promise<{
       transactionCount: transactions.length,
       success: true
     };
-    
+
   } catch (error) {
     console.error('Get user credit stats failed:', error);
     return {
@@ -294,17 +296,17 @@ export async function preCheckConsumption(userId: string, purpose: 'collage' | '
       download: 10,
       premium_template: 15
     };
-    
+
     const requiredAmount = costMap[purpose];
     const balance = await getUserCreditsBalance(userId);
-    
+
     return {
       canConsume: balance >= requiredAmount,
       currentBalance: balance,
       requiredAmount,
       message: balance < requiredAmount ? `积分不足，还需要 ${requiredAmount - balance} 积分` : undefined
     };
-    
+
   } catch (error) {
     console.error('Pre-check consumption failed:', error);
     return {
@@ -314,4 +316,4 @@ export async function preCheckConsumption(userId: string, purpose: 'collage' | '
       message: '检查失败'
     };
   }
-} 
+}

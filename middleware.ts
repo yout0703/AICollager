@@ -12,7 +12,7 @@ function getLocale(request: Request): string {
     request.headers.forEach((value, key) => (negotiatorHeaders[key] = value));
 
     const languages = new Negotiator({ headers: negotiatorHeaders }).languages();
-    
+
     // 过滤和清理语言代码，只保留有效的语言代码
     const validLanguages = languages
       .map(lang => {
@@ -37,35 +37,33 @@ function getLocale(request: Request): string {
 
 // 创建公共路由匹配器
 const isPublicRoute = createRouteMatcher([
-  "/", 
-  "/pricing(.*)", 
-  "/collage(.*)", 
+  "/",
+  "/pricing(.*)",
+  "/collage(.*)",
   "/sign-in(.*)",
   "/sign-up(.*)",
-  "/ucm-test(.*)",
   "/:locale",
   "/:locale/pricing(.*)",
   "/:locale/collage(.*)",
   "/:locale/sign-in(.*)",
   "/:locale/sign-up(.*)",
-  "/:locale/ucm-test(.*)",
 ]);
 
 // 使用 Clerk 的中间件
 export default clerkMiddleware(async (auth, request) => {
   const pathname = request.nextUrl.pathname;
-  
+
   // 如果是API路由，只进行Clerk认证处理，跳过语言路由
   if (pathname.startsWith('/api/')) {
     // API路由可能需要认证，这里让Clerk处理
     return NextResponse.next();
   }
-  
+
   // 如果是静态文件或Next.js内部路由，直接跳过
   if (pathname.startsWith('/_next/') || pathname.includes('.')) {
     return NextResponse.next();
   }
-  
+
   // 如果路径包含 :locale 占位符，说明有重定向问题，直接返回错误页面
   if (pathname.includes(':locale')) {
     console.error('Invalid URL with :locale placeholder:', pathname);
@@ -91,7 +89,7 @@ export default clerkMiddleware(async (auth, request) => {
   // 处理 Clerk 重定向
   // 如果是 Clerk 重定向到根路径（登录/注册成功），根据用户的语言偏好重定向
   if (
-    pathname === "/" && 
+    pathname === "/" &&
     request.nextUrl.searchParams.has("__clerk_status")
   ) {
     const locale = getLocale(request);
@@ -102,12 +100,12 @@ export default clerkMiddleware(async (auth, request) => {
   // 重定向未带语言前缀的路径
   const locale = getLocale(request);
   request.nextUrl.pathname = `/${locale}${pathname}`;
-  
+
   // 对于根路径，重定向到默认语言
   if (pathname === "/") {
     request.nextUrl.pathname = `/${locale}`;
   }
-  
+
   return NextResponse.redirect(request.nextUrl);
 });
 

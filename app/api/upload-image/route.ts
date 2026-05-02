@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { join } from "path";
 import { stat, mkdir, writeFile } from "fs/promises";
 import { v4 as uuidv4 } from 'uuid';
@@ -11,7 +10,7 @@ const UPLOAD_DIR = join(process.cwd(), "public", "uploads");
 async function ensureUploadDir() {
   try {
     await stat(UPLOAD_DIR);
-  } catch (e) {
+  } catch {
     await mkdir(UPLOAD_DIR, { recursive: true });
   }
 }
@@ -24,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json(
-        { code: -1, message: "No file provided" }, 
+        { code: -1, message: "No file provided" },
         { status: 400 }
       );
     }
@@ -72,4 +71,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

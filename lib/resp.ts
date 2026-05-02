@@ -11,7 +11,7 @@ export function respErr(message: string) {
 }
 
 export function respJson(code: number, message: string, data?: any) {
-  let json = {
+  const json = {
     code: code,
     message: message,
     data: data,

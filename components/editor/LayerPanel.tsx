@@ -3,15 +3,15 @@
 import React, { useCallback } from 'react';
 import { useEditor } from '@/contexts/EditorContext';
 import { Button } from '@/components/ui/button';
-import { 
-  Eye, 
-  EyeOff, 
-  Lock, 
-  Unlock, 
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Unlock,
   Trash2,
   ChevronUp,
   ChevronDown,
-  Image,
+  Image as ImageIcon,
   Type,
   Square,
   Star
@@ -23,12 +23,11 @@ interface LayerPanelProps {
 }
 
 export default function LayerPanel({ className = '' }: LayerPanelProps) {
-  const { 
-    state, 
-    selectElement, 
-    updateElement, 
-    deleteElement, 
-    reorderElement 
+  const {
+    state,
+    selectElement,
+    updateElement,
+    deleteElement
   } = useEditor();
 
   // 按z-index倒序排列（最上层在最前面）
@@ -38,15 +37,15 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
   const getElementIcon = useCallback((element: CollageElement) => {
     switch (element.type) {
       case 'image':
-        return <Image size={16} className="text-green-600" />;
+        return <ImageIcon size={16} className="text-primary" />;
       case 'text':
-        return <Type size={16} className="text-blue-600" />;
+        return <Type size={16} className="text-primary" />;
       case 'shape':
-        return element.shapeType === 'circle' ? 
-          <div className="w-4 h-4 bg-orange-600 rounded-full" /> :
-          <Square size={16} className="text-orange-600" />;
+        return element.shapeType === 'circle' ?
+          <div className="w-4 h-4 bg-primary rounded-full" /> :
+          <Square size={16} className="text-primary" />;
       case 'icon':
-        return <Star size={16} className="text-purple-600" />;
+        return <Star size={16} className="text-primary" />;
       default:
         return <Square size={16} className="text-gray-600" />;
     }
@@ -133,8 +132,8 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
             key={element.id}
             className={`
               flex items-center p-1.5 rounded cursor-pointer transition-colors
-              ${state.selectedElementId === element.id 
-                ? 'bg-blue-50 border border-blue-200' 
+              ${state.selectedElementId === element.id
+                ? 'bg-primary/10 border border-primary/20'
                 : 'hover:bg-gray-50 border border-transparent'
               }
               ${!element.isVisible ? 'opacity-50' : ''}
@@ -202,7 +201,7 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
                 onClick={(e) => handleToggleLock(element, e)}
               >
                 {element.isLocked ? (
-                  <Lock size={10} className="text-red-600" />
+                  <Lock size={10} className="text-destructive" />
                 ) : (
                   <Unlock size={10} className="text-gray-400" />
                 )}
@@ -212,7 +211,7 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-5 w-5 p-0 text-red-500 hover:text-red-700"
+                className="h-5 w-5 p-0 text-destructive hover:text-destructive/80"
                 onClick={(e) => handleDeleteElement(element.id, e)}
               >
                 <Trash2 size={10} />
@@ -223,4 +222,4 @@ export default function LayerPanel({ className = '' }: LayerPanelProps) {
       </div>
     </div>
   );
-} 
+}

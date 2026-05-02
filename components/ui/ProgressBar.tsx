@@ -25,41 +25,41 @@ export function ProgressBar({
   const getStepIcon = (step: ProgressStep) => {
     switch (step.status) {
       case 'completed':
-        return <CheckCircle className="w-5 h-5 text-green-600" />;
+        return <CheckCircle className="w-5 h-5 text-accent" />;
       case 'active':
-        return <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />;
+        return <Loader2 className="w-5 h-5 text-primary animate-spin" />;
       case 'error':
-        return <Circle className="w-5 h-5 text-red-600" />;
+        return <Circle className="w-5 h-5 text-destructive" />;
       default:
-        return <Circle className="w-5 h-5 text-gray-300" />;
+        return <Circle className="w-5 h-5 text-muted-foreground/40" />;
     }
   };
 
   const getStepStyle = (step: ProgressStep) => {
     switch (step.status) {
       case 'completed':
-        return 'bg-green-50 border-green-200';
+        return 'bg-accent/10 border-accent/20';
       case 'active':
-        return 'bg-blue-50 border-blue-200';
+        return 'bg-primary/10 border-primary/20';
       case 'error':
-        return 'bg-red-50 border-red-200';
+        return 'bg-destructive/10 border-destructive/20';
       default:
-        return 'bg-gray-50 border-gray-200';
+        return 'bg-secondary border-border';
     }
   };
 
   const getConnectorStyle = (index: number) => {
     if (index === steps.length - 1) return '';
-    
+
     const currentStepStatus = steps[index].status;
-    
+
     if (currentStepStatus === 'completed') {
-      return 'bg-green-300';
+      return 'bg-accent/40';
     }
     if (currentStepStatus === 'active') {
-      return 'bg-blue-300';
+      return 'bg-primary/40';
     }
-    return 'bg-gray-300';
+    return 'bg-border';
   };
 
   if (variant === 'minimal') {
@@ -69,13 +69,13 @@ export function ProgressBar({
 
     return (
       <div className={`w-full ${className}`}>
-        <div className="flex justify-between text-xs text-gray-600 mb-2">
+        <div className="flex justify-between text-xs text-muted-foreground mb-2">
           <span>进度</span>
           <span>{completedSteps}/{totalSteps}</span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-secondary rounded-full h-2">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+            className="bg-primary h-2 rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
@@ -86,7 +86,7 @@ export function ProgressBar({
   if (variant === 'circle') {
     return (
       <div className={`flex items-center justify-center space-x-8 ${className}`}>
-        {steps.map((step, index) => (
+        {steps.map((step) => (
           <div key={step.id} className="flex flex-col items-center">
             <div className={`
               w-12 h-12 rounded-full border-2 flex items-center justify-center
@@ -95,9 +95,9 @@ export function ProgressBar({
               {getStepIcon(step)}
             </div>
             <div className="mt-2 text-center max-w-20">
-              <p className="text-xs font-medium text-gray-900">{step.title}</p>
+              <p className="text-xs font-medium text-foreground">{step.title}</p>
               {showDescriptions && step.description && (
-                <p className="text-xs text-gray-500 mt-1">{step.description}</p>
+                <p className="text-xs text-muted-foreground mt-1">{step.description}</p>
               )}
             </div>
           </div>
@@ -119,32 +119,32 @@ export function ProgressBar({
                 ${getStepStyle(step)}
               `}>
                 {step.status === 'completed' && (
-                  <CheckCircle className="w-4 h-4 text-green-600" />
+                  <CheckCircle className="w-4 h-4 text-accent" />
                 )}
                 {step.status === 'active' && (
-                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-primary animate-spin" />
                 )}
                 {step.status === 'pending' && (
-                  <span className="text-xs font-medium text-gray-400">{index + 1}</span>
+                  <span className="text-xs font-medium text-muted-foreground">{index + 1}</span>
                 )}
                 {step.status === 'error' && (
-                  <span className="text-xs font-medium text-red-600">!</span>
+                  <span className="text-xs font-medium text-destructive">!</span>
                 )}
               </div>
-              
+
               {/* 步骤信息 */}
               <div className="mt-2 text-center">
                 <p className={`
                   text-xs font-medium
-                  ${step.status === 'active' ? 'text-blue-600' : ''}
-                  ${step.status === 'completed' ? 'text-green-600' : ''}
-                  ${step.status === 'error' ? 'text-red-600' : ''}
-                  ${step.status === 'pending' ? 'text-gray-500' : ''}
+                  ${step.status === 'active' ? 'text-primary' : ''}
+                  ${step.status === 'completed' ? 'text-accent' : ''}
+                  ${step.status === 'error' ? 'text-destructive' : ''}
+                  ${step.status === 'pending' ? 'text-muted-foreground' : ''}
                 `}>
                   {step.title}
                 </p>
                 {showDescriptions && step.description && (
-                  <p className="text-xs text-gray-400 mt-1 max-w-20">
+                  <p className="text-xs text-muted-foreground mt-1 max-w-20">
                     {step.description}
                   </p>
                 )}
@@ -206,4 +206,4 @@ export function CollageGenerationProgress({ currentStep = 0 }: { currentStep?: n
   );
 }
 
-export default ProgressBar; 
+export default ProgressBar;

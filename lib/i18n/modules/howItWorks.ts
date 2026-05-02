@@ -4,6 +4,7 @@ export const howItWorksTranslations = {
       title: "Simple",
       subtitle: "Steps",
       highlight: "4",
+      titleSuffix: "to create beautiful collages",
       description: "No design experience needed, no complex operations, AI handles all the creative work",
       tagline: "How to Use",
       steps: {
@@ -12,7 +13,7 @@ export const howItWorksTranslations = {
           description: "Select 2-20 photos you want to collage, supports JPG, PNG and other common formats",
           details: {
             batchUpload: "Batch upload support",
-            autoOptimize: "Auto compression optimization", 
+            autoOptimize: "Auto compression optimization",
             duplicateDetection: "Smart duplicate detection"
           }
         },
@@ -56,6 +57,7 @@ export const howItWorksTranslations = {
       title: "简单",
       subtitle: "步",
       highlight: "4",
+      titleSuffix: "，创作精美拼图",
       description: "无需设计经验，无需复杂操作，AI帮你完成一切创意工作",
       tagline: "使用步骤",
       steps: {
@@ -64,7 +66,7 @@ export const howItWorksTranslations = {
           description: "选择2-20张你想要拼接的照片，支持JPG、PNG等常见格式",
           details: {
             batchUpload: "支持批量上传",
-            autoOptimize: "自动压缩优化", 
+            autoOptimize: "自动压缩优化",
             duplicateDetection: "智能去重检测"
           }
         },
@@ -108,4 +110,4 @@ export const howItWorksTranslations = {
   de: {},
   ja: {},
   ko: {}
-}; 
+};

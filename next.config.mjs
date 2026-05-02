@@ -19,22 +19,22 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
-  
+
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
-  
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn']
     } : false,
   },
-  
+
   compress: true,
-  
+
   poweredByHeader: false,
-  
+
   webpack: (config, { dev, isServer }) => {
     if (!dev && !isServer) {
       if (process.env.ANALYZE === 'true') {
@@ -46,7 +46,7 @@ const nextConfig = {
           })
         );
       }
-      
+
       config.optimization.splitChunks = {
         ...config.optimization.splitChunks,
         cacheGroups: {
@@ -85,31 +85,22 @@ const nextConfig = {
         },
       };
     }
-    
+
     return config;
   },
-  
+
   env: {
     BUILD_TIME: new Date().toISOString(),
   },
-  
+
   async redirects() {
     return [
       // 可以在这里添加重定向规则
     ];
   },
-  
+
   async headers() {
     return [
-      {
-        source: '/api/:path*',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=300, s-maxage=300',
-          },
-        ],
-      },
       {
         source: '/_next/static/:path*',
         headers: [

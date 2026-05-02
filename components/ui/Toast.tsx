@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { getDictionary, type Locale } from '@/lib/i18n';
 
@@ -30,15 +30,19 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-export function ToastProvider({ 
-  children, 
-  locale = 'zh' as Locale 
-}: { 
+export function ToastProvider({
+  children,
+  locale = 'zh' as Locale
+}: {
   children: React.ReactNode;
   locale?: Locale;
 }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const dict = getDictionary(locale);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
@@ -56,11 +60,7 @@ export function ToastProvider({
         removeToast(id);
       }, newToast.duration);
     }
-  }, []);
-
-  const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
+  }, [removeToast]);
 
   const success = useCallback((message: string, options?: Partial<Toast>) => {
     addToast({
@@ -95,7 +95,7 @@ export function ToastProvider({
     });
   }, [addToast]);
 
-  const value: ToastContextType = {
+  const value: ToastContextType = useMemo(() => ({
     toasts,
     addToast,
     removeToast,
@@ -103,7 +103,7 @@ export function ToastProvider({
     error,
     warning,
     info,
-  };
+  }), [toasts, addToast, removeToast, success, error, warning, info]);
 
   // 设置全局 toast 实例
   React.useEffect(() => {
@@ -118,11 +118,11 @@ export function ToastProvider({
   );
 }
 
-function ToastContainer({ 
-  toasts, 
-  onRemove, 
-  dict 
-}: { 
+function ToastContainer({
+  toasts,
+  onRemove,
+  dict
+}: {
   toasts: Toast[];
   onRemove: (id: string) => void;
   dict: any;
@@ -132,9 +132,9 @@ function ToastContainer({
   return (
     <div className="fixed top-4 right-4 z-50 max-w-sm w-full space-y-2">
       {toasts.map(toast => (
-        <ToastItem 
-          key={toast.id} 
-          toast={toast} 
+        <ToastItem
+          key={toast.id}
+          toast={toast}
           onRemove={onRemove}
           dict={dict}
         />
@@ -143,11 +143,11 @@ function ToastContainer({
   );
 }
 
-function ToastItem({ 
-  toast, 
-  onRemove, 
-  dict 
-}: { 
+function ToastItem({
+  toast,
+  onRemove,
+  dict
+}: {
   toast: Toast;
   onRemove: (id: string) => void;
   dict: any;
@@ -155,45 +155,45 @@ function ToastItem({
   const getToastStyles = (type: ToastType) => {
     switch (type) {
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-900';
+        return 'bg-accent/10 border-accent/20 text-foreground';
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-900';
+        return 'bg-destructive/10 border-destructive/20 text-foreground';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-900';
+        return 'bg-primary/10 border-primary/20 text-foreground';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-900';
+        return 'bg-primary/10 border-primary/20 text-foreground';
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-900';
+        return 'bg-secondary border-border text-foreground';
     }
   };
 
   const getIcon = (type: ToastType) => {
     const iconClass = "w-5 h-5 flex-shrink-0";
-    
+
     switch (type) {
       case 'success':
-        return <CheckCircle className={`${iconClass} text-green-500`} />;
+        return <CheckCircle className={`${iconClass} text-accent`} />;
       case 'error':
-        return <AlertCircle className={`${iconClass} text-red-500`} />;
+        return <AlertCircle className={`${iconClass} text-destructive`} />;
       case 'warning':
-        return <AlertTriangle className={`${iconClass} text-yellow-500`} />;
+        return <AlertTriangle className={`${iconClass} text-primary`} />;
       case 'info':
-        return <Info className={`${iconClass} text-blue-500`} />;
+        return <Info className={`${iconClass} text-primary`} />;
       default:
-        return <Info className={`${iconClass} text-gray-500`} />;
+        return <Info className={`${iconClass} text-muted-foreground`} />;
     }
   };
 
   return (
     <div className={`
       ${getToastStyles(toast.type)}
-      p-4 rounded-lg border shadow-lg
+      p-4 rounded-lg border shadow-sm
       transform transition-all duration-300 ease-in-out
-      hover:scale-105 animate-in slide-in-from-right-full
+      animate-in slide-in-from-right-full
     `}>
       <div className="flex items-start">
         {getIcon(toast.type)}
-        
+
         <div className="ml-3 flex-1">
           {toast.title && (
             <h4 className="text-sm font-medium mb-1">
@@ -203,7 +203,7 @@ function ToastItem({
           <p className="text-sm">
             {toast.message}
           </p>
-          
+
           {toast.action && (
             <button
               onClick={toast.action.onClick}
@@ -237,7 +237,7 @@ export function useToast() {
 // 网络错误处理工具函数
 export function handleNetworkError(error: any, toast: ToastContextType, dict: any) {
   console.error('Network error:', error);
-  
+
   if (error?.message?.includes('network') || error?.code === 'NETWORK_ERROR') {
     toast.error(dict.errors?.networkError || '网络错误，请检查网络连接', {
       action: {
@@ -263,7 +263,7 @@ export function showSuccess(message: string, toast: ToastContextType) {
 
 // 操作确认工具函数
 export function showConfirmation(
-  message: string, 
+  message: string,
   onConfirm: () => void,
   toast: ToastContextType,
   dict: any

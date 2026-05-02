@@ -1,14 +1,12 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { useUser, SignIn, SignInButton } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { Dictionary, Locale, getTranslation } from "@/lib/i18n";
 import { toastMessage } from "@/lib/toast";
-import { Upload, Download, RotateCcw, Star, Share2, Trash2, Plus, X } from 'lucide-react';
 
 // 导入子组件和常量
-import { CollageImage, DEFAULT_LAYOUTS, ImageTransform, DEFAULT_IMAGE_TRANSFORM, DEFAULT_ASPECT_RATIOS, AspectRatio } from "./constants";
+import { CollageImage, DEFAULT_LAYOUTS, ImageTransform, DEFAULT_IMAGE_TRANSFORM, DEFAULT_ASPECT_RATIOS } from "./constants";
 import CollageRating from "./CollageRating";
 import CollageToolbar from "./CollageToolbar";
 import LayoutSelector from "./LayoutSelector";
@@ -23,7 +21,6 @@ interface CollageCreatorProps {
 }
 
 export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
-  const router = useRouter();
   const { isSignedIn, user } = useUser();
   const [selectedLayout, setSelectedLayout] = useState(DEFAULT_LAYOUTS[0]);
   const [selectedAspectRatio, setSelectedAspectRatio] = useState(DEFAULT_ASPECT_RATIOS[0]);
@@ -55,7 +52,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
   // 处理文件上传
   const handleFileUpload = useCallback((files: FileList | null) => {
     if (!files || files.length === 0) return;
-    
+
     const newImages: CollageImage[] = Array.from(files).map(file => {
       const id = `img-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
       return {
@@ -65,13 +62,13 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
         transform: { ...DEFAULT_IMAGE_TRANSFORM } // 初始化图像变换属性
       };
     });
-    
+
     setImages(prev => [...prev, ...newImages]);
-    
+
     // 如果有空白的预览格，自动填充上传的图片
     const totalCells = selectedLayout.cols * selectedLayout.rows;
     const filledPositions = images.map(img => img.position).filter(pos => pos !== undefined);
-    
+
     // 找出空白格子
     const emptyPositions: number[] = [];
     for (let i = 0; i < totalCells; i++) {
@@ -79,13 +76,13 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
         emptyPositions.push(i);
       }
     }
-    
+
     // 自动填充
     if (emptyPositions.length > 0) {
       setImages(prev => {
         const updatedImages = [...prev];
         const availableEmptyPositions = [...emptyPositions];
-        
+
         // 只处理新上传的图片
         newImages.forEach((newImg, index) => {
           if (availableEmptyPositions.length > 0 && index < availableEmptyPositions.length) {
@@ -98,11 +95,11 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
             }
           }
         });
-        
+
         return updatedImages;
       });
     }
-    
+
     toastMessage(t("imagesUploaded"), 'success');
   }, [images, selectedLayout, t]);
 
@@ -161,7 +158,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
     // 检查是否需要登录
     if (!isSignedIn) {
       toastMessage(t('loginRequired'), 'info');
-      
+
       // 保存当前拼图状态到 localStorage，以防用户选择页面登录而不是弹窗登录
       try {
         const collageState = {
@@ -174,7 +171,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
           }))
         };
         localStorage.setItem('collageState', JSON.stringify(collageState));
-        
+
         // 显示登录弹窗
         setShowLoginModal(true);
       } catch (error) {
@@ -220,23 +217,23 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
   useEffect(() => {
     // 从 URL 查询参数检查是否需要恢复状态
     const shouldRestore = window.location.search.includes('return=true');
-    
+
     if (isSignedIn && shouldRestore) {
       try {
         const savedState = localStorage.getItem('collageState');
         if (savedState) {
           const { selectedLayout: savedLayout, selectedAspectRatio: savedAspectRatio, images: savedImages } = JSON.parse(savedState);
-          
+
           // 恢复布局
           if (savedLayout) {
             setSelectedLayout(savedLayout);
           }
-          
+
           // 恢复尺寸比例
           if (savedAspectRatio) {
             setSelectedAspectRatio(savedAspectRatio);
           }
-          
+
           // 恢复图片
           if (savedImages && savedImages.length > 0) {
             const processedImages = savedImages.map((img: { id: string, url: string, position?: number }) => ({
@@ -245,14 +242,14 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
               position: img.position,
               file: null // 注意: file 对象无法序列化，这里使用 null 代替
             }));
-            
+
             setImages(processedImages);
             toastMessage(t('collageRestored'), 'success');
           }
-          
+
           // 清除保存的状态
           localStorage.removeItem('collageState');
-          
+
           // 清除 URL 参数
           window.history.replaceState({}, document.title, `/${locale}/collage`);
         }
@@ -276,7 +273,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
         }))
       };
       localStorage.setItem('collageState', JSON.stringify(collageState));
-      
+
       // 显示登录弹窗
       setShowLoginModal(true);
     } catch (error) {
@@ -292,7 +289,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
     if (id === selectedImageId) {
       setSelectedImageId(null);
     }
-    
+
     setImages(prevImages => {
       // 找到要移除的图片
       const imageToRemove = prevImages.find(img => img.id === id);
@@ -314,7 +311,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
     // 删除成功不显示 toast 消息
     // toast.success(t("imageRemoved"));
-  }, [selectedImageId, t]);
+  }, [selectedImageId]);
 
   // 处理预览区域的图片删除
   const handleRemoveFromPreview = useCallback((id: string) => {
@@ -322,7 +319,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
     if (id === selectedImageId) {
       setSelectedImageId(null);
     }
-    
+
     setImages(prevImages => {
       return prevImages.map(img =>
         img.id === id ? { ...img, position: undefined } : img
@@ -331,7 +328,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
     // 从预览区移除成功不显示 toast 消息
     // toast.success(t("imageRemovedFromPreview"));
-  }, [selectedImageId, t]);
+  }, [selectedImageId]);
 
   // 提交评分
   const handleSubmitRating = async (rating: number, comment: string) => {
@@ -355,7 +352,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
       // 评分提交成功保留提示，这是重要的用户反馈
       toastMessage(t("ratingSubmitted"), 'success');
       setShowRating(false);
-    } catch (error) {
+    } catch {
       toastMessage(t("ratingFailed"), 'error');
     }
   };
@@ -365,23 +362,23 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
     if (isSignedIn && showLoginModal) {
       // 用户登录成功，关闭登录弹窗
       setShowLoginModal(false);
-      
+
       // 恢复保存的拼图状态
       try {
         const savedState = localStorage.getItem('collageState');
         if (savedState) {
           const { selectedLayout: savedLayout, selectedAspectRatio: savedAspectRatio, images: savedImages } = JSON.parse(savedState);
-          
+
           // 恢复布局
           if (savedLayout) {
             setSelectedLayout(savedLayout);
           }
-          
+
           // 恢复尺寸比例
           if (savedAspectRatio) {
             setSelectedAspectRatio(savedAspectRatio);
           }
-          
+
           // 恢复图片
           if (savedImages && savedImages.length > 0) {
             const processedImages = savedImages.map((img: { id: string, url: string, position?: number }) => ({
@@ -390,11 +387,11 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
               position: img.position,
               file: null // 注意: file 对象无法序列化，这里使用 null 代替
             }));
-            
+
             setImages(processedImages);
             toastMessage(t('collageRestored'), 'success');
           }
-          
+
           // 清除保存的状态
           localStorage.removeItem('collageState');
         }
@@ -407,9 +404,9 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
   // 处理图像变换更新
   const handleUpdateImageTransform = useCallback((id: string, transform: ImageTransform) => {
     setImages(prevImages => {
-      return prevImages.map(img => 
-        img.id === id 
-          ? { ...img, transform } 
+      return prevImages.map(img =>
+        img.id === id
+          ? { ...img, transform }
           : img
       );
     });
@@ -422,6 +419,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
   // 获取选中的图片
   const selectedImage = images.find(img => img.id === selectedImageId);
+  const placedCount = images.filter(img => img.position !== undefined).length;
 
   return (
     <div className="w-full px-0">
@@ -431,6 +429,9 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
         onDownloadClick={handleDownload}
         isDownloading={isDownloading}
         hasImages={images.length > 0}
+        imageCount={images.length}
+        placedCount={placedCount}
+        aspectRatioName={selectedAspectRatio.name}
         translateFn={t}
       />
 
@@ -445,41 +446,54 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
       />
 
       {/* 整体布局结构 */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[320px_minmax(0,1fr)_340px] lg:items-start">
         {/* 左侧：尺寸选择、布局选择和上传图片列表 */}
-        <div className="md:col-span-1">
-          {/* 尺寸比例选择器 */}
-          <AspectRatioSelector
-            aspectRatios={DEFAULT_ASPECT_RATIOS}
-            selectedAspectRatio={selectedAspectRatio}
-            onSelectAspectRatio={setSelectedAspectRatio}
-            translateFn={t}
-          />
-        
-          {/* 布局选择器 */}
-          <LayoutSelector
-            layouts={DEFAULT_LAYOUTS}
-            selectedLayout={selectedLayout}
-            onSelectLayout={setSelectedLayout}
-            translateFn={t}
-          />
+        <div className="contents lg:block">
+          <div className="order-3 rounded-lg border border-border bg-card p-4 shadow-sm lg:order-none">
+            <div className="mb-5">
+              <h2 className="text-base font-semibold text-foreground">
+                {t('collageWorkspace.settings')}
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {t('collageWorkspace.settingsDescription')}
+              </p>
+            </div>
 
-          {/* 上传图片列表 */}
-          <ImagesList
-            images={images}
-            onDragStart={setDraggedImage}
-            onDragEnd={() => {
-              setDraggedImage(null);
-              setDraggedOver(null);
-            }}
-            onRemoveImage={handleRemoveImage}
-            onAddToPreview={handleAddToPreview}
-            translateFn={t}
-          />
+            <div className="space-y-6">
+              <AspectRatioSelector
+                aspectRatios={DEFAULT_ASPECT_RATIOS}
+                selectedAspectRatio={selectedAspectRatio}
+                onSelectAspectRatio={setSelectedAspectRatio}
+                translateFn={t}
+              />
+
+              <LayoutSelector
+                layouts={DEFAULT_LAYOUTS}
+                selectedLayout={selectedLayout}
+                onSelectLayout={setSelectedLayout}
+                translateFn={t}
+              />
+            </div>
+          </div>
+
+          <div className="order-1 rounded-lg border border-border bg-card p-4 shadow-sm lg:order-none lg:mt-4">
+            <ImagesList
+              images={images}
+              onDragStart={setDraggedImage}
+              onDragEnd={() => {
+                setDraggedImage(null);
+                setDraggedOver(null);
+              }}
+              onRemoveImage={handleRemoveImage}
+              onAddToPreview={handleAddToPreview}
+              onUploadClick={() => fileInputRef.current?.click()}
+              translateFn={t}
+            />
+          </div>
         </div>
 
         {/* 中间: 拼图预览 */}
-        <div className={selectedImage ? 'md:col-span-1' : 'md:col-span-2'}>
+        <div className="order-2 min-w-0 lg:order-none">
           <CollagePreview
             images={images}
             selectedLayout={selectedLayout}
@@ -555,28 +569,32 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
             onRemoveImage={handleRemoveFromPreview}
             onUpdateImageTransform={handleUpdateImageTransform}
             onImageClick={handleImageSelect}
+            selectedImageId={selectedImageId}
             translateFn={t}
             collageRef={collageRef}
           />
         </div>
 
         {/* 右侧: 图片编辑工具栏 */}
-        {selectedImage && (
-          <div className="md:col-span-1">
-            <ImageEditToolbar
-              image={selectedImage}
-              onChange={(transform) => handleUpdateImageTransform(selectedImageId!, transform)}
-              onClose={() => setSelectedImageId(null)}
-              translateFn={t}
-            />
-          </div>
-        )}
+        <div className="order-4 lg:order-none">
+          <ImageEditToolbar
+            image={selectedImage}
+            onChange={(transform) => {
+              if (selectedImageId) {
+                handleUpdateImageTransform(selectedImageId, transform);
+              }
+            }}
+            onClose={() => setSelectedImageId(null)}
+            translateFn={t}
+            placedCount={placedCount}
+          />
+        </div>
       </div>
 
       {/* 评分组件 - 使用折叠面板 */}
       {showRating && isSignedIn && (
         <div className="mt-3">
-          <details className="bg-white rounded-lg border border-gray-200">
+          <details className="bg-card rounded-lg border border-border">
             <summary className="p-2 text-sm font-medium cursor-pointer">
               {t("rateCollageToolTitle")}
             </summary>
@@ -596,8 +614,8 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
 
       {/* 下载提示 */}
       {!isSignedIn && (
-        <div className="p-2 bg-yellow-50 border border-yellow-200 rounded-lg text-center text-sm mt-2">
-          <p className="text-yellow-800">
+        <div className="p-2 bg-primary/10 border border-primary/20 rounded-lg text-center text-sm mt-2">
+          <p className="text-foreground">
             {t('loginRequired')}
             <button
               className="ml-2 text-primary underline"
@@ -613,7 +631,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
       {showLoginModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-4 w-full max-w-md relative">
-            <button 
+            <button
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
               onClick={() => setShowLoginModal(false)}
             >
@@ -623,7 +641,7 @@ export default function CollageCreator({ dict, locale }: CollageCreatorProps) {
               </svg>
             </button>
             <div className="py-4">
-              <SignInButton 
+              <SignInButton
                 mode="modal"
                 fallbackRedirectUrl={`/${locale}/collage`}
               >

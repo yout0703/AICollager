@@ -15,7 +15,7 @@ export function DefaultLoading({ message = "加载中..." }: { message?: string 
   return (
     <div className="flex items-center justify-center p-8">
       <div className="flex flex-col items-center space-y-2">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
         <span className="text-sm text-gray-600">{message}</span>
       </div>
     </div>
@@ -47,10 +47,10 @@ class ErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return this.props.fallback || (
         <div className="p-8 text-center">
-          <div className="text-red-600 mb-2">组件加载失败</div>
+          <div className="text-destructive mb-2">组件加载失败</div>
           <button
             onClick={() => this.setState({ hasError: false })}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
           >
             重试
           </button>
@@ -136,6 +136,8 @@ export function useProgressiveLoading<T>(
     }, delay);
 
     return () => clearTimeout(timer);
+    // The caller controls reload semantics through the dependency array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
   return loaded;
@@ -160,4 +162,4 @@ export function ProgressiveLoader({
   return <>{children}</>;
 }
 
-export default DynamicComponent; 
+export default DynamicComponent;

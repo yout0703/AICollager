@@ -10,7 +10,7 @@ export const featuresTranslations = {
         description: "Automatically recognizes photo content, colors, and composition to recommend the best collage layout for you"
       },
       oneClick: {
-        title: "One-Click Generation", 
+        title: "One-Click Generation",
         description: "Say goodbye to tedious operations. Upload photos and generate beautiful collages with one click, saving 90% of your time"
       },
       smartColor: {
@@ -32,8 +32,9 @@ export const featuresTranslations = {
       stats: {
         title: "Data Speaks, Amazing Results",
         subtitle: "See the real value our AI technology brings to users",
+        avgTimeValue: "5s",
         avgTime: "Average generation time",
-        layoutTemplates: "Layout templates", 
+        layoutTemplates: "Layout templates",
         decorativeIcons: "Decorative icons",
         hdOutput: "HD output"
       }
@@ -50,7 +51,7 @@ export const featuresTranslations = {
         description: "自动识别照片内容、色彩和构图，为你推荐最佳拼图布局"
       },
       oneClick: {
-        title: "一键生成", 
+        title: "一键生成",
         description: "告别繁琐操作，上传照片后一键生成精美拼图，节省90%时间"
       },
       smartColor: {
@@ -72,8 +73,9 @@ export const featuresTranslations = {
       stats: {
         title: "数据说话，效果惊人",
         subtitle: "看看我们的AI技术为用户带来的实际价值",
+        avgTimeValue: "5秒",
         avgTime: "平均生成时间",
-        layoutTemplates: "布局模板", 
+        layoutTemplates: "布局模板",
         decorativeIcons: "装饰图标",
         hdOutput: "高清输出"
       }
@@ -84,4 +86,4 @@ export const featuresTranslations = {
   de: {},
   ja: {},
   ko: {}
-}; 
+};

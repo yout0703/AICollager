@@ -2,18 +2,19 @@
 
 import React, { useState } from 'react';
 import { Dictionary, getTranslation } from "@/lib/i18n";
-import { 
-  HelpCircle, 
-  ChevronDown, 
+import {
+  HelpCircle,
+  ChevronDown,
   ChevronUp,
   Sparkles,
-  Clock,
   CreditCard,
-  Download,
   Shield,
-  Users,
-  Settings
+  Settings,
+  Users
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Section, SectionHeader, SectionInner } from "@/components/ui/section";
 
 interface FAQProps {
   dict: Dictionary;
@@ -21,7 +22,7 @@ interface FAQProps {
 
 const FAQ = ({ dict }: FAQProps) => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-  
+
   const t = (key: string): string => {
     return getTranslation(dict, key);
   };
@@ -107,76 +108,65 @@ const FAQ = ({ dict }: FAQProps) => {
   };
 
   return (
-    <section className="py-20 bg-white">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* 标题部分 */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-purple-100 border border-blue-200 mb-6">
-            <HelpCircle className="w-4 h-4 text-blue-600 mr-2" />
-            <span className="text-sm font-medium text-blue-700">
-              {t('faq.tagline')}
-            </span>
-          </div>
-          
-          <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6">
-            {t('faq.title')}
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              {" "}{t('faq.subtitle')}
-            </span>
+    <Section>
+      <SectionInner className="max-w-4xl">
+        <SectionHeader>
+          <Badge variant="soft" className="mb-5 gap-2">
+            <HelpCircle className="h-3.5 w-3.5" />
+            {t('faq.tagline')}
+          </Badge>
+
+          <h2 className="text-3xl font-semibold tracking-normal text-foreground md:text-5xl">
+            {t('faq.title')} <span className="text-primary">{t('faq.subtitle')}</span>
           </h2>
-          
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+
+          <p className="mt-5 text-lg leading-8 text-muted-foreground">
             {t('faq.description')}
           </p>
-        </div>
+        </SectionHeader>
 
-        {/* FAQ内容 */}
-        <div className="space-y-8">
+        <div className="space-y-5">
           {faqs.map((category, categoryIndex) => {
             const CategoryIcon = category.icon;
             return (
-              <div key={categoryIndex} className="bg-gray-50 rounded-2xl p-6">
-                {/* 分类标题 */}
+              <div key={categoryIndex} className="rounded-lg border border-border bg-secondary/50 p-5">
                 <div className="flex items-center mb-6">
-                  <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl mr-4">
-                    <CategoryIcon className="w-5 h-5 text-white" />
+                  <div className="mr-4 flex h-10 w-10 items-center justify-center rounded-md bg-primary/10">
+                    <CategoryIcon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">
+                  <h3 className="text-lg font-semibold text-foreground">
                     {category.category}
                   </h3>
                 </div>
 
-                {/* 问题列表 */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {category.questions.map((faq, questionIndex) => {
                     const index = categoryIndex * 1000 + questionIndex;
                     const isOpen = openIndex === index;
-                    
+
                     return (
                       <div
                         key={questionIndex}
-                        className="bg-white rounded-xl border border-gray-200 overflow-hidden"
+                        className="overflow-hidden rounded-md border border-border bg-background"
                       >
-                        {/* 问题标题 */}
                         <button
                           onClick={() => toggleFAQ(categoryIndex, questionIndex)}
-                          className="w-full px-6 py-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                          className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors hover:bg-secondary"
                         >
-                          <span className="font-semibold text-gray-900 pr-4">
+                          <span className="pr-4 font-medium text-foreground">
                             {faq.question}
                           </span>
                           {isOpen ? (
-                            <ChevronUp className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                            <ChevronUp className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                           ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                            <ChevronDown className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                           )}
                         </button>
 
-                        {/* 答案内容 */}
                         {isOpen && (
-                          <div className="px-6 pb-4">
-                            <div className="border-t border-gray-100 pt-4">
-                              <p className="text-gray-600 leading-relaxed">
+                          <div className="px-5 pb-4">
+                            <div className="border-t border-border pt-4">
+                              <p className="leading-7 text-muted-foreground">
                                 {faq.answer}
                               </p>
                             </div>
@@ -191,30 +181,29 @@ const FAQ = ({ dict }: FAQProps) => {
           })}
         </div>
 
-        {/* 底部联系信息 */}
-        <div className="text-center mt-16">
-          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-8 border border-blue-100">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+        <div className="mt-16 text-center">
+          <div className="rounded-lg border border-border bg-secondary/60 p-8">
+            <h3 className="mb-4 text-2xl font-semibold text-foreground">
               {t('faq.contact.title')}
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="mb-6 text-muted-foreground">
               {t('faq.contact.description')}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="inline-flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
-                <HelpCircle className="w-5 h-5 mr-2" />
+              <Button>
+                <HelpCircle className="mr-2 h-5 w-5" />
                 {t('faq.contact.contactSupport')}
-              </button>
-              <button className="inline-flex items-center justify-center bg-white hover:bg-gray-50 text-gray-900 font-semibold px-6 py-3 rounded-xl border border-gray-200 transition-all duration-300 shadow-md hover:shadow-lg">
-                <Users className="w-5 h-5 mr-2" />
+              </Button>
+              <Button variant="outline">
+                <Users className="mr-2 h-5 w-5" />
                 {t('faq.contact.joinCommunity')}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </SectionInner>
+    </Section>
   );
 };
 
-export default FAQ; 
+export default FAQ;

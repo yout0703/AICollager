@@ -36,25 +36,25 @@ export function PreferenceSelector({
       id: 'modern' as const,
       name: '现代风格',
       description: '简洁、清晰的设计语言',
-      preview: 'bg-gradient-to-br from-blue-400 to-purple-500'
+      preview: 'bg-primary/20'
     },
     {
       id: 'vintage' as const,
       name: '复古风格',
       description: '怀旧、温暖的质感',
-      preview: 'bg-gradient-to-br from-orange-400 to-red-500'
+      preview: 'bg-secondary'
     },
     {
       id: 'artistic' as const,
       name: '艺术风格',
       description: '创意、独特的表现形式',
-      preview: 'bg-gradient-to-br from-purple-400 to-pink-500'
+      preview: 'bg-accent/20'
     },
     {
       id: 'minimal' as const,
       name: '极简风格',
       description: '简约、留白的设计',
-      preview: 'bg-gradient-to-br from-gray-300 to-gray-500'
+      preview: 'bg-muted'
     }
   ];
 
@@ -64,35 +64,35 @@ export function PreferenceSelector({
       name: '旅行',
       description: '探索世界的美好',
       icon: '🌍',
-      color: 'bg-blue-100 text-blue-700'
+      color: 'bg-primary/10 text-primary'
     },
     {
       id: 'family' as const,
       name: '家庭',
       description: '温馨的家庭时光',
       icon: '👨‍👩‍👧‍👦',
-      color: 'bg-green-100 text-green-700'
+      color: 'bg-accent/10 text-accent'
     },
     {
       id: 'food' as const,
       name: '美食',
       description: '品味生活的美味',
       icon: '🍽️',
-      color: 'bg-orange-100 text-orange-700'
+      color: 'bg-secondary text-secondary-foreground'
     },
     {
       id: 'pets' as const,
       name: '宠物',
       description: '可爱的毛茸茸朋友',
       icon: '🐱',
-      color: 'bg-purple-100 text-purple-700'
+      color: 'bg-primary/10 text-primary'
     },
     {
       id: 'celebration' as const,
       name: '庆祝',
       description: '特殊时刻的纪念',
       icon: '🎉',
-      color: 'bg-pink-100 text-pink-700'
+      color: 'bg-accent/10 text-accent'
     }
   ];
 
@@ -101,19 +101,19 @@ export function PreferenceSelector({
       id: 'auto' as const,
       name: '智能配色',
       description: 'AI自动分析图片配色',
-      preview: ['bg-red-400', 'bg-yellow-400', 'bg-green-400', 'bg-blue-400']
+      preview: ['bg-primary/20', 'bg-accent/20', 'bg-secondary', 'bg-muted']
     },
     {
       id: 'warm' as const,
       name: '暖色调',
       description: '温暖、活力的色彩',
-      preview: ['bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-pink-400']
+      preview: ['bg-primary/20', 'bg-primary/10', 'bg-secondary', 'bg-muted']
     },
     {
       id: 'cool' as const,
       name: '冷色调',
       description: '清爽、宁静的色彩',
-      preview: ['bg-blue-400', 'bg-teal-400', 'bg-cyan-400', 'bg-indigo-400']
+      preview: ['bg-accent/20', 'bg-accent/10', 'bg-primary/10', 'bg-secondary']
     },
     {
       id: 'monochrome' as const,
@@ -137,7 +137,7 @@ export function PreferenceSelector({
       {/* 风格选择 */}
       <div>
         <div className="flex items-center mb-2">
-          <Sparkles className="w-4 h-4 text-purple-600 mr-2" />
+          <Sparkles className="w-4 h-4 text-primary mr-2" />
           <h3 className="text-sm font-medium text-gray-900">选择风格</h3>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -148,16 +148,16 @@ export function PreferenceSelector({
               className={`
                 relative p-3 rounded-lg border-2 transition-all group
                 ${preferences.style === style.id
-                  ? 'border-purple-500 bg-purple-50 shadow-md'
-                  : 'border-gray-200 hover:border-purple-300 hover:shadow-sm'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary'
                 }
               `}
             >
-              <div className={`w-full h-10 rounded-lg mb-2 ${style.preview} group-hover:scale-105 transition-transform`} />
+              <div className={`w-full h-10 rounded-md mb-2 ${style.preview}`} />
               <h4 className="font-medium text-xs text-gray-900">{style.name}</h4>
               <p className="text-xs text-gray-500 mt-0.5 leading-tight">{style.description}</p>
               {preferences.style === style.id && (
-                <div className="absolute top-2 right-2 w-4 h-4 bg-purple-500 rounded-full flex items-center justify-center">
+                <div className="absolute top-2 right-2 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
                   <Check className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
@@ -169,7 +169,7 @@ export function PreferenceSelector({
       {/* 主题选择 */}
       <div>
         <div className="flex items-center mb-2">
-          <Layout className="w-4 h-4 text-blue-600 mr-2" />
+          <Layout className="w-4 h-4 text-primary mr-2" />
           <h3 className="text-sm font-medium text-gray-900">选择主题</h3>
         </div>
         <div className="grid grid-cols-5 gap-1.5">
@@ -180,17 +180,17 @@ export function PreferenceSelector({
               className={`
                 relative p-2 rounded-lg border-2 transition-all text-center group
                 ${preferences.theme === theme.id
-                  ? 'border-blue-500 bg-blue-50 shadow-md'
-                  : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary'
                 }
               `}
             >
-              <div className={`w-6 h-6 rounded-full mx-auto mb-1 flex items-center justify-center ${theme.color} group-hover:scale-110 transition-transform`}>
+              <div className={`w-6 h-6 rounded-full mx-auto mb-1 flex items-center justify-center ${theme.color}`}>
                 <span className="text-xs">{theme.icon}</span>
               </div>
               <h4 className="font-medium text-xs text-gray-900">{theme.name}</h4>
               {preferences.theme === theme.id && (
-                <div className="absolute top-1 right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                <div className="absolute top-1 right-1 w-3 h-3 bg-primary rounded-full flex items-center justify-center">
                   <Check className="w-2 h-2 text-white" />
                 </div>
               )}
@@ -202,7 +202,7 @@ export function PreferenceSelector({
       {/* 配色方案 */}
       <div>
         <div className="flex items-center mb-2">
-          <Palette className="w-4 h-4 text-green-600 mr-2" />
+          <Palette className="w-4 h-4 text-primary mr-2" />
           <h3 className="text-sm font-medium text-gray-900">配色方案</h3>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -213,12 +213,12 @@ export function PreferenceSelector({
               className={`
                 relative p-3 rounded-lg border-2 transition-all group
                 ${preferences.colorScheme === scheme.id
-                  ? 'border-green-500 bg-green-50 shadow-md'
-                  : 'border-gray-200 hover:border-green-300 hover:shadow-sm'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary'
                 }
               `}
             >
-              <div className="flex space-x-0.5 mb-2 group-hover:scale-105 transition-transform">
+              <div className="flex space-x-0.5 mb-2">
                 {scheme.preview.map((color, index) => (
                   <div key={index} className={`flex-1 h-5 rounded ${color}`} />
                 ))}
@@ -226,7 +226,7 @@ export function PreferenceSelector({
               <h4 className="font-medium text-xs text-gray-900">{scheme.name}</h4>
               <p className="text-xs text-gray-500 mt-0.5 leading-tight">{scheme.description}</p>
               {preferences.colorScheme === scheme.id && (
-                <div className="absolute top-2 right-2 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                <div className="absolute top-2 right-2 w-4 h-4 bg-primary rounded-full flex items-center justify-center">
                   <Check className="w-2.5 h-2.5 text-white" />
                 </div>
               )}
@@ -238,7 +238,7 @@ export function PreferenceSelector({
       {/* 画布比例 */}
       <div>
         <div className="flex items-center mb-2">
-          <Ratio className="w-4 h-4 text-indigo-600 mr-2" />
+          <Ratio className="w-4 h-4 text-primary mr-2" />
           <h3 className="text-sm font-medium text-gray-900">画布比例</h3>
         </div>
         <div className="grid grid-cols-3 gap-1.5">
@@ -249,15 +249,15 @@ export function PreferenceSelector({
               className={`
                 relative p-2.5 rounded-lg border-2 transition-all text-center group
                 ${preferences.aspectRatio === ratio.id
-                  ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                  : 'border-gray-200 hover:border-indigo-300 hover:shadow-sm'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary'
                 }
               `}
             >
-              <h4 className="font-medium text-xs text-gray-900 group-hover:scale-105 transition-transform">{ratio.name}</h4>
+              <h4 className="font-medium text-xs text-gray-900">{ratio.name}</h4>
               <p className="text-xs text-gray-500 mt-0.5 leading-tight">{ratio.description}</p>
               {preferences.aspectRatio === ratio.id && (
-                <div className="absolute top-1 right-1 w-3 h-3 bg-indigo-500 rounded-full flex items-center justify-center">
+                <div className="absolute top-1 right-1 w-3 h-3 bg-primary rounded-full flex items-center justify-center">
                   <Check className="w-2 h-2 text-white" />
                 </div>
               )}
@@ -269,4 +269,4 @@ export function PreferenceSelector({
   );
 }
 
-export default PreferenceSelector; 
+export default PreferenceSelector;

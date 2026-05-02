@@ -31,21 +31,21 @@ export function ImageUploader({
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     if (!acceptedTypes.includes(file.type)) {
       return `不支持的文件格式。请上传 ${acceptedTypes.join(', ')} 格式的图片`;
     }
-    
+
     if (file.size > maxSizeInMB * 1024 * 1024) {
       return `文件大小不能超过 ${maxSizeInMB}MB`;
     }
-    
+
     return null;
-  };
+  }, [acceptedTypes, maxSizeInMB]);
 
   const addImages = useCallback((files: FileList) => {
     const newImages: ImageFile[] = [];
-    
+
     Array.from(files).forEach((file) => {
       const error = validateFile(file);
       if (error) {
@@ -60,7 +60,7 @@ export function ImageUploader({
 
       const id = Math.random().toString(36).substring(2);
       const preview = URL.createObjectURL(file);
-      
+
       newImages.push({ file, id, preview });
     });
 
@@ -69,7 +69,7 @@ export function ImageUploader({
       setImages(updatedImages);
       onImagesChange(updatedImages);
     }
-  }, [images, maxImages, acceptedTypes, maxSizeInMB, onImagesChange]);
+  }, [images, maxImages, onImagesChange, validateFile]);
 
   const removeImage = useCallback((id: string) => {
     const updatedImages = images.filter((img) => {
@@ -79,7 +79,7 @@ export function ImageUploader({
       }
       return true;
     });
-    
+
     setImages(updatedImages);
     onImagesChange(updatedImages);
   }, [images, onImagesChange]);
@@ -98,9 +98,9 @@ export function ImageUploader({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (disabled) return;
-    
+
     const { files } = e.dataTransfer;
     if (files && files.length > 0) {
       addImages(files);
@@ -128,8 +128,8 @@ export function ImageUploader({
       <div
         className={`
           relative border-2 border-dashed rounded-lg p-6 text-center transition-colors
-          ${dragActive 
-            ? 'border-blue-500 bg-blue-50' 
+          ${dragActive
+            ? 'border-primary bg-primary/10'
             : 'border-gray-300 hover:border-gray-400'
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
@@ -149,24 +149,24 @@ export function ImageUploader({
           disabled={disabled}
           className="hidden"
         />
-        
+
         <div className="flex flex-col items-center">
           <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             {dragActive ? (
-              <Upload className="w-8 h-8 text-blue-500" />
+              <Upload className="w-8 h-8 text-primary" />
             ) : (
               <Camera className="w-8 h-8 text-gray-500" />
             )}
           </div>
-          
+
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             {dragActive ? '释放文件' : '上传图片'}
           </h3>
-          
+
           <p className="text-sm text-gray-500 mb-2">
             拖拽图片到这里，或点击选择文件
           </p>
-          
+
           <p className="text-xs text-gray-400">
             支持 JPEG、PNG、WebP 格式，最大 {maxSizeInMB}MB，最多 {maxImages} 张
           </p>
@@ -181,7 +181,7 @@ export function ImageUploader({
               已上传图片 ({images.length}/{maxImages})
             </h4>
           </div>
-          
+
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {images.map((image) => (
               <div key={image.id} className="relative group">
@@ -194,19 +194,19 @@ export function ImageUploader({
                     className="w-full h-full object-cover"
                   />
                 </div>
-                
+
                 {/* 删除按钮 */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     removeImage(image.id);
                   }}
-                  className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   disabled={disabled}
                 >
                   <X className="w-4 h-4" />
                 </button>
-                
+
                 {/* 文件名 */}
                 <p className="mt-2 text-xs text-gray-600 truncate">
                   {image.file.name}
@@ -218,4 +218,4 @@ export function ImageUploader({
       )}
     </div>
   );
-} 
+}

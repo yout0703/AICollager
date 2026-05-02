@@ -3,20 +3,18 @@
 import React, { useCallback } from 'react';
 import { useEditor } from '@/contexts/EditorContext';
 import { Button } from '@/components/ui/button';
-import { 
-  Undo2, 
-  Redo2, 
-  Image, 
-  Type, 
-  Square, 
+import {
+  Undo2,
+  Redo2,
+  Image as ImageIcon,
+  Type,
+  Square,
   Circle,
   Star,
   Download,
   Save,
   Layers,
-  Plus,
-  Trash2,
-  Upload
+  Trash2
 } from 'lucide-react';
 import { CollageElement } from '@/types/collage';
 
@@ -27,22 +25,22 @@ interface ToolbarProps {
   onAddImage?: () => void;
 }
 
-export default function Toolbar({ 
-  className = '', 
-  onSave, 
-  onExport, 
-  onAddImage 
+export default function Toolbar({
+  className = '',
+  onSave,
+  onExport,
+  onAddImage
 }: ToolbarProps) {
-  const { 
-    state, 
-    addElement, 
-    deleteElement, 
-    undo, 
-    redo, 
-    canUndo, 
+  const {
+    state,
+    addElement,
+    deleteElement,
+    undo,
+    redo,
+    canUndo,
     canRedo,
     selectedElement,
-    pasteElement 
+    pasteElement
   } = useEditor();
 
   // 添加文字元素
@@ -77,7 +75,7 @@ export default function Toolbar({
       lineHeight: 1.5,
       letterSpacing: 0
     };
-    
+
     addElement(newElement);
   }, [addElement, state.elements.length]);
 
@@ -109,7 +107,7 @@ export default function Toolbar({
       strokeColor: '#1e40af',
       strokeWidth: 2
     };
-    
+
     addElement(newElement);
   }, [addElement, state.elements.length]);
 
@@ -198,7 +196,7 @@ export default function Toolbar({
           title="添加图片"
           className="h-7 px-2 text-xs"
         >
-          <Image size={12} className="mr-1" />
+          <ImageIcon size={12} className="mr-1" />
           图片
         </Button>
         <Button
@@ -211,7 +209,7 @@ export default function Toolbar({
           <Type size={12} className="mr-1" />
           文字
         </Button>
-        
+
         {/* 形状按钮组 */}
         <div className="flex items-center space-x-0.5">
           <Button
@@ -254,7 +252,7 @@ export default function Toolbar({
             size="sm"
             onClick={handleDeleteSelected}
             title="删除选中元素 (Delete)"
-            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:border-red-300"
+            className="h-7 w-7 p-0 text-destructive hover:text-destructive/80 hover:border-destructive/30"
           >
             <Trash2 size={12} />
           </Button>
@@ -263,7 +261,7 @@ export default function Toolbar({
 
       {/* 右侧操作 */}
       <div className="flex-1" />
-      
+
       <div className="flex items-center space-x-1">
         {/* 图层信息 */}
         <div className="flex items-center text-xs text-gray-500">
@@ -298,4 +296,4 @@ export default function Toolbar({
       </div>
     </div>
   );
-} 
+}

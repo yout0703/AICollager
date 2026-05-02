@@ -25,11 +25,11 @@ export async function exportCanvasToImage(
   config: Partial<ExportConfig> = {}
 ): Promise<string> {
   const exportConfig = { ...DEFAULT_EXPORT_CONFIG, ...config };
-  
+
   // 创建临时画布元素
   const canvasElement = document.createElement('canvas');
   const ctx = canvasElement.getContext('2d');
-  
+
   if (!ctx) {
     throw new Error('无法创建画布上下文');
   }
@@ -37,10 +37,10 @@ export async function exportCanvasToImage(
   // 设置画布尺寸
   const width = canvas.width * exportConfig.scale;
   const height = canvas.height * exportConfig.scale;
-  
+
   canvasElement.width = width;
   canvasElement.height = height;
-  
+
   // 设置背景色
   ctx.fillStyle = exportConfig.backgroundColor || canvas.backgroundColor;
   ctx.fillRect(0, 0, width, height);
@@ -49,11 +49,11 @@ export async function exportCanvasToImage(
   const sortedElements = [...elements].sort((a, b) => a.zIndex - b.zIndex);
 
   // 分别处理遮罩图片和其他元素
-  const maskImageElements = sortedElements.filter(el => 
+  const maskImageElements = sortedElements.filter(el =>
     el.type === 'image' && (el as ImageElement).maskRegion
   ) as ImageElement[];
-  
-  const nonImageElements = sortedElements.filter(el => 
+
+  const nonImageElements = sortedElements.filter(el =>
     el.type !== 'image' || !(el as ImageElement).maskRegion
   );
 
@@ -83,19 +83,19 @@ async function drawStandardElement(
   exportConfig: ExportConfig
 ): Promise<void> {
   ctx.save();
-  
+
   // 应用变换
   const x = element.transform.x * exportConfig.scale;
   const y = element.transform.y * exportConfig.scale;
   const w = element.transform.width * exportConfig.scale;
   const h = element.transform.height * exportConfig.scale;
-  
+
   ctx.translate(x + w / 2, y + h / 2);
   ctx.rotate((element.transform.rotation * Math.PI) / 180);
   ctx.scale(element.transform.scaleX, element.transform.scaleY);
   if (element.transform.flipX) ctx.scale(-1, 1);
   if (element.transform.flipY) ctx.scale(1, -1);
-  
+
   // 设置透明度
   ctx.globalAlpha = element.style.opacity;
 
@@ -105,19 +105,19 @@ async function drawStandardElement(
       await drawImageElement(ctx, element, w, h);
       break;
     case 'text':
-      drawTextElement(ctx, element, w, h);
+      drawTextElement(ctx, element, w);
       break;
     case 'shape':
       drawShapeElement(ctx, element, w, h);
       break;
     case 'icon':
-      await drawIconElement(ctx, element, w, h);
+      await drawIconElement(ctx, element);
       break;
     case 'border':
       drawBorderElement(ctx, element, w, h);
       break;
   }
-  
+
   ctx.restore();
 }
 
@@ -164,7 +164,7 @@ async function drawMaskImageElement(
   const canvasWidth = maskRegion.position.x + maskRegion.position.width;
   const canvasHeight = maskRegion.position.y + maskRegion.position.height;
   const imageSize = Math.max(canvasWidth, canvasHeight) * 1.5 * exportConfig.scale;
-  
+
   // 图片在遮罩区域内的实际位置
   const imageX = maskX + imageTransform.position.x * exportConfig.scale;
   const imageY = maskY + imageTransform.position.y * exportConfig.scale;
@@ -176,7 +176,7 @@ async function drawMaskImageElement(
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
+
     img.onload = () => {
       try {
         // 计算图片绘制位置（相对于遮罩容器）
@@ -200,7 +200,7 @@ async function drawMaskImageElement(
         reject(error);
       }
     };
-    
+
     img.onerror = () => reject(new Error('图片加载失败'));
     img.src = element.src;
   });
@@ -218,11 +218,11 @@ async function drawImageElement(
   height: number
 ): Promise<void> {
   if (element.type !== 'image') return;
-  
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
+
     img.onload = () => {
       try {
         ctx.drawImage(img, -width / 2, -height / 2, width, height);
@@ -231,49 +231,10 @@ async function drawImageElement(
         reject(error);
       }
     };
-    
+
     img.onerror = () => reject(new Error('图片加载失败'));
     img.src = element.src;
   });
-}
-
-/**
- * 应用CSS clipPath到Canvas上下文
- */
-function applyClipPath(ctx: CanvasRenderingContext2D, clipPath: string, width: number, height: number): void {
-  // 解析polygon clipPath，例如: "polygon(0% 0%, 100% 0%, 50% 100%)"
-  const polygonMatch = clipPath.match(/polygon\(([^)]+)\)/);
-  
-  if (polygonMatch) {
-    const coordinates = polygonMatch[1];
-    const points = coordinates.split(',').map(coord => coord.trim());
-    
-    if (points.length >= 3) {
-      ctx.beginPath();
-      
-      points.forEach((point, index) => {
-        const [xStr, yStr] = point.split(/\s+/);
-        
-        // 将百分比转换为像素坐标 (相对于元素中心)
-        const xPercent = parseFloat(xStr.replace('%', ''));
-        const yPercent = parseFloat(yStr.replace('%', ''));
-        
-        const x = (xPercent / 100) * width - width / 2;
-        const y = (yPercent / 100) * height - height / 2;
-        
-        if (index === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
-      
-      ctx.closePath();
-      ctx.clip();
-    }
-  }
-  
-  // 可以在这里添加其他clipPath类型的支持，如circle等
 }
 
 /**
@@ -282,30 +243,29 @@ function applyClipPath(ctx: CanvasRenderingContext2D, clipPath: string, width: n
 function drawTextElement(
   ctx: CanvasRenderingContext2D,
   element: CollageElement,
-  width: number,
-  height: number
+  width: number
 ): void {
   if (element.type !== 'text') return;
-  
+
   ctx.fillStyle = element.color;
   ctx.font = `${element.fontWeight} ${element.fontSize}px ${element.fontFamily}`;
   ctx.textAlign = element.textAlign as CanvasTextAlign;
   ctx.textBaseline = 'middle';
-  
+
   // 处理多行文本
   const lines = element.content.split('\n');
   const lineHeight = element.fontSize * element.lineHeight;
   const totalHeight = lines.length * lineHeight;
   const startY = -totalHeight / 2 + lineHeight / 2;
-  
+
   lines.forEach((line, index) => {
     const y = startY + index * lineHeight;
     let x = 0;
-    
+
     if (element.textAlign === 'center') x = 0;
     else if (element.textAlign === 'right') x = width / 2;
     else x = -width / 2;
-    
+
     ctx.fillText(line, x, y);
   });
 }
@@ -320,14 +280,14 @@ function drawShapeElement(
   height: number
 ): void {
   if (element.type !== 'shape') return;
-  
+
   ctx.fillStyle = element.fillColor;
-  
+
   if (element.strokeColor && element.strokeWidth) {
     ctx.strokeStyle = element.strokeColor;
     ctx.lineWidth = element.strokeWidth;
   }
-  
+
   switch (element.shapeType) {
     case 'rectangle':
       ctx.fillRect(-width / 2, -height / 2, width, height);
@@ -335,7 +295,7 @@ function drawShapeElement(
         ctx.strokeRect(-width / 2, -height / 2, width, height);
       }
       break;
-      
+
     case 'circle':
       ctx.beginPath();
       ctx.arc(0, 0, Math.min(width, height) / 2, 0, 2 * Math.PI);
@@ -344,7 +304,7 @@ function drawShapeElement(
         ctx.stroke();
       }
       break;
-      
+
     case 'triangle':
       ctx.beginPath();
       ctx.moveTo(0, -height / 2);
@@ -356,7 +316,7 @@ function drawShapeElement(
         ctx.stroke();
       }
       break;
-      
+
     default:
       // 其他复杂形状可以后续实现
       ctx.fillRect(-width / 2, -height / 2, width, height);
@@ -368,12 +328,10 @@ function drawShapeElement(
  */
 async function drawIconElement(
   ctx: CanvasRenderingContext2D,
-  element: CollageElement,
-  width: number,
-  height: number
+  element: CollageElement
 ): Promise<void> {
   if (element.type !== 'icon') return;
-  
+
   // 图标绘制比较复杂，这里简化处理
   // 实际应用中可能需要将SVG转换为Canvas路径或使用其他方法
   ctx.fillStyle = element.color;
@@ -393,14 +351,14 @@ function drawBorderElement(
   height: number
 ): void {
   if (element.type !== 'border') return;
-  
+
   ctx.strokeStyle = element.color;
   ctx.lineWidth = element.thickness;
-  
+
   if (element.borderType === 'decorative') {
     ctx.setLineDash([5, 5]);
   }
-  
+
   ctx.strokeRect(-width / 2, -height / 2, width, height);
   ctx.setLineDash([]);
 }
@@ -412,7 +370,7 @@ export function downloadImageDataURL(dataURL: string, filename: string): void {
   const link = document.createElement('a');
   link.href = dataURL;
   link.download = filename;
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -424,4 +382,4 @@ export function downloadImageDataURL(dataURL: string, filename: string): void {
 export function generateExportFilename(config: ExportConfig): string {
   const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
   return `collage_${timestamp}.${config.format}`;
-} 
+}

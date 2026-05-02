@@ -2,7 +2,7 @@
 
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { useEditor } from '@/contexts/EditorContext';
-import { CollageElement, ImageElement, MaskRegion, ImageTransform } from '@/types/collage';
+import { ImageElement, ImageTransform } from '@/types/collage';
 
 interface CanvasProps {
   className?: string;
@@ -11,7 +11,7 @@ interface CanvasProps {
 export default function Canvas({ className = '' }: CanvasProps) {
   const { state, selectElement, updateElement } = useEditor();
   const canvasRef = useRef<HTMLDivElement>(null);
-  
+
   // 拖拽相关状态
   const [isDragging, setIsDragging] = useState(false);
   const [dragElement, setDragElement] = useState<string | null>(null);
@@ -22,45 +22,45 @@ export default function Canvas({ className = '' }: CanvasProps) {
   const handleMouseDown = useCallback((e: React.MouseEvent, elementId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const element = state.elements.find(el => el.id === elementId) as ImageElement;
     if (!element || element.isLocked || element.type !== 'image' || !element.maskRegion) return;
-    
+
     selectElement(elementId);
-    
+
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     const clientX = e.clientX - rect.left;
     const clientY = e.clientY - rect.top;
-    
+
     setIsDragging(true);
     setDragElement(elementId);
     setDragStart({ x: clientX, y: clientY });
     // 记录图片在遮罩内的起始位置
-    setElementStart({ 
-      x: element.imageTransform?.position.x || 0, 
-      y: element.imageTransform?.position.y || 0 
+    setElementStart({
+      x: element.imageTransform?.position.x || 0,
+      y: element.imageTransform?.position.y || 0
     });
   }, [state.elements, selectElement]);
 
   // 处理鼠标移动事件 - 遮罩模式
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!dragElement || !isDragging) return;
-    
+
     const element = state.elements.find(el => el.id === dragElement) as ImageElement;
     if (!element || element.type !== 'image' || !element.maskRegion) return;
-    
+
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     const clientX = e.clientX - rect.left;
     const clientY = e.clientY - rect.top;
-    
+
     // 计算鼠标移动的距离
     const deltaX = clientX - dragStart.x;
     const deltaY = clientY - dragStart.y;
-    
+
     // 更新图片在遮罩内的位置
     const newImageTransform: ImageTransform = {
       ...element.imageTransform,
@@ -72,7 +72,7 @@ export default function Canvas({ className = '' }: CanvasProps) {
       rotation: element.imageTransform?.rotation || 0,
       anchor: element.imageTransform?.anchor || { x: 0.5, y: 0.5 }
     };
-    
+
     updateElement(dragElement, {
       imageTransform: newImageTransform
     });
@@ -94,18 +94,18 @@ export default function Canvas({ className = '' }: CanvasProps) {
   // 处理键盘事件 - 遮罩模式
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (!state.selectedElementId) return;
-    
+
     const element = state.elements.find(el => el.id === state.selectedElementId) as ImageElement;
     if (!element || element.isLocked || element.type !== 'image' || !element.maskRegion) return;
-    
+
     const step = e.shiftKey ? 10 : 1; // Shift键加速移动
-    const currentTransform = element.imageTransform || { 
-      position: { x: 0, y: 0 }, 
-      scale: 1, 
-      rotation: 0, 
-      anchor: { x: 0.5, y: 0.5 } 
+    const currentTransform = element.imageTransform || {
+      position: { x: 0, y: 0 },
+      scale: 1,
+      rotation: 0,
+      anchor: { x: 0.5, y: 0.5 }
     };
-    
+
     switch (e.key) {
       case 'ArrowUp':
         e.preventDefault();
@@ -168,7 +168,7 @@ export default function Canvas({ className = '' }: CanvasProps) {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -200,7 +200,7 @@ export default function Canvas({ className = '' }: CanvasProps) {
 
     // 图片的显示尺寸（要比遮罩大，这样才能拖动）
     const imageSize = Math.max(state.canvas.width, state.canvas.height) * 1.5; // 1.5倍画布大小
-    
+
     // 图片在遮罩区域内的实际位置
     const imageX = maskX + imageTransform.position.x;
     const imageY = maskY + imageTransform.position.y;
@@ -310,7 +310,7 @@ export default function Canvas({ className = '' }: CanvasProps) {
   }, [isDragging, dragElement, state.selectedElementId, state.canvas, handleMouseDown, selectElement]);
 
   // 获取遮罩模式下的图片元素
-  const maskModeImageElements = state.elements.filter(el => 
+  const maskModeImageElements = state.elements.filter(el =>
     el.type === 'image' && (el as ImageElement).maskRegion
   ) as ImageElement[];
 
@@ -323,8 +323,8 @@ export default function Canvas({ className = '' }: CanvasProps) {
         height: state.canvas.height,
         backgroundColor: state.canvas.backgroundColor,
         borderRadius: state.canvas.borderRadius || 0,
-        border: state.canvas.border ? 
-          `${state.canvas.border.width}px ${state.canvas.border.style} ${state.canvas.border.color}` : 
+        border: state.canvas.border ?
+          `${state.canvas.border.width}px ${state.canvas.border.style} ${state.canvas.border.color}` :
           '2px solid #e5e7eb'
       }}
       onClick={handleCanvasClick}
@@ -332,7 +332,7 @@ export default function Canvas({ className = '' }: CanvasProps) {
     >
       {/* 渲染画布背景纹理 */}
       {state.canvas.backgroundTexture && (
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none"
           style={{
             background: state.canvas.backgroundTexture.value,
@@ -343,10 +343,10 @@ export default function Canvas({ className = '' }: CanvasProps) {
 
       {/* 渲染遮罩图片元素 */}
       {maskModeImageElements.map(renderMaskModeImageElement)}
-      
+
       {/* 开发模式下的网格辅助线 */}
       {process.env.NODE_ENV === 'development' && (
-        <div 
+        <div
           className="absolute inset-0 pointer-events-none opacity-5"
           style={{
             backgroundImage: 'linear-gradient(rgba(0,0,0,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.3) 1px, transparent 1px)',
@@ -354,12 +354,12 @@ export default function Canvas({ className = '' }: CanvasProps) {
           }}
         />
       )}
-      
+
       {/* 画布中心辅助线 */}
       {state.selectedElementId && (
         <>
-          <div 
-            className="absolute bg-red-500 opacity-30 pointer-events-none"
+          <div
+            className="absolute bg-destructive opacity-30 pointer-events-none"
             style={{
               left: state.canvas.width / 2 - 0.5,
               top: 0,
@@ -367,8 +367,8 @@ export default function Canvas({ className = '' }: CanvasProps) {
               height: state.canvas.height
             }}
           />
-          <div 
-            className="absolute bg-red-500 opacity-30 pointer-events-none"
+          <div
+            className="absolute bg-destructive opacity-30 pointer-events-none"
             style={{
               left: 0,
               top: state.canvas.height / 2 - 0.5,
@@ -382,7 +382,7 @@ export default function Canvas({ className = '' }: CanvasProps) {
       {/* 遮罩模式提示信息 */}
       {maskModeImageElements.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="text-gray-400 text-sm text-center">
+          <div className="text-muted-foreground text-sm text-center">
             <p>遮罩拼图模式</p>
             <p className="text-xs mt-1">图片将显示在遮罩区域内</p>
             <p className="text-xs mt-1">🔍 拖动图片可调整露出的内容</p>
@@ -392,9 +392,9 @@ export default function Canvas({ className = '' }: CanvasProps) {
 
       {/* 遮罩模式使用提示 */}
       {maskModeImageElements.length > 0 && !state.selectedElementId && (
-        <div className="absolute top-4 left-4 bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 pointer-events-none">
+        <div className="absolute top-4 left-4 bg-primary/10 border border-primary/20 rounded-lg p-3 text-xs text-foreground pointer-events-none">
           <div className="flex items-center mb-1">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
             <span className="font-medium">遮罩拼图模式</span>
           </div>
           <p>• 洞的位置固定不变</p>
@@ -404,4 +404,4 @@ export default function Canvas({ className = '' }: CanvasProps) {
       )}
     </div>
   );
-} 
+}
