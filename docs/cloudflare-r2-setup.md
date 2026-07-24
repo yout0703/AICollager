@@ -80,10 +80,10 @@ R2_BUCKET_NAME="aicollager-images"
 R2_PUBLIC_URL="https://cdn.yourdomain.com"
 
 # 选项2：使用 R2.dev 域名
-***REMOVED***_PUBLIC_URL="https://pub-your-account-id.r2.dev"
+R2_PUBLIC_URL="https://pub-your-account-id.r2.dev"
 
 # 选项3：留空使用默认配置
-***REMOVED***_PUBLIC_URL=""
+R2_PUBLIC_URL=""
 ```
 
 ## 5. 验证配置

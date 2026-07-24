@@ -126,7 +126,7 @@
 
 ### 🤖 Week 3: AI服务集成 ✅
 
-###***REMOVED*** AI 集成
+### Gemini AI 集成
 - [x] **核心AI服务** ✅
   - [x] 创建 `services/geminiService.ts`
   - [x] 实现图片分析功能 (`analyzeImages`)
