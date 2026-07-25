@@ -66,7 +66,9 @@ export default async function LocaleLayout({
       <UserProvider>
         <section lang={locale} suppressHydrationWarning>
           {children}
-          <Analytics />
+          {process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === "true" ? (
+            <Analytics />
+          ) : null}
         </section>
       </UserProvider>
     </ClerkProvider>

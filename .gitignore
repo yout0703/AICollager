@@ -81,6 +81,12 @@ backup_*.sql
 # Generated files
 *.generated.*
 
+# Local disk uploads (dev-only endpoint)
+/public/uploads/
+
+# Keep env.example tracked (ignore rule above is .env*)
+!env.example
+
 # Lock files (keeping pnpm-lock.yaml as it's important for pnpm)
 # npm-shrinkwrap.json
 # package-lock.json

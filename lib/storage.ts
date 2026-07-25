@@ -267,7 +267,7 @@ export async function downloadImage(imageUrl: string, outputPath: string): Promi
  * 生成 R2 文件的公开访问 URL
  *
  * 支持以下配置方式：
- * 1. 自定义域名：设置 R2_PUBLIC_URL=https://static.aicollager.com
+ * 1. 自定义域名：设置 R2_PUBLIC_URL=https://cdn.example.com
  * 2. R2.dev 域名：使用默认的 pub-{account_id}.r2.dev
  *
  * @param r2Key R2 文件键，例如：collage-images/abc123
@@ -348,7 +348,7 @@ export function generateR2Key(prefix: string = 'collage-images', extension: stri
  * - R2_BUCKET_NAME: R2 存储桶名称
  *
  * 可选的环境变量：
- * - R2_PUBLIC_URL: 自定义域名，例如 https://static.aicollager.com
+ * - R2_PUBLIC_URL: 自定义域名，例如 https://cdn.example.com
  */
 export function validateR2Config(): boolean {
   const required = [

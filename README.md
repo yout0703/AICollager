@@ -1,71 +1,117 @@
 # AICollager
 
-AICollager 是一个基于 AI 的图像处理工具，帮助用户创建精美的拼贴图像和设计作品。
+[![CI](https://github.com/yout0703/AICollager/actions/workflows/ci.yml/badge.svg)](https://github.com/yout0703/AICollager/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-## 快速开始
+AI-powered photo collage app built with Next.js. Upload images, get layout suggestions from Google Gemini, and export polished collages.
 
-1. 克隆项目
+中文说明见 [README_CN.md](./README_CN.md).
 
-```shell
-git clone <your-repo-url>
-cd aicollager
-```
+## Features
 
-2. 安装依赖
+- Multi-image collage workspace with layout tools
+- AI analysis / layout suggestions (Google Gemini)
+- Auth via Clerk, credits & invitations
+- Object storage on Cloudflare R2
+- i18n: `en`, `zh`, `es`, `fr`, `de`, `ja`, `ko`
 
-```shell
+## Stack
+
+| Layer | Tech |
+|--------|------|
+| App | Next.js 15 (App Router), React 18, Tailwind |
+| Auth | [Clerk](https://clerk.com) |
+| AI | [Google Gemini](https://ai.google.dev) |
+| DB | PostgreSQL + [Drizzle ORM](https://orm.drizzle.team) (Supabase / Neon / local) |
+| Storage | [Cloudflare R2](https://developers.cloudflare.com/r2/) |
+
+## Prerequisites
+
+- Node.js 20+
+- [pnpm](https://pnpm.io) 9+
+- PostgreSQL (local Docker, Supabase, or Neon)
+- Clerk, Gemini, and R2 credentials (see below)
+
+## Quick start
+
+```bash
+git clone https://github.com/yout0703/AICollager.git
+cd AICollager
 pnpm install
+cp env.example .env.local
+# Edit .env.local with your keys
 ```
 
-3. 初始化数据库
+### Database
 
-创建您的数据库，可以使用 [本地 PostgreSQL](https://wiki.postgresql.org/wiki/Homebrew)、[vercel-postgres](https://vercel.com/docs/storage/vercel-postgres) 或 [supabase](https://supabase.com/)
+1. Create a Postgres database (example with Docker is in `env.example`).
+2. Set `POSTGRES_URL` in `.env.local`.
+3. Apply schema:
 
-使用 `data/install.sql` 中的 SQL 创建表
-
-4. 设置环境变量
-
-在 `aicollager` 根目录下创建 `.env.local` 文件，并设置以下变量
-
-```
-OPENAI_API_KEY=""
-
-# Database
-POSTGRES_URL=""
-
-# Cloudflare R2 Storage
-R2_ACCOUNT_ID=""
-R2_ACCESS_KEY_ID=""
-R2_SECRET_ACCESS_KEY=""
-R2_BUCKET_NAME=""
-R2_PUBLIC_URL=""  # Optional: Custom domain or R2.dev domain
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
-
-STRIPE_PUBLIC_KEY=""
-STRIPE_PRIVATE_KEY=""
-
-WEB_BASE_URI=""
+```bash
+pnpm db:push
+# or: pnpm db:migrate
 ```
 
-5. 本地开发
+Optional seed:
 
-```shell
+```bash
+pnpm db:seed
+```
+
+### Run
+
+```bash
 pnpm dev
 ```
 
-访问 `http://localhost:3000` 预览效果
+Open [http://localhost:3000](http://localhost:3000).
 
-## 技术栈
+## Environment variables
 
-- [Next.js](https://nextjs.org/docs) - 全栈开发框架
-- [Clerk](https://clerk.com/docs/quickstarts/nextjs) - 用户认证
-- [Cloudflare R2](https://developers.cloudflare.com/r2/) - 图像存储
-- [Stripe](https://stripe.com/docs/development) - 支付处理
-- [node-postgres](https://node-postgres.com/) - 数据处理
-- [Tailwind CSS](https://tailwindcss.com/) - 页面构建 
+Copy **`env.example`** → **`.env.local`**. Never commit real secrets.
+
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| `NEXT_PUBLIC_CLERK_*` / `CLERK_SECRET_KEY` | Yes | Auth |
+| `GEMINI_API_KEY` | Yes (AI features) | Gemini |
+| `POSTGRES_URL` | Yes | Database |
+| `NEXT_PUBLIC_SUPABASE_*` / `SUPABASE_SERVICE_ROLE_KEY` | If using Supabase client | Supabase |
+| `R2_*` | Yes (uploads) | Cloudflare R2 |
+| `NEXT_PUBLIC_APP_URL` | Recommended | Public origin for invite links |
+| `ADMIN_EMAILS` | For admin APIs | Comma-separated admin emails |
+| `NEXT_PUBLIC_ENABLE_ANALYTICS` | No | Set `true` to enable Vercel Analytics |
+| `ALLOW_LOCAL_UPLOAD` | No | Dev disk upload; keep `false` in production |
+
+Full comments live in `env.example`.
+
+## Scripts
+
+```bash
+pnpm dev          # local dev server
+pnpm build        # production build
+pnpm start        # run production build
+pnpm lint         # ESLint
+pnpm db:push      # push Drizzle schema
+pnpm db:migrate   # run migrations
+pnpm db:studio    # Drizzle Studio
+pnpm db:seed      # seed data
+```
+
+## Security notes
+
+- `/api/admin/*` requires a signed-in user whose email is listed in `ADMIN_EMAILS`.
+- `/api/upload-image` is **dev-oriented** (auth + size limits; disabled in production unless `ALLOW_LOCAL_UPLOAD=true`). Prefer R2 via the collage flow.
+- Report vulnerabilities privately — see [SECURITY.md](./SECURITY.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## License
+
+Licensed under the [Apache License 2.0](./LICENSE).
+
+## Disclaimer
+
+`docs/` and `features/` contain design notes and historical planning. They may lag the running code; prefer this README and `env.example` for setup.

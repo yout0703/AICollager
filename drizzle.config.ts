@@ -3,10 +3,9 @@ import { defineConfig } from "drizzle-kit";
 
 // 获取数据库连接字符串
 function getDatabaseUrl(): string {
-  const nodeEnv = process.env.NODE_ENV;
   const forceSupabase = process.env.FORCE_SUPABASE === 'true';
   const forcePostgres = process.env.FORCE_POSTGRES === 'true';
-  
+
   // 显式强制使用 Supabase
   if (forceSupabase && process.env.NEXT_PUBLIC_SUPABASE_URL) {
     // 从 Supabase URL 构建连接字符串
@@ -32,15 +31,10 @@ function getDatabaseUrl(): string {
   if (process.env.POSTGRES_URL) {
     return process.env.POSTGRES_URL;
   }
-  
-  // 开发环境默认配置
-  if (nodeEnv === 'development' || !nodeEnv) {
-    console.log('🔧 使用开发环境默认 PostgreSQL 配置');
-    return 'postgresql://postgres:123123@localhost:3333/aicollager';
-  }
-  
-  // 生产环境需要明确配置
-  throw new Error('数据库连接字符串未配置。请设置 DATABASE_URL、POSTGRES_URL 或 Supabase 环境变量');
+
+  throw new Error(
+    '数据库连接字符串未配置。请设置 POSTGRES_URL 或 DATABASE_URL（参见 env.example）'
+  );
 }
 
 export default defineConfig({

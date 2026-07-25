@@ -13,24 +13,9 @@ function createDbClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL
 
   if (!connectionString) {
-    // 开发环境默认连接字符串
-    const nodeEnv = process.env.NODE_ENV
-    if (nodeEnv === 'development' || !nodeEnv) {
-      console.log('🔧 使用开发环境默认 PostgreSQL 配置')
-      const defaultUrl = 'postgresql://postgres:123123@localhost:3333/aicollager'
-      const client = postgres(defaultUrl, {
-        max: 1,
-        idle_timeout: 20,
-        connect_timeout: 10,
-        prepare: false,
-      })
-      return drizzle(client, {
-        schema,
-        casing: 'snake_case'
-      })
-    }
-
-    throw new Error('数据库连接字符串未配置。请设置 DATABASE_URL、POSTGRES_URL 或 Supabase 环境变量')
+    throw new Error(
+      '数据库连接字符串未配置。请在 .env.local 中设置 POSTGRES_URL 或 DATABASE_URL（参见 env.example）'
+    )
   }
 
   // 检查是否为 Neon serverless 环境 (生产环境或 serverless 部署)

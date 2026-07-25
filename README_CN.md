@@ -1,71 +1,117 @@
 # AICollager
 
-AICollager 是一个基于 AI 的图像处理工具，帮助用户创建精美的拼贴图像和设计作品。
+[![CI](https://github.com/yout0703/AICollager/actions/workflows/ci.yml/badge.svg)](https://github.com/yout0703/AICollager/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-## 快速开始
+基于 AI 的拼贴图应用（Next.js）。上传图片、由 Google Gemini 辅助布局分析，并导出成品。
 
-1. 克隆项目
+English docs: [README.md](./README.md).
 
-```shell
-git clone <your-repo-url>
-cd aicollager
-```
+## 功能概览
 
-2. 安装依赖
-
-```shell
-pnpm install
-```
-
-3. 初始化数据库
-
-创建您的数据库，可以使用 [本地 PostgreSQL](https://wiki.postgresql.org/wiki/Homebrew)、[vercel-postgres](https://vercel.com/docs/storage/vercel-postgres) 或 [supabase](https://supabase.com/)
-
-使用 `data/install.sql` 中的 SQL 创建表
-
-4. 设置环境变量
-
-在 `aicollager` 根目录下创建 `.env.local` 文件，并设置以下变量
-
-```
-OPENAI_API_KEY=""
-
-# Database
-POSTGRES_URL=""
-
-# Cloudflare R2 Storage
-R2_ACCOUNT_ID=""
-R2_ACCESS_KEY_ID=""
-R2_SECRET_ACCESS_KEY=""
-R2_BUCKET_NAME=""
-R2_PUBLIC_URL=""  # 可选：自定义域名或 R2.dev 域名
-
-# Clerk
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=""
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
-NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
-NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
-
-STRIPE_PUBLIC_KEY=""
-STRIPE_PRIVATE_KEY=""
-
-WEB_BASE_URI=""
-```
-
-5. 本地开发
-
-```shell
-pnpm dev
-```
-
-访问 `http://localhost:3000` 预览效果
+- 多图拼贴工作台与布局工具
+- AI 分析 / 布局建议（Google Gemini）
+- Clerk 登录、积分与邀请
+- Cloudflare R2 对象存储
+- 多语言：`en` / `zh` / `es` / `fr` / `de` / `ja` / `ko`
 
 ## 技术栈
 
-- [Next.js](https://nextjs.org/docs) - 全栈开发框架
-- [Clerk](https://clerk.com/docs/quickstarts/nextjs) - 用户认证
-- [Cloudflare R2](https://developers.cloudflare.com/r2/) - 图像存储
-- [Stripe](https://stripe.com/docs/development) - 支付处理
-- [node-postgres](https://node-postgres.com/) - 数据处理
-- [Tailwind CSS](https://tailwindcss.com/) - 页面构建 
+| 层级 | 技术 |
+|------|------|
+| 应用 | Next.js 15（App Router）、React 18、Tailwind |
+| 认证 | [Clerk](https://clerk.com) |
+| AI | [Google Gemini](https://ai.google.dev) |
+| 数据库 | PostgreSQL + [Drizzle ORM](https://orm.drizzle.team) |
+| 存储 | [Cloudflare R2](https://developers.cloudflare.com/r2/) |
+
+## 环境要求
+
+- Node.js 20+
+- [pnpm](https://pnpm.io) 9+
+- PostgreSQL（本地 Docker / Supabase / Neon 等）
+- Clerk、Gemini、R2 等密钥（见下）
+
+## 快速开始
+
+```bash
+git clone https://github.com/yout0703/AICollager.git
+cd AICollager
+pnpm install
+cp env.example .env.local
+# 编辑 .env.local，填入真实配置
+```
+
+### 数据库
+
+1. 准备 Postgres（`env.example` 中有 Docker 示例）。
+2. 在 `.env.local` 设置 `POSTGRES_URL`。
+3. 同步表结构：
+
+```bash
+pnpm db:push
+# 或: pnpm db:migrate
+```
+
+可选种子数据：
+
+```bash
+pnpm db:seed
+```
+
+### 启动
+
+```bash
+pnpm dev
+```
+
+访问 [http://localhost:3000](http://localhost:3000)。
+
+## 环境变量
+
+将 **`env.example`** 复制为 **`.env.local`**，**不要**把真实密钥提交到 Git。
+
+| 变量 | 是否必需 | 用途 |
+|------|----------|------|
+| `NEXT_PUBLIC_CLERK_*` / `CLERK_SECRET_KEY` | 是 | 登录 |
+| `GEMINI_API_KEY` | AI 功能需要 | Gemini |
+| `POSTGRES_URL` | 是 | 数据库 |
+| Supabase 相关 | 使用 Supabase 客户端时 | Supabase |
+| `R2_*` | 上传需要 | R2 |
+| `NEXT_PUBLIC_APP_URL` | 建议 | 邀请链接等绝对地址 |
+| `ADMIN_EMAILS` | 管理接口需要 | 管理员邮箱（逗号分隔） |
+| `NEXT_PUBLIC_ENABLE_ANALYTICS` | 否 | 设为 `true` 启用 Vercel Analytics |
+| `ALLOW_LOCAL_UPLOAD` | 否 | 本地磁盘上传；生产保持 `false` |
+
+完整注释见 `env.example`。
+
+## 常用命令
+
+```bash
+pnpm dev          # 开发
+pnpm build        # 构建
+pnpm start        # 生产启动
+pnpm lint         # ESLint
+pnpm db:push      # 推送 schema
+pnpm db:migrate   # 执行迁移
+pnpm db:studio    # Drizzle Studio
+pnpm db:seed      # 种子数据
+```
+
+## 安全说明
+
+- `/api/admin/*` 仅允许 `ADMIN_EMAILS` 中的已登录用户。
+- `/api/upload-image` 面向本地开发（需登录、有大小限制；生产默认关闭）。生产请走 R2 拼贴上传流程。
+- 漏洞请私下报告，见 [SECURITY.md](./SECURITY.md)。
+
+## 贡献
+
+见 [CONTRIBUTING.md](./CONTRIBUTING.md)。
+
+## 许可证
+
+[Apache License 2.0](./LICENSE)。
+
+## 说明
+
+`docs/`、`features/` 含设计与历史规划，可能与当前代码不同步；**以本 README 与 `env.example` 为准**。

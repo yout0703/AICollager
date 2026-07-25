@@ -17,6 +17,7 @@ import {
 } from "@/lib/repositories/session";
 import { addUserCredits } from "@/lib/repositories/credits";
 import { completeInvitation } from "@/lib/repositories/invitation";
+import { getAdminEmails } from "@/lib/config";
 
 
 // 生成唯一邀请码
@@ -403,20 +404,21 @@ export async function checkUserPermission(clerkId: string, permission: 'admin' |
       return false;
     }
 
-    // 临时管理员邮箱列表（后续可以改为从配置文件或数据库读取）
-    const adminEmails = [
-      'admin@aicollager.com',
-      'linglin@example.com' // 可以根据实际需要添加
-    ];
+    const adminEmails = getAdminEmails();
+    const email = dbUser.email.toLowerCase();
 
-    // 基于邮箱检查权限
-    if (permission === 'admin') {
-      return adminEmails.includes(dbUser.email.toLowerCase());
-    } else if (permission === 'moderator') {
-      return adminEmails.includes(dbUser.email.toLowerCase()); // 暂时admin和moderator权限相同
-    } else {
-      return true; // 所有用户都有基本权限
+    // 基于 ADMIN_EMAILS 环境变量检查权限（逗号分隔）
+    if (permission === 'admin' || permission === 'moderator') {
+      if (adminEmails.length === 0) {
+        console.warn(
+          'ADMIN_EMAILS is not set; admin/moderator checks will deny all users'
+        );
+        return false;
+      }
+      return adminEmails.includes(email);
     }
+
+    return true; // 所有用户都有基本权限
 
   } catch (error) {
     console.error('Check user permission failed:', error);

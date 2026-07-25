@@ -11,6 +11,7 @@ import {
   isInvitationValid,
 } from "@/lib/repositories/invitation";
 import { addUserCredits } from "@/lib/repositories/credits";
+import { getAppBaseUrl } from "@/lib/config";
 
 // 类型转换工具函数
 function convertInvitationModelToInvitation(invitationModel: InvitationModel): Invitation {
@@ -72,8 +73,7 @@ export async function generateInviteLink(params: {
     const invitation = convertInvitationModelToInvitation(invitationModel);
 
     // 生成邀请链接
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.aicollager.com';
-    const inviteUrl = `${baseUrl}/invite/${invitation.invite_code}`;
+    const inviteUrl = `${getAppBaseUrl()}/invite/${invitation.invite_code}`;
 
     return {
       success: true,
@@ -380,8 +380,7 @@ export function generateShareText(invitation: Invitation): {
   description: string;
   shortUrl: string;
 } {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.aicollager.com';
-  const shortUrl = `${baseUrl}/i/${invitation.invite_code}`;
+  const shortUrl = `${getAppBaseUrl()}/i/${invitation.invite_code}`;
 
   return {
     title: '🎨 AI Collager - 智能拼图工具',
