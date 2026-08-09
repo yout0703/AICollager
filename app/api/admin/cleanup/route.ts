@@ -22,10 +22,7 @@ export async function POST() {
       success: result.success,
       data: {
         expired_sessions: result.expiredSessions,
-        expired_invitations: result.expiredInvitations,
-        expired_ai_caches: result.expiredAICaches,
-        low_usage_ai_caches: result.lowUsageAICaches,
-        old_ai_stats: result.oldAIStats
+        expired_invitations: result.expiredInvitations
       },
       message: result.message || '清理任务完成'
     });

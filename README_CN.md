@@ -3,14 +3,15 @@
 [![CI](https://github.com/yout0703/AICollager/actions/workflows/ci.yml/badge.svg)](https://github.com/yout0703/AICollager/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-基于 AI 的拼贴图应用（Next.js）。上传图片、由 Google Gemini 辅助布局分析，并导出成品。
+基于 OpenAI gpt-image-2 的提示词驱动 AI 图像生成应用（Next.js）。输入提示词、选择风格与场景即可直接生成图像；支持上传参考图（图生图）与多轮提示词精修。
 
 English docs: [README.md](./README.md).
 
 ## 功能概览
 
-- 多图拼贴工作台与布局工具
-- AI 分析 / 布局建议（Google Gemini）
+- 提示词驱动出图（OpenAI gpt-image-2），支持文生图与图生图
+- 预设风格库与场景模板，AI 智能编排最优提示词
+- 多轮提示词精修与完整历史版本回退
 - Clerk 登录、积分与邀请
 - Cloudflare R2 对象存储
 - 多语言：`en` / `zh` / `es` / `fr` / `de` / `ja` / `ko`
@@ -21,7 +22,7 @@ English docs: [README.md](./README.md).
 |------|------|
 | 应用 | Next.js 15（App Router）、React 18、Tailwind |
 | 认证 | [Clerk](https://clerk.com) |
-| AI | [Google Gemini](https://ai.google.dev) |
+| AI | [OpenAI gpt-image-2](https://developers.openai.com/api/docs/models/gpt-image-2) |
 | 数据库 | PostgreSQL + [Drizzle ORM](https://orm.drizzle.team) |
 | 存储 | [Cloudflare R2](https://developers.cloudflare.com/r2/) |
 
@@ -74,7 +75,7 @@ pnpm dev
 | 变量 | 是否必需 | 用途 |
 |------|----------|------|
 | `NEXT_PUBLIC_CLERK_*` / `CLERK_SECRET_KEY` | 是 | 登录 |
-| `GEMINI_API_KEY` | AI 功能需要 | Gemini |
+| `OPENAI_API_KEY` | AI 功能需要 | OpenAI gpt-image-2（需完成 API 组织验证） |
 | `POSTGRES_URL` | 是 | 数据库 |
 | Supabase 相关 | 使用 Supabase 客户端时 | Supabase |
 | `R2_*` | 上传需要 | R2 |

@@ -46,7 +46,9 @@ jobs:
           CLERK_SECRET_KEY: sk_test_ci_placeholder
           NEXT_PUBLIC_APP_URL: http://localhost:3000
           POSTGRES_URL: postgresql://postgres:postgres@localhost:5432/aicollager
-          GEMINI_API_KEY: ci-placeholder
+          OPENAI_API_KEY: ci-placeholder
+          OPENAI_BASE_URL: https://api.onehop.ai/v1
+          OPENAI_IMAGE_MODEL: openai/gpt-image-2
           R2_ACCOUNT_ID: ci
           R2_ACCESS_KEY_ID: ci
           R2_SECRET_ACCESS_KEY: ci

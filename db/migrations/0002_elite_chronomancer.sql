@@ -1,0 +1,58 @@
+CREATE TABLE "ac_generation_turns" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	"generation_id" uuid NOT NULL,
+	"turn_index" integer NOT NULL,
+	"type" varchar(20) NOT NULL,
+	"user_prompt" text NOT NULL,
+	"built_prompt" text,
+	"ref_image_urls" jsonb DEFAULT '[]'::jsonb,
+	"image_url" varchar(500) NOT NULL,
+	"thumbnail_url" varchar(500),
+	"size" varchar(20),
+	"quality" varchar(20),
+	"style" varchar(100),
+	"orchestrated" boolean DEFAULT false NOT NULL,
+	"duration_ms" integer,
+	"credits_used" integer DEFAULT 0 NOT NULL,
+	"revised_prompt" text,
+	"status" varchar(20) DEFAULT 'completed' NOT NULL,
+	"error_message" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "ac_generation_turns_uuid_unique" UNIQUE("uuid")
+);
+--> statement-breakpoint
+CREATE TABLE "ac_generations" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"uuid" uuid DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid,
+	"session_id" varchar(255),
+	"title" varchar(255),
+	"prompt" text NOT NULL,
+	"final_prompt" text,
+	"style" varchar(100),
+	"scene" varchar(100),
+	"aspect_ratio" varchar(20) DEFAULT '1:1' NOT NULL,
+	"quality" varchar(20) DEFAULT 'high' NOT NULL,
+	"image_url" varchar(500),
+	"thumbnail_url" varchar(500),
+	"status" varchar(20) DEFAULT 'active' NOT NULL,
+	"generation_status" varchar(20) DEFAULT 'pending' NOT NULL,
+	"visibility" varchar(20) DEFAULT 'private' NOT NULL,
+	"turn_count" integer DEFAULT 0 NOT NULL,
+	"view_count" integer DEFAULT 0 NOT NULL,
+	"download_count" integer DEFAULT 0 NOT NULL,
+	"like_count" integer DEFAULT 0 NOT NULL,
+	"is_featured" integer DEFAULT 0 NOT NULL,
+	"credits_used" integer DEFAULT 0 NOT NULL,
+	"ai_model" varchar(50),
+	"ai_cost" numeric(10, 4) DEFAULT '0',
+	"metadata" jsonb DEFAULT '{}'::jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"deleted_at" timestamp with time zone,
+	CONSTRAINT "ac_generations_uuid_unique" UNIQUE("uuid")
+);
+--> statement-breakpoint
+ALTER TABLE "ac_generation_turns" ADD CONSTRAINT "ac_generation_turns_generation_id_ac_generations_uuid_fk" FOREIGN KEY ("generation_id") REFERENCES "public"."ac_generations"("uuid") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "ac_generations" ADD CONSTRAINT "ac_generations_user_id_ac_users_uuid_fk" FOREIGN KEY ("user_id") REFERENCES "public"."ac_users"("uuid") ON DELETE cascade ON UPDATE no action;

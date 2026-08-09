@@ -114,14 +114,6 @@ export function createDynamicComponent<T extends ComponentType<any>>(
   };
 }
 
-// 预设的动态组件加载器 - 仅包含确实存在的组件
-export const DynamicEditor = createDynamicComponent(
-  () => import('@/components/editor/Canvas'),
-  {
-    loading: () => <DefaultLoading message="加载编辑器中..." />,
-    ssr: false
-  }
-);
 
 // Hook for progressive loading
 export function useProgressiveLoading<T>(
